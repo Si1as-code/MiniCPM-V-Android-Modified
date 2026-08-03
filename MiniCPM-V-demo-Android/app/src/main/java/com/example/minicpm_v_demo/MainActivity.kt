@@ -38,7 +38,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
-class MainActivity : StatusBarHidingActivity() {
+class MainActivity : StatusBarVisibleActivity() {
 
     private val pendingImageViewModel: PendingImageViewModel by viewModels()
 
@@ -58,7 +58,7 @@ class MainActivity : StatusBarHidingActivity() {
     private lateinit var ivPendingImage: ImageView
     private lateinit var pendingImageScrim: View
     private lateinit var progressPendingImage: CircularProgressIndicator
-    private lateinit var tvPendingImageProgress: TextView
+    private lateinit var tvPendingImageStatus: TextView
     private lateinit var tvPendingImageInfo: TextView
 
     private lateinit var engine: LlamaEngine
@@ -77,6 +77,12 @@ class MainActivity : StatusBarHidingActivity() {
     private var currentEngineState: LlamaState = LlamaState.Uninitialized
     private var pendingCameraUri: Uri? = null
     private var pendingCameraFile: File? = null
+    private val originalImageCache by lazy {
+        ImageSourceCache(
+            File(cacheDir, PendingImageViewModel.SOURCE_CACHE_DIRECTORY),
+            ImageDecodePolicy.MAX_SOURCE_BYTES
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -136,7 +142,7 @@ class MainActivity : StatusBarHidingActivity() {
         ivPendingImage = findViewById(R.id.iv_pending_image)
         pendingImageScrim = findViewById(R.id.pending_image_scrim)
         progressPendingImage = findViewById(R.id.progress_pending_image)
-        tvPendingImageProgress = findViewById(R.id.tv_pending_image_progress)
+        tvPendingImageStatus = findViewById(R.id.tv_pending_image_status)
         tvPendingImageInfo = findViewById(R.id.tv_pending_image_info)
     }
 
@@ -145,6 +151,7 @@ class MainActivity : StatusBarHidingActivity() {
         chatAdapter.setOnStopClick {
             engine.cancelGeneration()
         }
+        chatAdapter.setOnImageClick(::openOriginalImage)
         chatAdapter.setOnSuggestionClick { suggestion ->
             if (isModelReady && !isProcessingVideo) {
                 etInput.setText(suggestion)
@@ -188,6 +195,16 @@ class MainActivity : StatusBarHidingActivity() {
             startActivity(Intent(this, ModelManagerActivity::class.java))
         }
         btnImageSlice.setOnClickListener { showImageSliceDialog() }
+        ivPendingImage.setOnClickListener {
+            val token = when (val state = pendingImageViewModel.uiState.value) {
+                is PendingImageUiState.Preprocessing ->
+                    state.attachment.originalImageToken
+                is PendingImageUiState.Ready ->
+                    state.attachment.originalImageToken
+                else -> null
+            }
+            token?.let(::openOriginalImage)
+        }
 
         etInput.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
@@ -288,11 +305,24 @@ class MainActivity : StatusBarHidingActivity() {
 
     private fun clearChatUI() {
         pendingImageViewModel.clearLocalAfterEngineReset()
+        releaseMessageOriginals()
         messages.clear()
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
         messages.add(ChatMessage.WelcomeCard(isTextOnly = selectedModel.isTextOnly))
         messageIdCounter = 1L
         chatAdapter.submitList(messages.toList())
+    }
+
+    private fun openOriginalImage(token: String) {
+        startActivity(OriginalImageViewerActivity.intent(this, token))
+    }
+
+    private fun releaseMessageOriginals() {
+        messages.asSequence()
+            .filterIsInstance<ChatMessage.UserMessage>()
+            .mapNotNull { it.originalImageToken }
+            .distinct()
+            .forEach(originalImageCache::deleteToken)
     }
 
     private fun clearChat() {
@@ -458,10 +488,17 @@ class MainActivity : StatusBarHidingActivity() {
         val mmprojMissing = !model.isTextOnly && (mmprojFile == null || !mmprojFile.exists())
 
         if (ggufMissing || mmprojMissing) {
-            promptDownloadModels(
-                ggufMissing = ggufMissing,
-                mmprojMissing = mmprojMissing
-            )
+            if (ModelDownloadPromptPolicy.shouldPrompt(
+                    ggufMissing = ggufMissing,
+                    mmprojMissing = mmprojMissing,
+                    downloadRunning = ModelDownloadController.isRunning
+                )
+            ) {
+                promptDownloadModels(
+                    ggufMissing = ggufMissing,
+                    mmprojMissing = mmprojMissing
+                )
+            }
             return
         }
 
@@ -624,25 +661,23 @@ class MainActivity : StatusBarHidingActivity() {
             tvPendingImageInfo.text = attachment.imageInfo
         }
 
-        progressPendingImage.visibility = View.INVISIBLE
         when (state) {
             is PendingImageUiState.LoadingPreview,
             is PendingImageUiState.Preprocessing,
             PendingImageUiState.Clearing -> {
                 pendingImageScrim.visibility = View.VISIBLE
+                progressPendingImage.visibility = View.VISIBLE
                 progressPendingImage.isIndeterminate = true
-                tvPendingImageProgress.visibility = View.GONE
+                tvPendingImageStatus.setText(R.string.image_preprocessing_wait)
             }
             is PendingImageUiState.Ready -> {
                 pendingImageScrim.visibility = View.GONE
-                progressPendingImage.isIndeterminate = false
-                progressPendingImage.setProgressCompat(100, true)
-                tvPendingImageProgress.setText(R.string.image_preprocessing_complete)
-                tvPendingImageProgress.visibility = View.VISIBLE
+                progressPendingImage.visibility = View.GONE
+                tvPendingImageStatus.setText(R.string.image_ready_view_original)
             }
             PendingImageUiState.Empty -> Unit
         }
-        progressPendingImage.visibility = View.VISIBLE
+        ivPendingImage.isClickable = attachment != null
     }
 
     private fun restorePendingCameraCapture(savedInstanceState: Bundle?) {
@@ -843,7 +878,8 @@ class MainActivity : StatusBarHidingActivity() {
             id = msgId,
             text = userMsg,
             imageBitmap = attachment?.thumbnail,
-            imageInfo = attachment?.imageInfo
+            imageInfo = attachment?.imageInfo,
+            originalImageToken = attachment?.originalImageToken
         )
         renderPendingImage(pendingImageViewModel.uiState.value)
         messages.add(userMessage)
@@ -991,6 +1027,9 @@ class MainActivity : StatusBarHidingActivity() {
     override fun onDestroy() {
         if (isFinishing) {
             clearPendingCameraCapture()
+            if (!isLocaleRestart) {
+                releaseMessageOriginals()
+            }
         }
         if (isFinishing && !isLocaleRestart && ::engine.isInitialized) {
             engine.destroy()

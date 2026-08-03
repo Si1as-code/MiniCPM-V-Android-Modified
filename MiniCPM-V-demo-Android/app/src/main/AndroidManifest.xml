@@ -61,6 +61,10 @@
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".OriginalImageViewerActivity"
+            android:exported="false"
+            android:label="@string/original_image_title" />
+        <activity
             android:name=".TtsActivity"
             android:exported="false"
             android:configChanges="locale|layoutDirection"

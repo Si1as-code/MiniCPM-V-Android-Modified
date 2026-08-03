@@ -65,9 +65,11 @@
     <string name="error_image_too_large">Image is too large; maximum is 64 MB</string>
     <string name="error_create_camera_file">Unable to create camera cache file</string>
     <string name="image_preprocessing">Preprocessing image…</string>
-    <string name="image_preprocessing_initial">0%</string>
-    <string name="image_preprocessing_progress">%1$d%%</string>
-    <string name="image_preprocessing_complete">100%</string>
+    <string name="image_preprocessing_wait">Preprocessing image, please wait</string>
+    <string name="image_ready_view_original">Image ready — tap to view original</string>
+    <string name="open_original_image">Tap to view original image</string>
+    <string name="original_image_title">Original image</string>
+    <string name="original_image_unavailable">Original image cache is no longer available</string>
     <string name="pending_image_ready">Image preprocessing complete</string>
     <string name="video_only_v46">Video understanding is only available on MiniCPM-V-4.6. Please switch models in Model Management.</string>
     <string name="video_processing_progress">%1$s · Processing %2$d/%3$d</string>

@@ -5,6 +5,7 @@ import java.nio.file.Files
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
@@ -30,6 +31,30 @@ class ImageSourceCacheTest {
         assertEquals(1, openCount)
         assertEquals(bytes.size.toLong(), cached.byteCount)
         assertArrayEquals(bytes, Files.readAllBytes(cached.file.toPath()))
+        assertEquals(cached.file.canonicalFile, cache.resolve(cached.token))
+    }
+
+    @Test
+    fun resolvesOnlyOpaqueTokensInsidePrivateCache() {
+        val directory = temporaryFolder.newFolder("images")
+        val cache = ImageSourceCache(directory, 1024)
+        val cached = cache.cache { ByteArrayInputStream(byteArrayOf(1, 2, 3)) }
+
+        assertEquals(cached.file.canonicalFile, cache.resolve(cached.token))
+        assertNull(cache.resolve("../${cached.token}"))
+        assertNull(cache.resolve("not-a-source.img"))
+        assertNull(cache.resolve(""))
+    }
+
+    @Test
+    fun deletesCachedSourceByOpaqueToken() {
+        val cache = ImageSourceCache(temporaryFolder.newFolder("images"), 1024)
+        val cached = cache.cache { ByteArrayInputStream(byteArrayOf(1)) }
+
+        cache.deleteToken(cached.token)
+
+        assertFalse(cached.file.exists())
+        assertNull(cache.resolve(cached.token))
     }
 
     @Test

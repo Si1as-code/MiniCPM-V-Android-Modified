@@ -25,6 +25,7 @@ class ChatAdapter(
 
     private var onSuggestionClick: ((String) -> Unit)? = null
     private var onStopClick: (() -> Unit)? = null
+    private var onImageClick: ((String) -> Unit)? = null
 
     private var activeAiHolder: AiMessageViewHolder? = null
     private var activeAiId: Long = -1L
@@ -35,6 +36,10 @@ class ChatAdapter(
 
     fun setOnStopClick(listener: () -> Unit) {
         onStopClick = listener
+    }
+
+    fun setOnImageClick(listener: (String) -> Unit) {
+        onImageClick = listener
     }
 
     fun setActiveAiMessage(id: Long) {
@@ -156,11 +161,18 @@ class ChatAdapter(
                 tvImageInfo.visibility = View.VISIBLE
                 tvImageInfo.text = item.imageInfo ?: ""
                 progressImage.visibility = if (item.isPrefilling) View.VISIBLE else View.GONE
+                flImageContainer.isClickable = !item.isVideo && item.originalImageToken != null
+                flImageContainer.setOnClickListener {
+                    item.originalImageToken?.takeUnless { item.isVideo }
+                        ?.let { token -> onImageClick?.invoke(token) }
+                }
             } else {
                 flImageContainer.visibility = View.GONE
                 ivVideoBadge.visibility = View.GONE
                 tvImageInfo.visibility = View.GONE
                 progressImage.visibility = View.GONE
+                flImageContainer.isClickable = false
+                flImageContainer.setOnClickListener(null)
             }
         }
     }
@@ -283,6 +295,7 @@ class ChatAdapter(
                     oldItem.text == newItem.text &&
                             bitmapsHaveSameContent(oldItem.imageBitmap, newItem.imageBitmap) &&
                             oldItem.imageInfo == newItem.imageInfo &&
+                            oldItem.originalImageToken == newItem.originalImageToken &&
                             oldItem.isPrefilling == newItem.isPrefilling &&
                             oldItem.isVideo == newItem.isVideo
                 oldItem is ChatMessage.AiMessage && newItem is ChatMessage.AiMessage ->

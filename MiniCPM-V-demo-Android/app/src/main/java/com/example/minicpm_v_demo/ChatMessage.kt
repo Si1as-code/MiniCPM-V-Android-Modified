@@ -10,6 +10,7 @@ sealed class ChatMessage {
         val text: String,
         val imageBitmap: Bitmap? = null,
         val imageInfo: String? = null,
+        val originalImageToken: String? = null,
         val isPrefilling: Boolean = false,
         // True when [imageBitmap] is a video's first frame and the
         // cell should overlay a play icon to communicate "this was a

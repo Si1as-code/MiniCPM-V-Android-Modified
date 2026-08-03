@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class ModelManagerActivity : StatusBarHidingActivity() {
+class ModelManagerActivity : StatusBarVisibleActivity() {
 
     private lateinit var tvModelStatus: TextView
     private lateinit var btnDownload: MaterialButton

@@ -18,8 +18,38 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MainActivityUiTest {
 
     @Test
-    fun chatScreenStartsWithHiddenStatusBarAndPendingImagePanel() {
-        val statusBarHidden = AtomicBoolean(false)
+    fun modelManagerToolbarStartsBelowStatusBar() {
+        val toolbarBelowStatusBar = AtomicBoolean(false)
+        val verified = CountDownLatch(1)
+
+        ActivityScenario.launch(ModelManagerActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val toolbar = activity.findViewById<View>(R.id.toolbar)
+                toolbar.post {
+                    val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)
+                    val statusBarHeight = insets
+                        ?.getInsets(WindowInsetsCompat.Type.statusBars())
+                        ?.top ?: 0
+                    val location = IntArray(2)
+                    toolbar.getLocationOnScreen(location)
+                    toolbarBelowStatusBar.set(
+                        statusBarHeight > 0 && location[1] >= statusBarHeight
+                    )
+                    verified.countDown()
+                }
+            }
+
+            assertTrue(verified.await(5, TimeUnit.SECONDS))
+            assertTrue(
+                "The model manager toolbar must start below the status bar",
+                toolbarBelowStatusBar.get()
+            )
+        }
+    }
+
+    @Test
+    fun chatScreenStartsBelowVisibleStatusBarAndHasPendingImagePanel() {
+        val statusBarVisible = AtomicBoolean(false)
         val verified = CountDownLatch(1)
 
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -27,10 +57,12 @@ class MainActivityUiTest {
                 val pendingPanel = activity.findViewById<View>(R.id.pending_image_panel)
                 val cameraButton = activity.findViewById<View>(R.id.btn_camera)
                 val sendButton = activity.findViewById<View>(R.id.btn_send)
+                val preprocessingStatus = activity.findViewById<View>(R.id.tv_pending_image_status)
 
                 assertNotNull(pendingPanel)
                 assertNotNull(cameraButton)
                 assertNotNull(sendButton)
+                assertNotNull(preprocessingStatus)
                 assertTrue(pendingPanel.visibility == View.GONE)
 
                 val parent = cameraButton.parent as ViewGroup
@@ -38,16 +70,16 @@ class MainActivityUiTest {
 
                 activity.window.decorView.post {
                     val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)
-                    statusBarHidden.set(
+                    statusBarVisible.set(
                         insets != null &&
-                            !insets.isVisible(WindowInsetsCompat.Type.statusBars())
+                            insets.isVisible(WindowInsetsCompat.Type.statusBars())
                     )
                     verified.countDown()
                 }
             }
 
             assertTrue(verified.await(5, TimeUnit.SECONDS))
-            assertTrue("The Android status bar must be hidden", statusBarHidden.get())
+            assertTrue("The Android status bar must remain visible", statusBarVisible.get())
         }
     }
 }

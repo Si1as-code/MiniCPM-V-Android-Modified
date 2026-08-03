@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
 data class PendingImageAttachment(
     val requestId: Long,
     val thumbnail: Bitmap,
-    val imageInfo: String
+    val imageInfo: String,
+    val originalImageToken: String
 )
 
 sealed interface PendingImageUiState {
@@ -40,8 +41,7 @@ sealed interface PendingImageUiState {
         val attachment: PendingImageAttachment
     ) : PendingImageUiState
     data class Ready(
-        val attachment: PendingImageAttachment,
-        val progressPercent: Int = 100
+        val attachment: PendingImageAttachment
     ) : PendingImageUiState
     data object Clearing : PendingImageUiState
 }
@@ -158,9 +158,13 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
      * image prefill that was already in flight.
      */
     suspend fun cancelAndClear() {
+        var retainedToken: String? = null
         val job = synchronized(stateLock) {
             activeRequestId = null
             val current = processingJob
+            if (current == null) {
+                retainedToken = currentAttachmentToken()
+            }
             _uiState.value = if (current == null) {
                 PendingImageUiState.Empty
             } else {
@@ -170,6 +174,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         }
 
         job?.cancelAndJoin()
+        sourceCache.deleteToken(retainedToken)
 
         synchronized(stateLock) {
             if (processingJob === job) {
@@ -186,12 +191,17 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
      * native prefill can still be running.
      */
     fun clearLocalAfterEngineReset() {
+        var retainedToken: String? = null
         synchronized(stateLock) {
             activeRequestId = null
+            if (processingJob == null) {
+                retainedToken = currentAttachmentToken()
+            }
             processingJob?.cancel()
             processingJob = null
             _uiState.value = PendingImageUiState.Empty
         }
+        sourceCache.deleteToken(retainedToken)
     }
 
     private suspend fun preprocess(
@@ -202,6 +212,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         var modelBitmap: Bitmap? = null
         var cachedSource: CachedImageSource? = null
         var encodedFile: File? = null
+        var retainSourceForViewer = false
         try {
             cachedSource = sourceCache.cache {
                 contentResolver.openInputStream(uri)
@@ -230,7 +241,8 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             val previewAttachment = PendingImageAttachment(
                 requestId = requestId,
                 thumbnail = thumbnail,
-                imageInfo = "$displayWidth x $displayHeight"
+                imageInfo = "$displayWidth x $displayHeight",
+                originalImageToken = cachedSource.token
             )
             publishIfCurrent(
                 requestId,
@@ -281,6 +293,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
 
             synchronized(stateLock) {
                 if (activeRequestId == requestId) {
+                    retainSourceForViewer = true
                     processingJob = null
                     _uiState.value = PendingImageUiState.Ready(preparedAttachment)
                 }
@@ -311,7 +324,9 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         } finally {
             modelBitmap?.takeUnless { it.isRecycled }?.recycle()
             encodedFile?.let(::deletePreparedCacheFile)
-            sourceCache.delete(cachedSource?.file)
+            if (!retainSourceForViewer) {
+                sourceCache.delete(cachedSource?.file)
+            }
             deleteCameraCacheFile(cameraCacheFile)
         }
     }
@@ -504,6 +519,21 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             activeRequestId == requestId
         }
 
+    private fun currentAttachmentToken(): String? =
+        when (val state = _uiState.value) {
+            is PendingImageUiState.Preprocessing ->
+                state.attachment.originalImageToken
+            is PendingImageUiState.Ready ->
+                state.attachment.originalImageToken
+            else -> null
+        }
+
+    override fun onCleared() {
+        val token = synchronized(stateLock) { currentAttachmentToken() }
+        sourceCache.deleteToken(token)
+        super.onCleared()
+    }
+
     private data class ImageMetadata(
         val width: Int,
         val height: Int,
@@ -515,7 +545,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         const val THUMBNAIL_MAX_PIXEL_COUNT = 512L * 512L
 
         private const val PREPARED_CACHE_DIRECTORY = "pending-images"
-        private const val SOURCE_CACHE_DIRECTORY = "pending-image-sources"
+        const val SOURCE_CACHE_DIRECTORY = "pending-image-sources"
         private const val PREPARED_FILE_PREFIX = "prepared-"
         private const val CAMERA_CACHE_DIRECTORY = "camera"
         private const val JPEG_QUALITY = 95

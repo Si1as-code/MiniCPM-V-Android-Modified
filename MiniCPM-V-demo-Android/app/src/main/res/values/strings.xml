@@ -68,9 +68,11 @@
     <string name="error_image_too_large">图片文件过大，最大 64 MB</string>
     <string name="error_create_camera_file">无法创建拍照缓存文件</string>
     <string name="image_preprocessing">图片预处理中…</string>
-    <string name="image_preprocessing_initial">0%</string>
-    <string name="image_preprocessing_progress">%1$d%%</string>
-    <string name="image_preprocessing_complete">100%</string>
+    <string name="image_preprocessing_wait">图像预处理中，请耐心等待</string>
+    <string name="image_ready_view_original">图像已准备好，点击查看原图</string>
+    <string name="open_original_image">点击查看原图</string>
+    <string name="original_image_title">原图</string>
+    <string name="original_image_unavailable">原图缓存已失效</string>
     <string name="pending_image_ready">图片预处理完成</string>
     <string name="video_only_v46">视频理解仅在 MiniCPM-V-4.6 上可用，请前往"模型管理"切换模型</string>
     <string name="video_processing_progress">%1$s · 处理中 %2$d/%3$d</string>
