@@ -1,0 +1,58 @@
+package com.example.minicpm_v_demo
+
+import java.io.ByteArrayInputStream
+import java.nio.file.Files
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+
+class ImageSourceCacheTest {
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
+
+    @Test
+    fun cachesOneShotSourceWithExactlyOneOpen() {
+        val bytes = ByteArray(32 * 1024) { (it % 251).toByte() }
+        var openCount = 0
+        val cache = ImageSourceCache(temporaryFolder.newFolder("images"), bytes.size.toLong())
+
+        val cached = cache.cache {
+            openCount++
+            check(openCount == 1) { "The selected URI was opened more than once" }
+            ByteArrayInputStream(bytes)
+        }
+
+        assertEquals(1, openCount)
+        assertEquals(bytes.size.toLong(), cached.byteCount)
+        assertArrayEquals(bytes, Files.readAllBytes(cached.file.toPath()))
+    }
+
+    @Test
+    fun rejectsEmptySourceAndRemovesTemporaryFile() {
+        val directory = temporaryFolder.newFolder("images")
+        val cache = ImageSourceCache(directory, 1024)
+
+        assertThrows(ImageSourceUnreadableException::class.java) {
+            cache.cache { ByteArrayInputStream(ByteArray(0)) }
+        }
+
+        assertFalse(directory.listFiles().orEmpty().isNotEmpty())
+    }
+
+    @Test
+    fun rejectsOversizedSourceAndRemovesTemporaryFile() {
+        val directory = temporaryFolder.newFolder("images")
+        val cache = ImageSourceCache(directory, 8)
+
+        assertThrows(ImageSourceTooLargeException::class.java) {
+            cache.cache { ByteArrayInputStream(ByteArray(9)) }
+        }
+
+        assertFalse(directory.listFiles().orEmpty().isNotEmpty())
+    }
+}

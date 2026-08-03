@@ -9,6 +9,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -54,6 +55,10 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
     private val appContext = application.applicationContext
     private val contentResolver = application.contentResolver
     private val engine by lazy { LlamaEngine.getInstance(appContext) }
+    private val sourceCache = ImageSourceCache(
+        File(appContext.cacheDir, SOURCE_CACHE_DIRECTORY),
+        ImageDecodePolicy.MAX_SOURCE_BYTES
+    )
     private val stateLock = Any()
 
     private val _uiState = MutableStateFlow<PendingImageUiState>(
@@ -195,14 +200,17 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         cameraCacheFile: File?
     ) {
         var modelBitmap: Bitmap? = null
+        var cachedSource: CachedImageSource? = null
         var encodedFile: File? = null
         try {
-            validateSourceLength(uri)
-            val metadata = readMetadata(uri)
+            cachedSource = sourceCache.cache {
+                contentResolver.openInputStream(uri)
+            }
+            val metadata = readMetadata(cachedSource.file)
             ensureCurrent(requestId)
 
             val thumbnail = decodeOrientedBitmap(
-                uri = uri,
+                source = cachedSource.file,
                 metadata = metadata,
                 maxDimension = THUMBNAIL_MAX_DIMENSION,
                 maxPixelCount = THUMBNAIL_MAX_PIXEL_COUNT
@@ -230,7 +238,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             )
 
             modelBitmap = decodeOrientedBitmap(
-                uri = uri,
+                source = cachedSource.file,
                 metadata = metadata,
                 maxDimension = ImageDecodePolicy.MAX_DIMENSION,
                 maxPixelCount = ImageDecodePolicy.MAX_PIXEL_COUNT
@@ -279,6 +287,16 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
+        } catch (_: ImageSourceTooLargeException) {
+            failRequest(
+                requestId,
+                appContext.getString(R.string.error_image_too_large)
+            )
+        } catch (_: ImageSourceUnreadableException) {
+            failRequest(
+                requestId,
+                appContext.getString(R.string.error_read_image)
+            )
         } catch (_: OutOfMemoryError) {
             failRequest(
                 requestId,
@@ -293,42 +311,27 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         } finally {
             modelBitmap?.takeUnless { it.isRecycled }?.recycle()
             encodedFile?.let(::deletePreparedCacheFile)
+            sourceCache.delete(cachedSource?.file)
             deleteCameraCacheFile(cameraCacheFile)
         }
     }
 
-    private fun validateSourceLength(uri: Uri) {
-        val sourceLength = contentResolver.openAssetFileDescriptor(uri, "r")?.use {
-            it.length
-        } ?: -1L
-        if (!ImageDecodePolicy.isSourceLengthAllowed(sourceLength)) {
-            val errorResource = if (
-                sourceLength > ImageDecodePolicy.MAX_SOURCE_BYTES
-            ) {
-                R.string.error_image_too_large
-            } else {
-                R.string.error_read_image
-            }
-            throw IOException(appContext.getString(errorResource))
-        }
-    }
-
-    private fun readMetadata(uri: Uri): ImageMetadata {
+    private fun readMetadata(source: File): ImageMetadata {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        contentResolver.openInputStream(uri)?.use { input ->
+        FileInputStream(source).use { input ->
             BitmapFactory.decodeStream(input, null, bounds)
-        } ?: throw IOException(appContext.getString(R.string.error_read_image))
+        }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
             throw IOException(appContext.getString(R.string.error_decode_image))
         }
 
         val orientation = try {
-            contentResolver.openInputStream(uri)?.use { input ->
+            FileInputStream(source).use { input ->
                 ExifInterface(input).getAttributeInt(
                     ExifInterface.TAG_ORIENTATION,
                     ExifInterface.ORIENTATION_NORMAL
                 )
-            } ?: ExifInterface.ORIENTATION_NORMAL
+            }
         } catch (_: IOException) {
             ExifInterface.ORIENTATION_NORMAL
         }
@@ -340,7 +343,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun decodeOrientedBitmap(
-        uri: Uri,
+        source: File,
         metadata: ImageMetadata,
         maxDimension: Int,
         maxPixelCount: Long
@@ -354,7 +357,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             )
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
-        val decoded = contentResolver.openInputStream(uri)?.use { input ->
+        val decoded = FileInputStream(source).use { input ->
             BitmapFactory.decodeStream(input, null, options)
         } ?: throw IOException(appContext.getString(R.string.error_decode_image))
         return applyExifTransform(decoded, metadata.transform)
@@ -512,6 +515,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         const val THUMBNAIL_MAX_PIXEL_COUNT = 512L * 512L
 
         private const val PREPARED_CACHE_DIRECTORY = "pending-images"
+        private const val SOURCE_CACHE_DIRECTORY = "pending-image-sources"
         private const val PREPARED_FILE_PREFIX = "prepared-"
         private const val CAMERA_CACHE_DIRECTORY = "camera"
         private const val JPEG_QUALITY = 95
