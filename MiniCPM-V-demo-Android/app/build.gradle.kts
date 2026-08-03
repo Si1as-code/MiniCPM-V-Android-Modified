@@ -126,9 +126,23 @@ dependencies {
 // ---------------------------------------------------------------------------
 
 fun runCmd(vararg args: String) {
-    val proc = ProcessBuilder(*args).inheritIO().start()
-    val rc = proc.waitFor()
-    if (rc != 0) error("Command failed (rc=$rc): ${args.joinToString(" ")}")
+    val logFile = File.createTempFile("minicpmv-native-", ".log")
+    try {
+        val proc = ProcessBuilder(*args)
+            .redirectErrorStream(true)
+            .redirectOutput(logFile)
+            .start()
+        val rc = proc.waitFor()
+        if (rc != 0) {
+            val outputTail = logFile.readLines().takeLast(200).joinToString("\n")
+            error(
+                "Command failed (rc=$rc): ${args.joinToString(" ")}\n" +
+                    outputTail
+            )
+        }
+    } finally {
+        logFile.delete()
+    }
 }
 
 val sdkRoot: String = System.getenv("ANDROID_HOME")
@@ -145,12 +159,27 @@ tasks.register("buildGgmlCpu_v86") {
 
     doLast {
         val cmake = "$sdkRoot/cmake/4.1.2/bin/cmake"
+        val ninja = File(cmake).parentFile.resolve("ninja.exe").absolutePath
         val toolchain = "$sdkRoot/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"
+        val kleidiAiSource = fileTree(file(".cxx/Release")) {
+            include("*/arm64-v8a/_deps/kleidiai_download-src/CMakeLists.txt")
+        }.files
+            .map { it.parentFile }
+            .maxByOrNull { it.lastModified() }
+            ?: error(
+                "KleidiAI source cache is missing. Run the standard Android native " +
+                    "build once before buildGgmlCpu_v86."
+            )
         val bd = File(project.layout.buildDirectory.asFile.get(), "v86-cmake/arm64-v8a")
         bd.mkdirs()
 
         runCmd(
             cmake,
+            "--fresh",
+            "-G", "Ninja",
+            "-DCMAKE_MAKE_PROGRAM=$ninja",
+            "-DFETCHCONTENT_FULLY_DISCONNECTED=ON",
+            "-DFETCHCONTENT_SOURCE_DIR_KLEIDIAI_DOWNLOAD=${kleidiAiSource.absolutePath}",
             "-DCMAKE_TOOLCHAIN_FILE=$toolchain",
             "-DANDROID_ABI=arm64-v8a",
             "-DANDROID_PLATFORM=android-24",

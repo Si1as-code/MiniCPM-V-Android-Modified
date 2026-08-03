@@ -1,5 +1,13 @@
 # MiniCPM-V Demo — iOS, Android & HarmonyOS
 
+> **Modified Android fork:** This repository is based on the official
+> [OpenBMB/MiniCPM-V-Apps](https://github.com/OpenBMB/MiniCPM-V-Apps) repository
+> at commit `2b4049fd877be538e77cae5122204ee0ea3ac34c`. The Android demo adds status-bar
+> hiding, an in-chat camera action, and a pending-image preprocessing workflow
+> that completes native image prefill before inference starts. See
+> [the Chinese modification guide](MiniCPM-V-demo-Android/README_MODIFIED_zh.md)
+> for implementation, security limits, build instructions, and validation.
+
 **English** | [中文](README_zh.md)
 
 This demo runs the MiniCPM-V family of multimodal models fully on-device on iOS, Android, and HarmonyOS NEXT. Currently supported:

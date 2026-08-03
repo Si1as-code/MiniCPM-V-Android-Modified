@@ -1,8 +1,7 @@
 package com.example.minicpm_v_demo
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -10,58 +9,79 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import io.noties.markwon.Markwon
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : StatusBarHidingActivity() {
+
+    private val pendingImageViewModel: PendingImageViewModel by viewModels()
 
     private lateinit var recyclerChat: RecyclerView
     private lateinit var chatAdapter: ChatAdapter
     private lateinit var etInput: TextInputEditText
     private lateinit var btnSend: ImageButton
     private lateinit var btnImage: ImageButton
+    private lateinit var btnCamera: ImageButton
     private lateinit var btnClearChat: ImageButton
     private lateinit var btnModelManager: ImageButton
     private lateinit var btnImageSlice: ImageButton
     private lateinit var cardInputBar: View
     private lateinit var appBarLayout: AppBarLayout
     private lateinit var tvTitle: TextView
+    private lateinit var pendingImagePanel: View
+    private lateinit var ivPendingImage: ImageView
+    private lateinit var pendingImageScrim: View
+    private lateinit var progressPendingImage: CircularProgressIndicator
+    private lateinit var tvPendingImageProgress: TextView
+    private lateinit var tvPendingImageInfo: TextView
 
     private lateinit var engine: LlamaEngine
     private var generationJob: Job? = null
+    private var videoProcessingJob: Job? = null
     private var isModelReady = false
-    private var isImagePrefilled = false
     private var isProcessingVideo = false
+    private var isSubmitting = false
+    private var isClearing = false
     private var hasAutoLoaded = false
     private var loadedModelId: String? = null
     private var messageIdCounter = 1L
     private val messages = mutableListOf<ChatMessage>()
     private var createdWithLocale: String? = null
     private var isLocaleRestart = false
+    private var currentEngineState: LlamaState = LlamaState.Uninitialized
+    private var pendingCameraUri: Uri? = null
+    private var pendingCameraFile: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         createdWithLocale = LocaleManager.currentLanguage(this).tag
+        restorePendingCameraCapture(savedInstanceState)
 
         // If the selected model is a TTS model, redirect to TtsActivity immediately.
         // The chat interface is only meaningful for LLM/VLM models.
@@ -96,6 +116,7 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupRecyclerView()
         setupClickListeners()
+        observePendingImage()
         initEngine()
     }
 
@@ -104,12 +125,19 @@ class MainActivity : AppCompatActivity() {
         etInput = findViewById(R.id.et_input)
         btnSend = findViewById(R.id.btn_send)
         btnImage = findViewById(R.id.btn_image)
+        btnCamera = findViewById(R.id.btn_camera)
         btnClearChat = findViewById(R.id.btn_clear_chat)
         btnModelManager = findViewById(R.id.btn_model_manager)
         btnImageSlice = findViewById(R.id.btn_image_slice)
         cardInputBar = findViewById(R.id.card_input_bar)
         appBarLayout = findViewById(R.id.appBarLayout)
         tvTitle = findViewById(R.id.tv_title)
+        pendingImagePanel = findViewById(R.id.pending_image_panel)
+        ivPendingImage = findViewById(R.id.iv_pending_image)
+        pendingImageScrim = findViewById(R.id.pending_image_scrim)
+        progressPendingImage = findViewById(R.id.progress_pending_image)
+        tvPendingImageProgress = findViewById(R.id.tv_pending_image_progress)
+        tvPendingImageInfo = findViewById(R.id.tv_pending_image_info)
     }
 
     private fun setupRecyclerView() {
@@ -153,6 +181,7 @@ class MainActivity : AppCompatActivity() {
         // only fed to the model if the loaded model is V-4.6 (gated in
         // [handleSelectedMedia] / [LlamaEngine.isVideoUnderstandingSupported]).
         btnImage.setOnClickListener { getMedia.launch(arrayOf("image/*", "video/*")) }
+        btnCamera.setOnClickListener { launchCameraCapture() }
         btnSend.setOnClickListener { handleUserInput() }
         btnClearChat.setOnClickListener { showClearChatDialog() }
         btnModelManager.setOnClickListener {
@@ -164,6 +193,27 @@ class MainActivity : AppCompatActivity() {
             if (hasFocus) {
                 collapseAppBar()
                 scrollToBottom()
+            }
+        }
+        etInput.doAfterTextChanged { refreshInputControls() }
+    }
+
+    private fun observePendingImage() {
+        lifecycleScope.launch {
+            pendingImageViewModel.uiState.collect { state ->
+                renderPendingImage(state)
+                refreshInputControls()
+            }
+        }
+        lifecycleScope.launch {
+            pendingImageViewModel.events.collect { event ->
+                when (event) {
+                    is PendingImageEvent.Error -> Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.toast_image_failed, event.message),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }
@@ -237,27 +287,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun clearChatUI() {
+        pendingImageViewModel.clearLocalAfterEngineReset()
         messages.clear()
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
         messages.add(ChatMessage.WelcomeCard(isTextOnly = selectedModel.isTextOnly))
         messageIdCounter = 1L
-        isImagePrefilled = false
         chatAdapter.submitList(messages.toList())
     }
 
     private fun clearChat() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        if (isClearing) return
+        isClearing = true
+        refreshInputControls()
+
+        lifecycleScope.launch {
             try {
-                engine.clearContext()
-                withContext(Dispatchers.Main) {
-                    clearChatUI()
-                    Toast.makeText(this@MainActivity, R.string.clear_chat_toast, Toast.LENGTH_SHORT).show()
+                pendingImageViewModel.cancelAndClear()
+                videoProcessingJob?.cancelAndJoin()
+                videoProcessingJob = null
+                withContext(Dispatchers.IO) {
+                    engine.clearContext()
                 }
+                clearChatUI()
+                Toast.makeText(
+                    this@MainActivity,
+                    R.string.clear_chat_toast,
+                    Toast.LENGTH_SHORT
+                ).show()
             } catch (e: Exception) {
                 Log.e(TAG, "Error clearing context", e)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, getString(R.string.toast_clear_chat_failed, e.message), Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.toast_clear_chat_failed, e.message),
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                isClearing = false
+                refreshInputControls()
             }
         }
     }
@@ -274,57 +340,85 @@ class MainActivity : AppCompatActivity() {
     private fun observeEngineState() {
         lifecycleScope.launch {
             engine.state.collect { state ->
+                currentEngineState = state
                 when (state) {
                     is LlamaState.Uninitialized,
                     is LlamaState.Initializing -> {
-                        enableInput(false)
+                        isModelReady = false
                     }
                     is LlamaState.Initialized -> {
-                        enableInput(false)
+                        isModelReady = false
                         if (!hasAutoLoaded) {
                             hasAutoLoaded = true
                             loadDefaultModel()
                         }
                     }
                     is LlamaState.LoadingModel -> {
-                        enableInput(false)
+                        isModelReady = false
                     }
                     is LlamaState.ModelReady -> {
                         isModelReady = true
                         loadedModelId = LlamaEngine.getSelectedModel(applicationContext).id
-                        enableInput(true)
                         updateUIForModelType()
                     }
                     is LlamaState.ProcessingSystemPrompt,
                     is LlamaState.ProcessingUserPrompt,
                     is LlamaState.Generating -> {
-                        enableInput(false)
+                        isModelReady = true
                     }
                     is LlamaState.PrefillingImage -> {
                         isModelReady = true
-                        etInput.isEnabled = true
-                        btnSend.isEnabled = !isProcessingVideo
-                        btnImage.isEnabled = false
                     }
                     is LlamaState.UnloadingModel -> {
-                        enableInput(false)
+                        isModelReady = false
                     }
                     is LlamaState.Error -> {
-                        enableInput(false)
+                        isModelReady = false
                     }
                 }
+                refreshInputControls()
             }
         }
     }
 
-    private fun enableInput(enable: Boolean) {
-        etInput.isEnabled = enable
-        btnSend.isEnabled = enable
-        if (!enable) {
-            btnImage.isEnabled = false
-        } else {
-            btnImage.isEnabled = engine.isVisionSupported
+    private fun refreshInputControls() {
+        if (!::etInput.isInitialized) return
+
+        val engineBusy = isSubmitting || isClearing || when (currentEngineState) {
+            is LlamaState.ModelReady,
+            is LlamaState.PrefillingImage -> false
+            else -> true
         }
+        val controls = pendingImageViewModel.controls(
+            modelReady = isModelReady,
+            engineBusy = engineBusy,
+            videoProcessing = isProcessingVideo,
+            hasText = etInput.text?.toString()?.isNotBlank() == true
+        )
+        val visionSupported = ::engine.isInitialized && engine.isVisionSupported
+        val hasPendingImage =
+            pendingImageViewModel.uiState.value !is PendingImageUiState.Empty
+        val modelManagerSafe = !hasPendingImage && !isSubmitting && !isClearing &&
+            !isProcessingVideo &&
+            when (currentEngineState) {
+                is LlamaState.LoadingModel,
+                is LlamaState.ProcessingSystemPrompt,
+                is LlamaState.ProcessingUserPrompt,
+                is LlamaState.PrefillingImage,
+                is LlamaState.Generating,
+                is LlamaState.UnloadingModel -> false
+                else -> true
+            }
+
+        etInput.isEnabled = controls.textEnabled
+        btnSend.isEnabled = controls.sendEnabled
+        btnImage.isEnabled = controls.mediaEnabled && visionSupported
+        btnCamera.isEnabled = controls.mediaEnabled && visionSupported
+        btnModelManager.isEnabled = modelManagerSafe
+        btnImageSlice.isEnabled = controls.modelSettingsEnabled && visionSupported
+        btnClearChat.isEnabled = isModelReady && !isSubmitting && !isClearing &&
+            (currentEngineState is LlamaState.ModelReady ||
+                currentEngineState is LlamaState.PrefillingImage)
     }
 
     private fun shouldRedirectToTts(): Boolean {
@@ -338,10 +432,11 @@ class MainActivity : AppCompatActivity() {
 
         tvTitle.setText(if (isVision) R.string.app_title else R.string.app_title_text)
         btnImage.visibility = if (isVision) View.VISIBLE else View.GONE
+        btnCamera.visibility = if (isVision) View.VISIBLE else View.GONE
         btnImageSlice.visibility = if (isVision) View.VISIBLE else View.GONE
-        btnImage.isEnabled = isVision
 
         refreshWelcomeCard(model.isTextOnly)
+        refreshInputControls()
     }
 
     private fun refreshWelcomeCard(isTextOnly: Boolean) {
@@ -418,9 +513,27 @@ class MainActivity : AppCompatActivity() {
         uri?.let { handleSelectedMedia(it) }
     }
 
+    private val takePicture = registerForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { captured ->
+        val uri = pendingCameraUri
+        val file = pendingCameraFile
+        pendingCameraUri = null
+        pendingCameraFile = null
+        if (captured && uri != null && file != null) {
+            handleSelectedImage(uri, file)
+        } else {
+            deleteCameraCacheFile(file)
+        }
+    }
+
     private fun handleSelectedMedia(uri: Uri) {
-        if (!isModelReady) {
+        if (!isModelReady || currentEngineState !is LlamaState.ModelReady) {
             Toast.makeText(this, R.string.toast_load_model_first, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (pendingImageViewModel.uiState.value !is PendingImageUiState.Empty) {
+            Toast.makeText(this, R.string.toast_wait_image_preprocessing, Toast.LENGTH_SHORT).show()
             return
         }
         val mime = contentResolver.getType(uri).orEmpty()
@@ -433,59 +546,140 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleSelectedImage(uri: Uri) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val imageData = contentResolver.openInputStream(uri)?.use { input ->
-                    val bitmap = BitmapFactory.decodeStream(input)
-                        ?: throw RuntimeException(getString(R.string.error_decode_image))
-                    val stream = ByteArrayOutputStream()
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    Pair(stream.toByteArray(), bitmap)
-                } ?: throw RuntimeException(getString(R.string.error_read_image))
+    private fun launchCameraCapture() {
+        if (!isModelReady || currentEngineState !is LlamaState.ModelReady) {
+            Toast.makeText(this, R.string.toast_load_model_first, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (pendingImageViewModel.uiState.value !is PendingImageUiState.Empty) {
+            Toast.makeText(this, R.string.toast_wait_image_preprocessing, Toast.LENGTH_SHORT).show()
+            return
+        }
 
-                val (imageBytes, bitmap) = imageData
-
-                val imageName = getFileName(uri)
-                val width = bitmap.width
-                val height = bitmap.height
-                val sizeKb = imageBytes.size / 1024
-                val imageInfo = "$width x $height ($sizeKb KB)"
-                val msgId = messageIdCounter++
-
-                withContext(Dispatchers.Main) {
-                    val imageMessage = ChatMessage.UserMessage(
-                        id = msgId,
-                        text = "",
-                        imageBitmap = bitmap,
-                        imageInfo = imageInfo,
-                        isPrefilling = true
-                    )
-                    messages.add(imageMessage)
-                    chatAdapter.submitList(messages.toList()) {
-                        scrollToBottom()
-                    }
-                }
-
-                engine.prefillImage(imageBytes)
-
-                isImagePrefilled = true
-
-                withContext(Dispatchers.Main) {
-                    val index = messages.indexOfFirst { it.id == msgId }
-                    if (index >= 0) {
-                        messages[index] = (messages[index] as ChatMessage.UserMessage).copy(
-                            isPrefilling = false
-                        )
-                        chatAdapter.submitList(messages.toList())
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error processing image", e)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, getString(R.string.toast_image_failed, e.message), Toast.LENGTH_SHORT).show()
-                }
+        try {
+            val cameraDir = File(cacheDir, CAMERA_CACHE_DIRECTORY)
+            if (!cameraDir.exists() && !cameraDir.mkdirs()) {
+                throw IOException(getString(R.string.error_create_camera_file))
             }
+            val captureFile = File.createTempFile("capture-", ".jpg", cameraDir)
+            val captureUri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                captureFile
+            )
+            pendingCameraFile = captureFile
+            pendingCameraUri = captureUri
+            takePicture.launch(captureUri)
+        } catch (e: ActivityNotFoundException) {
+            Log.e(TAG, "No camera app can handle image capture", e)
+            clearPendingCameraCapture()
+            Toast.makeText(
+                this,
+                getString(R.string.toast_camera_failed, e.localizedMessage ?: "No camera app"),
+                Toast.LENGTH_LONG
+            ).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Unable to create camera capture", e)
+            clearPendingCameraCapture()
+            Toast.makeText(
+                this,
+                getString(
+                    R.string.toast_camera_failed,
+                    e.localizedMessage ?: getString(R.string.error_create_camera_file)
+                ),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun handleSelectedImage(uri: Uri, cameraCacheFile: File? = null) {
+        if (!pendingImageViewModel.start(uri, cameraCacheFile)) {
+            Toast.makeText(this, R.string.toast_wait_image_preprocessing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        renderPendingImage(pendingImageViewModel.uiState.value)
+        refreshInputControls()
+    }
+
+    private fun renderPendingImage(
+        state: PendingImageUiState = pendingImageViewModel.uiState.value
+    ) {
+        if (state is PendingImageUiState.Empty) {
+            pendingImagePanel.visibility = View.GONE
+            ivPendingImage.setImageDrawable(null)
+            return
+        }
+
+        pendingImagePanel.visibility = View.VISIBLE
+        val attachment = when (state) {
+            is PendingImageUiState.Preprocessing -> state.attachment
+            is PendingImageUiState.Ready -> state.attachment
+            else -> null
+        }
+        if (attachment == null) {
+            ivPendingImage.setImageDrawable(null)
+            tvPendingImageInfo.setText(R.string.image_preprocessing)
+        } else {
+            ivPendingImage.setImageBitmap(attachment.thumbnail)
+            tvPendingImageInfo.text = attachment.imageInfo
+        }
+
+        progressPendingImage.visibility = View.INVISIBLE
+        when (state) {
+            is PendingImageUiState.LoadingPreview,
+            is PendingImageUiState.Preprocessing,
+            PendingImageUiState.Clearing -> {
+                pendingImageScrim.visibility = View.VISIBLE
+                progressPendingImage.isIndeterminate = true
+                tvPendingImageProgress.visibility = View.GONE
+            }
+            is PendingImageUiState.Ready -> {
+                pendingImageScrim.visibility = View.GONE
+                progressPendingImage.isIndeterminate = false
+                progressPendingImage.setProgressCompat(100, true)
+                tvPendingImageProgress.setText(R.string.image_preprocessing_complete)
+                tvPendingImageProgress.visibility = View.VISIBLE
+            }
+            PendingImageUiState.Empty -> Unit
+        }
+        progressPendingImage.visibility = View.VISIBLE
+    }
+
+    private fun restorePendingCameraCapture(savedInstanceState: Bundle?) {
+        val uriText = savedInstanceState?.getString(STATE_CAMERA_URI) ?: return
+        val savedFileName = savedInstanceState.getString(STATE_CAMERA_FILE_NAME) ?: return
+        if (savedFileName != File(savedFileName).name) return
+
+        val restoredUri = Uri.parse(uriText)
+        if (
+            restoredUri.scheme != "content" ||
+            restoredUri.authority != "${packageName}.fileprovider"
+        ) {
+            return
+        }
+        val restoredFile = File(File(cacheDir, CAMERA_CACHE_DIRECTORY), savedFileName)
+        if (!restoredFile.isFile) return
+
+        pendingCameraUri = restoredUri
+        pendingCameraFile = restoredFile
+    }
+
+    private fun clearPendingCameraCapture() {
+        deleteCameraCacheFile(pendingCameraFile)
+        pendingCameraUri = null
+        pendingCameraFile = null
+    }
+
+    private fun deleteCameraCacheFile(file: File?) {
+        if (file == null) return
+        try {
+            val cameraDir = File(cacheDir, CAMERA_CACHE_DIRECTORY).canonicalFile
+            val target = file.canonicalFile
+            if (target.parentFile == cameraDir && target.isFile && !target.delete()) {
+                Log.w(TAG, "Unable to delete camera cache file: ${target.name}")
+            }
+        } catch (e: IOException) {
+            Log.w(TAG, "Unable to resolve camera cache file", e)
         }
     }
 
@@ -510,9 +704,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         isProcessingVideo = true
-        lifecycleScope.launch(Dispatchers.IO) {
-            val msgId = messageIdCounter++
+        val msgId = messageIdCounter++
+        refreshInputControls()
+        videoProcessingJob = lifecycleScope.launch(Dispatchers.IO) {
             val startNs = System.nanoTime()
+            var completed = false
+            var failure: Exception? = null
             try {
                 val extracted = VideoFrameExtractor.extract(applicationContext, uri)
                 val info = VideoFrameExtractor.formatVideoInfo(applicationContext, extracted)
@@ -546,11 +743,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                isImagePrefilled = true
-
                 val elapsedMs = (System.nanoTime() - startNs) / 1_000_000
                 withContext(Dispatchers.Main) {
-                    isProcessingVideo = false
                     val index = messages.indexOfFirst { it.id == msgId }
                     if (index >= 0) {
                         val cur = messages[index] as ChatMessage.UserMessage
@@ -561,32 +755,35 @@ class MainActivity : AppCompatActivity() {
                         chatAdapter.submitList(messages.toList())
                     }
                 }
+                completed = true
+            } catch (e: CancellationException) {
+                Log.i(TAG, "Video preprocessing was cancelled")
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing video", e)
-                withContext(Dispatchers.Main) {
+                failure = e
+            } finally {
+                withContext(NonCancellable + Dispatchers.Main) {
                     isProcessingVideo = false
-                    val index = messages.indexOfFirst { it.id == msgId }
-                    if (index >= 0) {
-                        messages.removeAt(index)
-                        chatAdapter.submitList(messages.toList())
+                    if (!completed) {
+                        val index = messages.indexOfFirst { it.id == msgId }
+                        if (index >= 0) {
+                            messages.removeAt(index)
+                            chatAdapter.submitList(messages.toList())
+                        }
                     }
-                    Toast.makeText(this@MainActivity, getString(R.string.toast_video_failed, e.message), Toast.LENGTH_LONG).show()
+                    videoProcessingJob = null
+                    refreshInputControls()
+                    failure?.let { error ->
+                        Toast.makeText(
+                            this@MainActivity,
+                            getString(R.string.toast_video_failed, error.message),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
         }
-    }
-
-    private fun getFileName(uri: Uri): String {
-        val cursor = contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                if (nameIndex >= 0) {
-                    return it.getString(nameIndex)
-                }
-            }
-        }
-        return "file-${System.currentTimeMillis()}"
     }
 
     private fun handleUserInput() {
@@ -595,13 +792,49 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.toast_empty_input, Toast.LENGTH_SHORT).show()
             return
         }
+        val pendingState = pendingImageViewModel.uiState.value
+        if (
+            pendingState is PendingImageUiState.LoadingPreview ||
+            pendingState is PendingImageUiState.Preprocessing ||
+            pendingState is PendingImageUiState.Clearing
+        ) {
+            Toast.makeText(this, R.string.toast_wait_image_preprocessing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (
+            !isModelReady ||
+            currentEngineState !is LlamaState.ModelReady ||
+            isSubmitting ||
+            isClearing
+        ) {
+            Toast.makeText(this, R.string.toast_load_model_first, Toast.LENGTH_SHORT).show()
+            return
+        }
 
+        val attachment = if (pendingState is PendingImageUiState.Ready) {
+            pendingImageViewModel.consumeReady().also { consumed ->
+                if (consumed == null) {
+                    Log.e(TAG, "Ready pending image could not be consumed")
+                }
+            }
+        } else {
+            null
+        }
+        if (pendingState is PendingImageUiState.Ready && attachment == null) {
+            Toast.makeText(
+                this,
+                getString(R.string.toast_image_failed, getString(R.string.error_read_image)),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
         etInput.clearFocus()
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
             .hideSoftInputFromWindow(etInput.windowToken, 0)
 
         etInput.text = null
-        enableInput(false)
+        isSubmitting = true
+        refreshInputControls()
 
         collapseAppBar()
 
@@ -609,15 +842,14 @@ class MainActivity : AppCompatActivity() {
         val userMessage = ChatMessage.UserMessage(
             id = msgId,
             text = userMsg,
-            imageBitmap = null,
-            imageInfo = null
+            imageBitmap = attachment?.thumbnail,
+            imageInfo = attachment?.imageInfo
         )
+        renderPendingImage(pendingImageViewModel.uiState.value)
         messages.add(userMessage)
         chatAdapter.submitList(messages.toList()) {
             scrollToBottom()
         }
-
-        isImagePrefilled = false
 
         val aiMsgId = messageIdCounter++
         val aiMessage = ChatMessage.AiMessage(id = aiMsgId, text = "", isGenerating = true)
@@ -629,39 +861,50 @@ class MainActivity : AppCompatActivity() {
 
         generationJob = lifecycleScope.launch(Dispatchers.Default) {
             val fullResponse = StringBuilder()
-            engine.sendUserPrompt(userMsg)
-                .onCompletion {
-                    withContext(Dispatchers.Main) {
-                        val index = messages.indexOfFirst { it.id == aiMsgId }
-                        if (index >= 0) {
-                            messages[index] = (messages[index] as ChatMessage.AiMessage).copy(
-                                text = fullResponse.toString(),
-                                isGenerating = false
-                            )
+            try {
+                engine.sendUserPrompt(userMsg)
+                    .collect { token ->
+                        fullResponse.append(token)
+                        withContext(Dispatchers.Main) {
+                            val currentText = fullResponse.toString()
+                            val index = messages.indexOfFirst { it.id == aiMsgId }
+                            if (index >= 0) {
+                                messages[index] = ChatMessage.AiMessage(
+                                    id = aiMsgId,
+                                    text = currentText,
+                                    isGenerating = true
+                                )
+                            }
+                            chatAdapter.updateStreamingText(aiMsgId, currentText)
+                            scrollToBottom()
                         }
-                        chatAdapter.setGeneratingDone(aiMsgId)
-                        chatAdapter.clearActiveAiMessage()
-                        chatAdapter.submitList(messages.toList())
-                        enableInput(true)
+                    }
+            } catch (e: CancellationException) {
+                Log.i(TAG, "Text generation was cancelled")
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Text generation failed", e)
+            } finally {
+                withContext(NonCancellable + Dispatchers.Main) {
+                    val index = messages.indexOfFirst { it.id == aiMsgId }
+                    if (index >= 0) {
+                        val current = messages[index] as? ChatMessage.AiMessage
+                        messages[index] = (current ?: aiMessage).copy(
+                            text = fullResponse.toString(),
+                            isGenerating = false
+                        )
+                    }
+                    chatAdapter.setGeneratingDone(aiMsgId)
+                    chatAdapter.clearActiveAiMessage()
+                    chatAdapter.submitList(messages.toList())
+                    isSubmitting = false
+                    generationJob = null
+                    refreshInputControls()
+                    if (index >= 0) {
                         scrollToBottom()
                     }
                 }
-                .collect { token ->
-                    fullResponse.append(token)
-                    withContext(Dispatchers.Main) {
-                        val currentText = fullResponse.toString()
-                        val index = messages.indexOfFirst { it.id == aiMsgId }
-                        if (index >= 0) {
-                            messages[index] = ChatMessage.AiMessage(
-                                id = aiMsgId,
-                                text = currentText,
-                                isGenerating = true
-                            )
-                        }
-                        chatAdapter.updateStreamingText(aiMsgId, currentText)
-                        scrollToBottom()
-                    }
-                }
+            }
         }
     }
 
@@ -711,18 +954,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun reloadAfterModelSwitch() {
-        enableInput(false)
-        lifecycleScope.launch(Dispatchers.IO) {
+        if (isClearing) return
+        isClearing = true
+        isModelReady = false
+        refreshInputControls()
+        lifecycleScope.launch {
             try {
-                if (engine.state.value is LlamaState.ModelReady) {
-                    engine.unloadModel()
+                pendingImageViewModel.cancelAndClear()
+                withContext(Dispatchers.IO) {
+                    if (engine.state.value is LlamaState.ModelReady) {
+                        engine.unloadModel()
+                    }
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Error unloading during model switch", e)
-            }
-            withContext(Dispatchers.Main) {
+            } finally {
+                isClearing = false
                 clearChatUI()
                 loadDefaultModel()
+                refreshInputControls()
             }
         }
     }
@@ -732,7 +982,16 @@ class MainActivity : AppCompatActivity() {
         super.onStop()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        pendingCameraUri?.let { outState.putString(STATE_CAMERA_URI, it.toString()) }
+        pendingCameraFile?.let { outState.putString(STATE_CAMERA_FILE_NAME, it.name) }
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroy() {
+        if (isFinishing) {
+            clearPendingCameraCapture()
+        }
         if (isFinishing && !isLocaleRestart && ::engine.isInitialized) {
             engine.destroy()
         }
@@ -741,5 +1000,8 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val TAG = MainActivity::class.java.simpleName
+        private const val CAMERA_CACHE_DIRECTORY = "camera"
+        private const val STATE_CAMERA_URI = "pending_camera_uri"
+        private const val STATE_CAMERA_FILE_NAME = "pending_camera_file_name"
     }
 }

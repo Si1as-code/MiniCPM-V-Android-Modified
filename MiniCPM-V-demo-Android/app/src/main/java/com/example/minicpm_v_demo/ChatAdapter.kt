@@ -281,7 +281,7 @@ class ChatAdapter(
             return when {
                 oldItem is ChatMessage.UserMessage && newItem is ChatMessage.UserMessage ->
                     oldItem.text == newItem.text &&
-                            oldItem.imageBitmap == newItem.imageBitmap &&
+                            bitmapsHaveSameContent(oldItem.imageBitmap, newItem.imageBitmap) &&
                             oldItem.imageInfo == newItem.imageInfo &&
                             oldItem.isPrefilling == newItem.isPrefilling &&
                             oldItem.isVideo == newItem.isVideo
@@ -292,6 +292,12 @@ class ChatAdapter(
                     oldItem.isTextOnly == newItem.isTextOnly
                 else -> false
             }
+        }
+
+        private fun bitmapsHaveSameContent(oldBitmap: Bitmap?, newBitmap: Bitmap?): Boolean {
+            if (oldBitmap === newBitmap) return true
+            if (oldBitmap == null || newBitmap == null) return false
+            return oldBitmap.sameAs(newBitmap)
         }
     }
 }

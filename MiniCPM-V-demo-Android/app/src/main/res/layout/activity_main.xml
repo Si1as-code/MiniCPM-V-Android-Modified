@@ -112,6 +112,72 @@
             android:padding="12dp">
 
             <LinearLayout
+                android:id="@+id/pending_image_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="4dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <FrameLayout
+                    android:layout_width="80dp"
+                    android:layout_height="80dp">
+
+                    <ImageView
+                        android:id="@+id/iv_pending_image"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/image_desc"
+                        android:scaleType="centerCrop" />
+
+                    <View
+                        android:id="@+id/pending_image_scrim"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#99000000" />
+
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                        android:id="@+id/progress_pending_image"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:indeterminate="false"
+                        android:max="100"
+                        android:progress="0"
+                        app:indicatorColor="@android:color/white"
+                        app:indicatorInset="0dp"
+                        app:indicatorSize="48dp"
+                        app:trackColor="#66FFFFFF"
+                        app:trackThickness="4dp" />
+
+                    <TextView
+                        android:id="@+id/tv_pending_image_progress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="@string/image_preprocessing_initial"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tv_pending_image_info"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:text="@string/image_preprocessing"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/layout_input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -144,6 +210,17 @@
                     android:src="@drawable/ic_image"
                     android:contentDescription="@string/add_image"
                     android:enabled="false"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+
+                <ImageButton
+                    android:id="@+id/btn_camera"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/camera_capture"
+                    android:enabled="false"
+                    android:src="@drawable/ic_camera"
                     app:tint="?attr/colorOnSurfaceVariant" />
 
                 <ImageButton
