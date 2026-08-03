@@ -9,6 +9,10 @@
     <string name="suggestion_1">What\'s in this photo?</string>
     <string name="suggestion_1_text">Write a poem on spring.</string>
     <string name="model_management">Model Management</string>
+    <string name="chat_settings">Settings</string>
+    <string name="settings_model_summary">Current model: %1$s</string>
+    <string name="settings_slice_summary">Current slices: %1$d · Higher preserves more detail</string>
+    <string name="settings_clear_chat_summary">Delete current messages, image cache, and model context</string>
     <string name="status_uninitialized">Not initialized — download or load a model</string>
     <string name="status_initializing">Initializing…</string>
     <string name="status_initialized">Initialized — load a model</string>

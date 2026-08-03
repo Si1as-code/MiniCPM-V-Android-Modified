@@ -55,11 +55,15 @@ class MainActivityUiTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val pendingPanel = activity.findViewById<View>(R.id.pending_image_panel)
+                val settingsButton = activity.findViewById<View>(R.id.btn_settings)
+                val title = activity.findViewById<View>(R.id.tv_title)
                 val cameraButton = activity.findViewById<View>(R.id.btn_camera)
                 val sendButton = activity.findViewById<View>(R.id.btn_send)
                 val preprocessingStatus = activity.findViewById<View>(R.id.tv_pending_image_status)
 
                 assertNotNull(pendingPanel)
+                assertNotNull(settingsButton)
+                assertNotNull(title)
                 assertNotNull(cameraButton)
                 assertNotNull(sendButton)
                 assertNotNull(preprocessingStatus)
@@ -67,6 +71,15 @@ class MainActivityUiTest {
 
                 val parent = cameraButton.parent as ViewGroup
                 assertTrue(parent.indexOfChild(cameraButton) < parent.indexOfChild(sendButton))
+
+                val settingsLocation = IntArray(2)
+                val titleLocation = IntArray(2)
+                settingsButton.getLocationOnScreen(settingsLocation)
+                title.getLocationOnScreen(titleLocation)
+                assertTrue(
+                    "The unified settings entry must be left of the title",
+                    settingsLocation[0] < titleLocation[0]
+                )
 
                 activity.window.decorView.post {
                     val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)

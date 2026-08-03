@@ -48,9 +48,7 @@ class MainActivity : StatusBarVisibleActivity() {
     private lateinit var btnSend: ImageButton
     private lateinit var btnImage: ImageButton
     private lateinit var btnCamera: ImageButton
-    private lateinit var btnClearChat: ImageButton
-    private lateinit var btnModelManager: ImageButton
-    private lateinit var btnImageSlice: ImageButton
+    private lateinit var btnSettings: ImageButton
     private lateinit var cardInputBar: View
     private lateinit var appBarLayout: AppBarLayout
     private lateinit var tvTitle: TextView
@@ -132,9 +130,7 @@ class MainActivity : StatusBarVisibleActivity() {
         btnSend = findViewById(R.id.btn_send)
         btnImage = findViewById(R.id.btn_image)
         btnCamera = findViewById(R.id.btn_camera)
-        btnClearChat = findViewById(R.id.btn_clear_chat)
-        btnModelManager = findViewById(R.id.btn_model_manager)
-        btnImageSlice = findViewById(R.id.btn_image_slice)
+        btnSettings = findViewById(R.id.btn_settings)
         cardInputBar = findViewById(R.id.card_input_bar)
         appBarLayout = findViewById(R.id.appBarLayout)
         tvTitle = findViewById(R.id.tv_title)
@@ -190,11 +186,7 @@ class MainActivity : StatusBarVisibleActivity() {
         btnImage.setOnClickListener { getMedia.launch(arrayOf("image/*", "video/*")) }
         btnCamera.setOnClickListener { launchCameraCapture() }
         btnSend.setOnClickListener { handleUserInput() }
-        btnClearChat.setOnClickListener { showClearChatDialog() }
-        btnModelManager.setOnClickListener {
-            startActivity(Intent(this, ModelManagerActivity::class.java))
-        }
-        btnImageSlice.setOnClickListener { showImageSliceDialog() }
+        btnSettings.setOnClickListener { showChatSettingsDialog() }
         ivPendingImage.setOnClickListener {
             val token = when (val state = pendingImageViewModel.uiState.value) {
                 is PendingImageUiState.Preprocessing ->
@@ -263,6 +255,61 @@ class MainActivity : StatusBarVisibleActivity() {
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    private fun showChatSettingsDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_chat_settings, null, false)
+        val rowModelManagement = view.findViewById<View>(R.id.row_model_management)
+        val rowImageSlice = view.findViewById<View>(R.id.row_image_slice)
+        val rowClearChat = view.findViewById<View>(R.id.row_clear_chat)
+        val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
+
+        view.findViewById<TextView>(R.id.tv_settings_model_summary).text =
+            getString(R.string.settings_model_summary, selectedModel.displayName)
+        view.findViewById<TextView>(R.id.tv_settings_slice_summary).text =
+            getString(
+                R.string.settings_slice_summary,
+                LlamaEngine.getImageMaxSliceNums(this)
+            )
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.chat_settings)
+            .setView(view)
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+
+        val modelManagementEnabled = isModelManagerSafe()
+        val imageSliceEnabled = canChangeImageSlices()
+        val clearChatEnabled = canClearCurrentChat()
+        rowImageSlice.visibility = if (
+            ::engine.isInitialized && engine.isVisionSupported
+        ) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        rowModelManagement.setOnClickListener {
+            dialog.dismiss()
+            startActivity(Intent(this, ModelManagerActivity::class.java))
+        }
+        rowImageSlice.setOnClickListener {
+            dialog.dismiss()
+            showImageSliceDialog()
+        }
+        rowClearChat.setOnClickListener {
+            dialog.dismiss()
+            showClearChatDialog()
+        }
+        setSettingsRowEnabled(rowModelManagement, modelManagementEnabled)
+        setSettingsRowEnabled(rowImageSlice, imageSliceEnabled)
+        setSettingsRowEnabled(rowClearChat, clearChatEnabled)
+        dialog.show()
+    }
+
+    private fun setSettingsRowEnabled(row: View, enabled: Boolean) {
+        row.isEnabled = enabled
+        row.isClickable = enabled
+        row.alpha = if (enabled) 1f else 0.38f
     }
 
     /**
@@ -426,9 +473,20 @@ class MainActivity : StatusBarVisibleActivity() {
             hasText = etInput.text?.toString()?.isNotBlank() == true
         )
         val visionSupported = ::engine.isInitialized && engine.isVisionSupported
+        val modelManagerSafe = isModelManagerSafe()
+        val clearChatSafe = canClearCurrentChat()
+
+        etInput.isEnabled = controls.textEnabled
+        btnSend.isEnabled = controls.sendEnabled
+        btnImage.isEnabled = controls.mediaEnabled && visionSupported
+        btnCamera.isEnabled = controls.mediaEnabled && visionSupported
+        btnSettings.isEnabled = modelManagerSafe || clearChatSafe
+    }
+
+    private fun isModelManagerSafe(): Boolean {
         val hasPendingImage =
             pendingImageViewModel.uiState.value !is PendingImageUiState.Empty
-        val modelManagerSafe = !hasPendingImage && !isSubmitting && !isClearing &&
+        return !hasPendingImage && !isSubmitting && !isClearing &&
             !isProcessingVideo &&
             when (currentEngineState) {
                 is LlamaState.LoadingModel,
@@ -439,17 +497,15 @@ class MainActivity : StatusBarVisibleActivity() {
                 is LlamaState.UnloadingModel -> false
                 else -> true
             }
+    }
 
-        etInput.isEnabled = controls.textEnabled
-        btnSend.isEnabled = controls.sendEnabled
-        btnImage.isEnabled = controls.mediaEnabled && visionSupported
-        btnCamera.isEnabled = controls.mediaEnabled && visionSupported
-        btnModelManager.isEnabled = modelManagerSafe
-        btnImageSlice.isEnabled = controls.modelSettingsEnabled && visionSupported
-        btnClearChat.isEnabled = isModelReady && !isSubmitting && !isClearing &&
+    private fun canChangeImageSlices(): Boolean =
+        ::engine.isInitialized && engine.isVisionSupported && isModelManagerSafe()
+
+    private fun canClearCurrentChat(): Boolean =
+        isModelReady && !isSubmitting && !isClearing &&
             (currentEngineState is LlamaState.ModelReady ||
                 currentEngineState is LlamaState.PrefillingImage)
-    }
 
     private fun shouldRedirectToTts(): Boolean {
         val model = LlamaEngine.getSelectedModel(applicationContext)
@@ -463,8 +519,6 @@ class MainActivity : StatusBarVisibleActivity() {
         tvTitle.setText(if (isVision) R.string.app_title else R.string.app_title_text)
         btnImage.visibility = if (isVision) View.VISIBLE else View.GONE
         btnCamera.visibility = if (isVision) View.VISIBLE else View.GONE
-        btnImageSlice.visibility = if (isVision) View.VISIBLE else View.GONE
-
         refreshWelcomeCard(model.isTextOnly)
         refreshInputControls()
     }

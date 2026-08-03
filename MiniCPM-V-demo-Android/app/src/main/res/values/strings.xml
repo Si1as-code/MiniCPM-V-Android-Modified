@@ -11,6 +11,10 @@
     <string name="suggestion_1_text">帮我写一首关于春天的诗</string>
     <string name="suggestion_2_text" translatable="false">Explain AI in brief.</string>
     <string name="model_management">模型管理</string>
+    <string name="chat_settings">设置</string>
+    <string name="settings_model_summary">当前模型：%1$s</string>
+    <string name="settings_slice_summary">当前切片数：%1$d · 越高细节越清晰</string>
+    <string name="settings_clear_chat_summary">删除当前消息、图片缓存和模型上下文</string>
     <string name="status_uninitialized">未初始化 - 请下载或加载模型</string>
     <string name="status_initializing">正在初始化...</string>
     <string name="status_initialized">已初始化 - 请加载模型</string>
