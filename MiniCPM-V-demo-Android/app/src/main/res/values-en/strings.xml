@@ -5,6 +5,7 @@
          that are already English are intentionally omitted. -->
 
     <string name="welcome_desc">I can help you learn, get inspired, and work faster — and I can also understand images for you.</string>
+    <string name="welcome_desc_no_image">Upload an image or take a photo to start visual Q&amp;A, or type a regular text question.</string>
     <string name="welcome_desc_text">I can help you learn, get inspired, and work faster — ask me anything.</string>
     <string name="suggestion_1">What\'s in this photo?</string>
     <string name="suggestion_1_text">Write a poem on spring.</string>
@@ -59,6 +60,8 @@
     <string name="toast_wait_image_preprocessing">Please wait for image preprocessing to finish</string>
     <string name="toast_camera_failed">Failed to take photo: %1$s</string>
     <string name="toast_empty_input">Please enter a message</string>
+    <string name="response_blocked_no_visual_context">There is no usable image in this conversation, so I cannot determine image content. Upload one or take a photo first.</string>
+    <string name="response_uncertain_visual_request">There is no usable image in this conversation. If you mean image content, upload one or take a photo; otherwise, clarify the text question.</string>
     <string name="toast_clear_chat_failed">Failed to clear chat: %1$s</string>
     <string name="toast_model_load_failed">Failed to load model: %1$s</string>
     <string name="toast_image_failed">Failed to process image: %1$s</string>
@@ -78,6 +81,7 @@
     <string name="video_only_v46">Video understanding is only available on MiniCPM-V-4.6. Please switch models in Model Management.</string>
     <string name="video_processing_progress">%1$s · Processing %2$d/%3$d</string>
     <string name="video_preprocessing_done">%1$s · Preprocess %2$.1fs</string>
+    <string name="visual_grounding_system_prompt">Only answer visual questions using image or video content actually provided in this conversation. If no visual content is available, clearly say that you cannot inspect an image and ask the user to upload one or take a photo. Never invent visual details.</string>
 
     <!-- Download prompt dialog -->
     <string name="download_prompt_title">Model Download Required</string>

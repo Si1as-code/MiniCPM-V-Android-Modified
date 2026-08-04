@@ -33,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -61,6 +62,7 @@ class MainActivity : StatusBarVisibleActivity() {
 
     private lateinit var engine: LlamaEngine
     private var generationJob: Job? = null
+    private var localGuardJob: Job? = null
     private var videoProcessingJob: Job? = null
     private var isModelReady = false
     private var isProcessingVideo = false
@@ -145,19 +147,14 @@ class MainActivity : StatusBarVisibleActivity() {
     private fun setupRecyclerView() {
         chatAdapter = ChatAdapter(Markwon.create(this))
         chatAdapter.setOnStopClick {
-            engine.cancelGeneration()
-        }
-        chatAdapter.setOnImageClick(::openOriginalImage)
-        chatAdapter.setOnSuggestionClick { suggestion ->
-            if (isModelReady && !isProcessingVideo) {
-                etInput.setText(suggestion)
-                handleUserInput()
-            } else if (!isModelReady) {
-                Toast.makeText(this, R.string.toast_load_model_first, Toast.LENGTH_SHORT).show()
+            if (localGuardJob?.isActive == true) {
+                localGuardJob?.cancel()
             } else {
-                Toast.makeText(this, R.string.toast_wait_video, Toast.LENGTH_SHORT).show()
+                engine.cancelGeneration()
             }
         }
+        chatAdapter.setOnImageClick(::openOriginalImage)
+        chatAdapter.setOnWelcomeAction(::handleWelcomeAction)
 
         recyclerChat.layoutManager = LinearLayoutManager(this)
         recyclerChat.adapter = chatAdapter
@@ -172,8 +169,54 @@ class MainActivity : StatusBarVisibleActivity() {
         }
 
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
-        messages.add(ChatMessage.WelcomeCard(isTextOnly = selectedModel.isTextOnly))
+        messages.add(
+            ChatMessage.WelcomeCard(
+                isTextOnly = selectedModel.isTextOnly,
+                hasVisualContext = false
+            )
+        )
         chatAdapter.submitList(messages.toList())
+    }
+
+    private fun handleWelcomeAction(action: WelcomeAction) {
+        when (action) {
+            is WelcomeAction.SendPrompt -> {
+                if (isModelReady && !isProcessingVideo) {
+                    etInput.setText(action.prompt)
+                    handleUserInput()
+                } else if (!isModelReady) {
+                    Toast.makeText(
+                        this,
+                        R.string.toast_load_model_first,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    Toast.makeText(this, R.string.toast_wait_video, Toast.LENGTH_SHORT).show()
+                }
+            }
+            WelcomeAction.PickMedia -> startVisualInput {
+                getMedia.launch(arrayOf("image/*", "video/*"))
+            }
+            WelcomeAction.TakePhoto -> startVisualInput(::launchCameraCapture)
+        }
+    }
+
+    private fun startVisualInput(action: () -> Unit) {
+        when {
+            !isModelReady || currentEngineState !is LlamaState.ModelReady ->
+                Toast.makeText(this, R.string.toast_load_model_first, Toast.LENGTH_SHORT).show()
+            isProcessingVideo ->
+                Toast.makeText(this, R.string.toast_wait_video, Toast.LENGTH_SHORT).show()
+            pendingImageViewModel.uiState.value !is PendingImageUiState.Empty ->
+                Toast.makeText(
+                    this,
+                    R.string.toast_wait_image_preprocessing,
+                    Toast.LENGTH_SHORT
+                ).show()
+            !engine.isVisionSupported ->
+                Toast.makeText(this, R.string.toast_load_model_first, Toast.LENGTH_SHORT).show()
+            else -> action()
+        }
     }
 
     private fun setupClickListeners() {
@@ -355,7 +398,12 @@ class MainActivity : StatusBarVisibleActivity() {
         releaseMessageOriginals()
         messages.clear()
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
-        messages.add(ChatMessage.WelcomeCard(isTextOnly = selectedModel.isTextOnly))
+        messages.add(
+            ChatMessage.WelcomeCard(
+                isTextOnly = selectedModel.isTextOnly,
+                hasVisualContext = false
+            )
+        )
         messageIdCounter = 1L
         chatAdapter.submitList(messages.toList())
     }
@@ -410,6 +458,7 @@ class MainActivity : StatusBarVisibleActivity() {
             engine = LlamaEngine.getInstance(applicationContext)
             withContext(Dispatchers.Main) {
                 observeEngineState()
+                observeVisualContext()
             }
         }
     }
@@ -454,6 +503,16 @@ class MainActivity : StatusBarVisibleActivity() {
                     }
                 }
                 refreshInputControls()
+            }
+        }
+    }
+
+    private fun observeVisualContext() {
+        lifecycleScope.launch {
+            engine.hasVisualContext.collect {
+                refreshWelcomeCard(
+                    LlamaEngine.getSelectedModel(applicationContext).isTextOnly
+                )
             }
         }
     }
@@ -526,7 +585,10 @@ class MainActivity : StatusBarVisibleActivity() {
     private fun refreshWelcomeCard(isTextOnly: Boolean) {
         val welcomeIndex = messages.indexOfFirst { it is ChatMessage.WelcomeCard }
         if (welcomeIndex >= 0) {
-            messages[welcomeIndex] = ChatMessage.WelcomeCard(isTextOnly = isTextOnly)
+            messages[welcomeIndex] = ChatMessage.WelcomeCard(
+                isTextOnly = isTextOnly,
+                hasVisualContext = ::engine.isInitialized && engine.hasVisualContext.value
+            )
             chatAdapter.submitList(messages.toList())
         }
     }
@@ -900,6 +962,12 @@ class MainActivity : StatusBarVisibleActivity() {
             return
         }
 
+        val dispatchPlan = LocalGuardReplyPolicy.plan(engine.evaluateVisualPrompt(userMsg))
+        if (dispatchPlan.destination == PromptDestination.LOCAL_ONLY) {
+            showLocalGuardReply(userMsg, requireNotNull(dispatchPlan.localReplyKind))
+            return
+        }
+
         val attachment = if (pendingState is PendingImageUiState.Ready) {
             pendingImageViewModel.consumeReady().also { consumed ->
                 if (consumed == null) {
@@ -949,24 +1017,27 @@ class MainActivity : StatusBarVisibleActivity() {
             scrollToBottom()
         }
 
+        val generationHadVisualContext = engine.hasVisualContext.value
         generationJob = lifecycleScope.launch(Dispatchers.Default) {
             val fullResponse = StringBuilder()
             try {
                 engine.sendUserPrompt(userMsg)
                     .collect { token ->
                         fullResponse.append(token)
-                        withContext(Dispatchers.Main) {
-                            val currentText = fullResponse.toString()
-                            val index = messages.indexOfFirst { it.id == aiMsgId }
-                            if (index >= 0) {
-                                messages[index] = ChatMessage.AiMessage(
-                                    id = aiMsgId,
-                                    text = currentText,
-                                    isGenerating = true
-                                )
+                        if (generationHadVisualContext) {
+                            withContext(Dispatchers.Main) {
+                                val currentText = fullResponse.toString()
+                                val index = messages.indexOfFirst { it.id == aiMsgId }
+                                if (index >= 0) {
+                                    messages[index] = ChatMessage.AiMessage(
+                                        id = aiMsgId,
+                                        text = currentText,
+                                        isGenerating = true
+                                    )
+                                }
+                                chatAdapter.updateStreamingText(aiMsgId, currentText)
+                                scrollToBottom()
                             }
-                            chatAdapter.updateStreamingText(aiMsgId, currentText)
-                            scrollToBottom()
                         }
                     }
             } catch (e: CancellationException) {
@@ -977,10 +1048,27 @@ class MainActivity : StatusBarVisibleActivity() {
             } finally {
                 withContext(NonCancellable + Dispatchers.Main) {
                     val index = messages.indexOfFirst { it.id == aiMsgId }
+                    val candidateResponse = fullResponse.toString()
+                    val responseDecision = engine.evaluateVisualResponse(
+                        response = candidateResponse,
+                        hadVisualContext = generationHadVisualContext
+                    )
+                    val displayedResponse = when (responseDecision) {
+                        VisualResponseDecision.ALLOW -> candidateResponse
+                        VisualResponseDecision.BLOCK_VISUAL_ASSERTION,
+                        VisualResponseDecision.BLOCK_UNCERTAIN_ASSERTION -> {
+                            Log.w(
+                                TAG,
+                                "Generated response hidden by visual grounding guard: " +
+                                    responseDecision.name
+                            )
+                            getString(R.string.response_blocked_no_visual_context)
+                        }
+                    }
                     if (index >= 0) {
                         val current = messages[index] as? ChatMessage.AiMessage
                         messages[index] = (current ?: aiMessage).copy(
-                            text = fullResponse.toString(),
+                            text = displayedResponse,
                             isGenerating = false
                         )
                     }
@@ -993,6 +1081,75 @@ class MainActivity : StatusBarVisibleActivity() {
                     if (index >= 0) {
                         scrollToBottom()
                     }
+                }
+            }
+        }
+    }
+
+    private fun showLocalGuardReply(userMessageText: String, kind: LocalGuardReplyKind) {
+        val replyText = getString(
+            when (kind) {
+                LocalGuardReplyKind.NO_VISUAL_CONTEXT ->
+                    R.string.response_blocked_no_visual_context
+                LocalGuardReplyKind.UNCERTAIN_VISUAL_REQUEST ->
+                    R.string.response_uncertain_visual_request
+            }
+        )
+
+        etInput.clearFocus()
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(etInput.windowToken, 0)
+        etInput.text = null
+        isSubmitting = true
+        refreshInputControls()
+        collapseAppBar()
+
+        val userMessage = ChatMessage.UserMessage(
+            id = messageIdCounter++,
+            text = userMessageText
+        )
+        val aiMessageId = messageIdCounter++
+        val aiMessage = ChatMessage.AiMessage(
+            id = aiMessageId,
+            text = "",
+            isGenerating = true
+        )
+        messages.add(userMessage)
+        messages.add(aiMessage)
+        chatAdapter.setActiveAiMessage(aiMessageId)
+        chatAdapter.submitList(messages.toList()) {
+            scrollToBottom()
+        }
+
+        localGuardJob = lifecycleScope.launch {
+            var displayedText = ""
+            try {
+                for (frame in LocalResponseStreamer.frames(replyText)) {
+                    displayedText = frame
+                    val index = messages.indexOfFirst { it.id == aiMessageId }
+                    if (index >= 0) {
+                        messages[index] = aiMessage.copy(text = frame)
+                    }
+                    chatAdapter.updateStreamingText(aiMessageId, frame)
+                    scrollToBottom()
+                    delay(LOCAL_GUARD_FRAME_DELAY_MS)
+                }
+            } finally {
+                val index = messages.indexOfFirst { it.id == aiMessageId }
+                if (index >= 0) {
+                    messages[index] = aiMessage.copy(
+                        text = displayedText,
+                        isGenerating = false
+                    )
+                }
+                chatAdapter.setGeneratingDone(aiMessageId)
+                chatAdapter.clearActiveAiMessage()
+                chatAdapter.submitList(messages.toList())
+                isSubmitting = false
+                localGuardJob = null
+                refreshInputControls()
+                if (index >= 0) {
+                    scrollToBottom()
                 }
             }
         }
@@ -1096,5 +1253,6 @@ class MainActivity : StatusBarVisibleActivity() {
         private const val CAMERA_CACHE_DIRECTORY = "camera"
         private const val STATE_CAMERA_URI = "pending_camera_uri"
         private const val STATE_CAMERA_FILE_NAME = "pending_camera_file_name"
+        private const val LOCAL_GUARD_FRAME_DELAY_MS = 24L
     }
 }

@@ -405,10 +405,22 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processSystemPrompt(
 
     const auto *system_prompt = env->GetStringUTFChars(jsystem_prompt, nullptr);
     LOGd("%s: System prompt received: \n%s", __func__, system_prompt);
-    std::string formatted_system_prompt(system_prompt);
+    const std::string system_content(system_prompt);
+    std::string formatted_system_prompt(system_content);
 
-    const bool has_chat_template = common_chat_templates_was_explicit(g_chat_templates.get());
-    if (has_chat_template) {
+    if (g_ctx_vision) {
+        // MiniCPM-V user turns are formatted manually below because its mtmd
+        // model metadata does not expose a common_chat template that can safely
+        // format every role.  System turns must use the same explicit ChatML
+        // path; common_chat_format_single() aborts for this model.
+        formatted_system_prompt =
+                "<|im_start|>system\n" + system_content + "<|im_end|>\n";
+
+        common_chat_msg new_msg;
+        new_msg.role = ROLE_SYSTEM;
+        new_msg.content = system_content;
+        chat_msgs.push_back(new_msg);
+    } else if (common_chat_templates_was_explicit(g_chat_templates.get())) {
         formatted_system_prompt = chat_add_and_format(ROLE_SYSTEM, system_prompt);
     }
     env->ReleaseStringUTFChars(jsystem_prompt, system_prompt);

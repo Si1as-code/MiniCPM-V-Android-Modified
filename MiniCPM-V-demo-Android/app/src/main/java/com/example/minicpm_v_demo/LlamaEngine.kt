@@ -862,6 +862,21 @@ class LlamaEngine private constructor(
     private val _state = MutableStateFlow<LlamaState>(LlamaState.Uninitialized)
     val state: StateFlow<LlamaState> = _state.asStateFlow()
 
+    private val visualContextPolicy = VisualContextPolicy()
+    val hasVisualContext: StateFlow<Boolean> = visualContextPolicy.hasVisualContext
+
+    fun evaluateVisualPrompt(message: String): VisualPromptDecision =
+        visualContextPolicy.evaluatePrompt(message)
+
+    fun evaluateVisualResponse(
+        response: String,
+        hadVisualContext: Boolean
+    ): VisualResponseDecision =
+        visualContextPolicy.evaluateResponse(response, hadVisualContext)
+
+    fun shouldBlockVisualRequest(message: String): Boolean =
+        visualContextPolicy.shouldBlock(message)
+
     @Volatile
     private var _cancelGeneration = false
 
@@ -935,6 +950,7 @@ class LlamaEngine private constructor(
                 "Cannot load model in ${_state.value.javaClass.simpleName}!"
             }
             try {
+                visualContextPolicy.reset()
                 Log.i(TAG, "Checking access to model file... \n$pathToModel")
                 File(pathToModel).let {
                     require(it.exists()) { "File not found: $pathToModel" }
@@ -985,6 +1001,9 @@ class LlamaEngine private constructor(
                 _readyForSystemPrompt = true
                 _cancelGeneration = false
                 _state.value = LlamaState.ModelReady
+                if (_mmprojLoaded) {
+                    setSystemPrompt(context.getString(R.string.visual_grounding_system_prompt))
+                }
             } catch (e: Exception) {
                 Log.e(TAG, (e.message ?: "Error loading model") + "\n" + pathToModel, e)
                 _state.value = LlamaState.Error(e)
@@ -1049,6 +1068,7 @@ class LlamaEngine private constructor(
                 throw RuntimeException("Failed to prefill image (code: $result)")
             }
             Log.i(TAG, "Image prefilled!")
+            visualContextPolicy.markVisualContextAvailable()
             _state.value = LlamaState.ModelReady
         }
 
@@ -1124,6 +1144,7 @@ class LlamaEngine private constructor(
                 onProgress(idx + 1, frames.size)
             }
             Log.i(TAG, "Video frames prefilled successfully")
+            visualContextPolicy.markVisualContextAvailable()
         } finally {
             if (needSliceOverride) {
                 Log.i(TAG, "Restoring image_max_slice_nums=$savedSliceCap after video")
@@ -1139,7 +1160,11 @@ class LlamaEngine private constructor(
                 "Cannot clear context in ${_state.value.javaClass.simpleName}"
             }
             fullReset()
+            visualContextPolicy.reset()
             _readyForSystemPrompt = true
+            if (_mmprojLoaded) {
+                setSystemPrompt(context.getString(R.string.visual_grounding_system_prompt))
+            }
             Log.i(TAG, "Context fully reset - context recreated, ready for new conversation")
         }
 
@@ -1148,6 +1173,11 @@ class LlamaEngine private constructor(
         predictLength: Int = DEFAULT_PREDICT_LENGTH
     ): Flow<String> = flow {
         require(message.isNotEmpty()) { "User prompt must not be empty!" }
+        val promptDecision = visualContextPolicy.evaluatePrompt(message)
+        check(promptDecision == VisualPromptDecision.ALLOW) {
+            "Visual request rejected because this conversation has no visual context: " +
+                promptDecision.name
+        }
         check(_state.value is LlamaState.ModelReady) {
             "User prompt discarded due to: ${_state.value.javaClass.simpleName}"
         }
@@ -1199,6 +1229,7 @@ class LlamaEngine private constructor(
     suspend fun unloadModel() = withContext(llamaDispatcher) {
         if (_state.value is LlamaState.ModelReady) {
             Log.i(TAG, "Unloading model...")
+            visualContextPolicy.reset()
             _readyForSystemPrompt = false
             _mmprojLoaded = false
             _state.value = LlamaState.UnloadingModel
@@ -1209,6 +1240,7 @@ class LlamaEngine private constructor(
     }
 
     fun resetToInitialized() {
+        visualContextPolicy.reset()
         _mmprojLoaded = false
         _readyForSystemPrompt = false
         _cancelGeneration = false
@@ -1221,6 +1253,7 @@ class LlamaEngine private constructor(
             when (val state = _state.value) {
                 is LlamaState.ModelReady -> {
                     Log.i(TAG, "Unloading model and free resources...")
+                    visualContextPolicy.reset()
                     _readyForSystemPrompt = false
                     _mmprojLoaded = false
                     _state.value = LlamaState.UnloadingModel
@@ -1230,6 +1263,7 @@ class LlamaEngine private constructor(
                 }
                 is LlamaState.Error -> {
                     Log.i(TAG, "Resetting error states...")
+                    visualContextPolicy.reset()
                     _mmprojLoaded = false
                     _state.value = LlamaState.Initialized
                 }
@@ -1240,6 +1274,7 @@ class LlamaEngine private constructor(
 
     fun destroy() {
         _cancelGeneration = true
+        visualContextPolicy.reset()
         runBlocking(llamaDispatcher) {
             _readyForSystemPrompt = false
             _mmprojLoaded = false

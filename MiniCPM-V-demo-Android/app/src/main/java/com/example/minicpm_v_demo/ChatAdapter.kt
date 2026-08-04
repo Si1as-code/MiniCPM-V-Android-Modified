@@ -23,15 +23,15 @@ class ChatAdapter(
         private const val TYPE_AI = 2
     }
 
-    private var onSuggestionClick: ((String) -> Unit)? = null
+    private var onWelcomeAction: ((WelcomeAction) -> Unit)? = null
     private var onStopClick: (() -> Unit)? = null
     private var onImageClick: ((String) -> Unit)? = null
 
     private var activeAiHolder: AiMessageViewHolder? = null
     private var activeAiId: Long = -1L
 
-    fun setOnSuggestionClick(listener: (String) -> Unit) {
-        onSuggestionClick = listener
+    fun setOnWelcomeAction(listener: (WelcomeAction) -> Unit) {
+        onWelcomeAction = listener
     }
 
     fun setOnStopClick(listener: () -> Unit) {
@@ -119,26 +119,62 @@ class ChatAdapter(
         private val btnSuggestion2: MaterialButton = itemView.findViewById(R.id.btn_suggestion_2)
 
         fun bind(item: ChatMessage.WelcomeCard) {
-            val ctx = itemView.context
-            if (item.isTextOnly) {
-                tvWelcomeTitle.setText(R.string.welcome_title_text)
-                tvWelcomeDesc.setText(R.string.welcome_desc_text)
-                btnSuggestion1.setText(R.string.suggestion_1_text)
-                btnSuggestion2.setText(R.string.suggestion_2_text)
-                btnSuggestion1.setIconResource(R.drawable.ic_lightbulb)
-                btnSuggestion2.setIconResource(R.drawable.ic_lightbulb)
-            } else {
-                tvWelcomeTitle.setText(R.string.welcome_title)
-                tvWelcomeDesc.setText(R.string.welcome_desc)
-                btnSuggestion1.setText(R.string.suggestion_1)
-                btnSuggestion2.setText(R.string.suggestion_2)
-                btnSuggestion1.setIconResource(R.drawable.ic_lightbulb)
-                btnSuggestion2.setIconResource(R.drawable.ic_image)
+            when (WelcomeSuggestionPolicy.mode(item.isTextOnly, item.hasVisualContext)) {
+                WelcomeSuggestionMode.TEXT_PROMPTS -> {
+                    tvWelcomeTitle.setText(R.string.welcome_title_text)
+                    tvWelcomeDesc.setText(R.string.welcome_desc_text)
+                    configurePromptButton(
+                        btnSuggestion1,
+                        R.string.suggestion_1_text,
+                        R.drawable.ic_lightbulb
+                    )
+                    configurePromptButton(
+                        btnSuggestion2,
+                        R.string.suggestion_2_text,
+                        R.drawable.ic_lightbulb
+                    )
+                }
+                WelcomeSuggestionMode.VISUAL_INPUT_ACTIONS -> {
+                    tvWelcomeTitle.setText(R.string.welcome_title)
+                    tvWelcomeDesc.setText(R.string.welcome_desc_no_image)
+                    btnSuggestion1.setText(R.string.add_image)
+                    btnSuggestion1.setIconResource(R.drawable.ic_image)
+                    btnSuggestion1.setOnClickListener {
+                        onWelcomeAction?.invoke(WelcomeAction.PickMedia)
+                    }
+                    btnSuggestion2.setText(R.string.camera_capture)
+                    btnSuggestion2.setIconResource(R.drawable.ic_camera)
+                    btnSuggestion2.setOnClickListener {
+                        onWelcomeAction?.invoke(WelcomeAction.TakePhoto)
+                    }
+                }
+                WelcomeSuggestionMode.VISUAL_PROMPTS -> {
+                    tvWelcomeTitle.setText(R.string.welcome_title)
+                    tvWelcomeDesc.setText(R.string.welcome_desc)
+                    configurePromptButton(
+                        btnSuggestion1,
+                        R.string.suggestion_1,
+                        R.drawable.ic_lightbulb
+                    )
+                    configurePromptButton(
+                        btnSuggestion2,
+                        R.string.suggestion_2,
+                        R.drawable.ic_image
+                    )
+                }
             }
-            val s1 = btnSuggestion1.text.toString()
-            val s2 = btnSuggestion2.text.toString()
-            btnSuggestion1.setOnClickListener { onSuggestionClick?.invoke(s1) }
-            btnSuggestion2.setOnClickListener { onSuggestionClick?.invoke(s2) }
+        }
+
+        private fun configurePromptButton(
+            button: MaterialButton,
+            textRes: Int,
+            iconRes: Int
+        ) {
+            button.setText(textRes)
+            button.setIconResource(iconRes)
+            button.setOnClickListener {
+                onWelcomeAction?.invoke(WelcomeAction.SendPrompt(button.text.toString()))
+            }
         }
     }
 
@@ -302,7 +338,8 @@ class ChatAdapter(
                     oldItem.isGenerating == newItem.isGenerating &&
                             (oldItem.isGenerating || oldItem.text == newItem.text)
                 oldItem is ChatMessage.WelcomeCard && newItem is ChatMessage.WelcomeCard ->
-                    oldItem.isTextOnly == newItem.isTextOnly
+                    oldItem.isTextOnly == newItem.isTextOnly &&
+                        oldItem.hasVisualContext == newItem.hasVisualContext
                 else -> false
             }
         }
