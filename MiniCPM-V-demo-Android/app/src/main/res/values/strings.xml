@@ -65,6 +65,14 @@
     <string name="toast_empty_input">请输入文字消息</string>
     <string name="response_blocked_no_visual_context">当前对话没有可用图片，无法判断图片内容，请先上传或拍照。</string>
     <string name="response_uncertain_visual_request">当前对话没有可用图片。如果你指的是图片内容，请先上传或拍照；如果这是普通文字问题，请补充说明。</string>
+    <string name="privacy_input_confirmation_label">检测到隐私信息，是否继续发送？</string>
+    <string name="privacy_input_reject">否，删除</string>
+    <string name="privacy_input_approve">是，继续发送</string>
+    <string name="response_privacy_output_confirmation">检测到回答可能包含隐私信息，内容已隐藏。是否确认显示？请明确回复“是”或“否”。</string>
+    <string name="response_privacy_cancelled">已取消，不会提交或显示该隐私内容。</string>
+    <string name="response_privacy_confirmation_required">请明确回复“是”或“否”。在确认前，隐私内容不会提交或显示。</string>
+    <string name="response_illegal_refusal">该请求涉及违法或高风险操作，我不能提供相关内容。</string>
+    <string name="response_safety_review">该请求的安全风险暂时无法确认，已停止处理。请换一种合法、明确的方式提问。</string>
     <string name="toast_clear_chat_failed">清空对话失败: %1$s</string>
     <string name="toast_model_load_failed">模型加载失败: %1$s</string>
     <string name="toast_image_failed">处理图片失败: %1$s</string>

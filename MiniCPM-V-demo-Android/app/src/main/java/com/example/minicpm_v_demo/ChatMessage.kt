@@ -12,6 +12,7 @@ sealed class ChatMessage {
         val imageInfo: String? = null,
         val originalImageToken: String? = null,
         val isPrefilling: Boolean = false,
+        val requiresPrivacyConfirmation: Boolean = false,
         // True when [imageBitmap] is a video's first frame and the
         // cell should overlay a play icon to communicate "this was a
         // video, the model saw N sampled frames".  Mirrors iOS

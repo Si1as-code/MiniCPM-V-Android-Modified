@@ -26,6 +26,7 @@ class ChatAdapter(
     private var onWelcomeAction: ((WelcomeAction) -> Unit)? = null
     private var onStopClick: (() -> Unit)? = null
     private var onImageClick: ((String) -> Unit)? = null
+    private var onPrivacyInputChoice: ((Long, Boolean) -> Unit)? = null
 
     private var activeAiHolder: AiMessageViewHolder? = null
     private var activeAiId: Long = -1L
@@ -40,6 +41,10 @@ class ChatAdapter(
 
     fun setOnImageClick(listener: (String) -> Unit) {
         onImageClick = listener
+    }
+
+    fun setOnPrivacyInputChoice(listener: (Long, Boolean) -> Unit) {
+        onPrivacyInputChoice = listener
     }
 
     fun setActiveAiMessage(id: Long) {
@@ -185,6 +190,12 @@ class ChatAdapter(
         private val ivVideoBadge: ImageView = itemView.findViewById(R.id.iv_video_play_badge)
         private val tvImageInfo: TextView = itemView.findViewById(R.id.tv_image_info)
         private val progressImage: LinearProgressIndicator = itemView.findViewById(R.id.progress_image)
+        private val privacyConfirmationPanel: View =
+            itemView.findViewById(R.id.privacy_confirmation_panel)
+        private val btnPrivacyReject: MaterialButton =
+            itemView.findViewById(R.id.btn_privacy_reject)
+        private val btnPrivacyApprove: MaterialButton =
+            itemView.findViewById(R.id.btn_privacy_approve)
 
         fun bind(item: ChatMessage.UserMessage) {
             tvText.text = item.text
@@ -209,6 +220,23 @@ class ChatAdapter(
                 progressImage.visibility = View.GONE
                 flImageContainer.isClickable = false
                 flImageContainer.setOnClickListener(null)
+            }
+
+            privacyConfirmationPanel.visibility = if (item.requiresPrivacyConfirmation) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+            if (item.requiresPrivacyConfirmation) {
+                btnPrivacyReject.setOnClickListener {
+                    onPrivacyInputChoice?.invoke(item.id, false)
+                }
+                btnPrivacyApprove.setOnClickListener {
+                    onPrivacyInputChoice?.invoke(item.id, true)
+                }
+            } else {
+                btnPrivacyReject.setOnClickListener(null)
+                btnPrivacyApprove.setOnClickListener(null)
             }
         }
     }
@@ -333,6 +361,8 @@ class ChatAdapter(
                             oldItem.imageInfo == newItem.imageInfo &&
                             oldItem.originalImageToken == newItem.originalImageToken &&
                             oldItem.isPrefilling == newItem.isPrefilling &&
+                            oldItem.requiresPrivacyConfirmation ==
+                            newItem.requiresPrivacyConfirmation &&
                             oldItem.isVideo == newItem.isVideo
                 oldItem is ChatMessage.AiMessage && newItem is ChatMessage.AiMessage ->
                     oldItem.isGenerating == newItem.isGenerating &&

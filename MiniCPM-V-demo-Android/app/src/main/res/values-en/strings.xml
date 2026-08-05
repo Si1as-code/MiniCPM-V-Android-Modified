@@ -62,6 +62,14 @@
     <string name="toast_empty_input">Please enter a message</string>
     <string name="response_blocked_no_visual_context">There is no usable image in this conversation, so I cannot determine image content. Upload one or take a photo first.</string>
     <string name="response_uncertain_visual_request">There is no usable image in this conversation. If you mean image content, upload one or take a photo; otherwise, clarify the text question.</string>
+    <string name="privacy_input_confirmation_label">Private information detected. Send it anyway?</string>
+    <string name="privacy_input_reject">No, delete</string>
+    <string name="privacy_input_approve">Yes, send</string>
+    <string name="response_privacy_output_confirmation">The response may contain private data and has been hidden. Show it? Reply exactly “yes” or “no”.</string>
+    <string name="response_privacy_cancelled">Cancelled. The private content will not be submitted or displayed.</string>
+    <string name="response_privacy_confirmation_required">Reply exactly “yes” or “no”. The private content will not be submitted or displayed until you confirm.</string>
+    <string name="response_illegal_refusal">This request involves illegal or high-risk activity, so I can’t provide that content.</string>
+    <string name="response_safety_review">The safety risk of this request could not be determined, so processing was stopped. Please ask again in a clear and lawful way.</string>
     <string name="toast_clear_chat_failed">Failed to clear chat: %1$s</string>
     <string name="toast_model_load_failed">Failed to load model: %1$s</string>
     <string name="toast_image_failed">Failed to process image: %1$s</string>

@@ -39,6 +39,11 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
+private sealed interface PendingPrivacyAction {
+    data class SubmitPrompt(val prompt: String, val messageId: Long) : PendingPrivacyAction
+    data class RevealResponse(val response: String) : PendingPrivacyAction
+}
+
 class MainActivity : StatusBarVisibleActivity() {
 
     private val pendingImageViewModel: PendingImageViewModel by viewModels()
@@ -77,6 +82,7 @@ class MainActivity : StatusBarVisibleActivity() {
     private var currentEngineState: LlamaState = LlamaState.Uninitialized
     private var pendingCameraUri: Uri? = null
     private var pendingCameraFile: File? = null
+    private var pendingPrivacyAction: PendingPrivacyAction? = null
     private val originalImageCache by lazy {
         ImageSourceCache(
             File(cacheDir, PendingImageViewModel.SOURCE_CACHE_DIRECTORY),
@@ -155,6 +161,7 @@ class MainActivity : StatusBarVisibleActivity() {
         }
         chatAdapter.setOnImageClick(::openOriginalImage)
         chatAdapter.setOnWelcomeAction(::handleWelcomeAction)
+        chatAdapter.setOnPrivacyInputChoice(::handlePrivacyInputChoice)
 
         recyclerChat.layoutManager = LinearLayoutManager(this)
         recyclerChat.adapter = chatAdapter
@@ -394,6 +401,7 @@ class MainActivity : StatusBarVisibleActivity() {
     }
 
     private fun clearChatUI() {
+        pendingPrivacyAction = null
         pendingImageViewModel.clearLocalAfterEngineReset()
         releaseMessageOriginals()
         messages.clear()
@@ -962,11 +970,131 @@ class MainActivity : StatusBarVisibleActivity() {
             return
         }
 
+        pendingPrivacyAction?.let { pendingAction ->
+            if (pendingAction is PendingPrivacyAction.RevealResponse) {
+                handlePrivacyOutputConfirmation(userMsg, pendingAction)
+            }
+            return
+        }
+
+        val contentDecision = ContentSafetyPolicyEngine.evaluate(
+            LocalContentSafetyClassifier.classify(userMsg)
+        )
+        when (contentDecision) {
+            ContentSafetyDecision.WARNING -> {
+                showPrivacyInputConfirmation(userMsg)
+                return
+            }
+            ContentSafetyDecision.BLOCK -> {
+                showLocalOnlyConversation(userMsg, getString(R.string.response_illegal_refusal))
+                return
+            }
+            ContentSafetyDecision.REVIEW -> {
+                showLocalOnlyConversation(userMsg, getString(R.string.response_safety_review))
+                return
+            }
+            ContentSafetyDecision.ALLOW -> Unit
+        }
+
         val dispatchPlan = LocalGuardReplyPolicy.plan(engine.evaluateVisualPrompt(userMsg))
         if (dispatchPlan.destination == PromptDestination.LOCAL_ONLY) {
             showLocalGuardReply(userMsg, requireNotNull(dispatchPlan.localReplyKind))
             return
         }
+
+        submitPromptToModel(userMsg, pendingState, displayUserMessage = true)
+    }
+
+    private fun handlePrivacyOutputConfirmation(
+        confirmationText: String,
+        pendingAction: PendingPrivacyAction.RevealResponse
+    ) {
+        when (ExplicitConfirmationParser.parse(confirmationText)) {
+            ConfirmationDecision.CONFIRM -> {
+                pendingPrivacyAction = null
+                showLocalOnlyConversation(
+                    confirmationText,
+                    pendingAction.response,
+                    streamReply = false
+                )
+            }
+            ConfirmationDecision.DECLINE -> {
+                pendingPrivacyAction = null
+                showLocalOnlyConversation(
+                    confirmationText,
+                    getString(R.string.response_privacy_cancelled)
+                )
+            }
+            ConfirmationDecision.INVALID -> {
+                showLocalOnlyConversation(
+                    confirmationText,
+                    getString(R.string.response_privacy_confirmation_required)
+                )
+            }
+        }
+    }
+
+    private fun showPrivacyInputConfirmation(userMsg: String) {
+        etInput.clearFocus()
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(etInput.windowToken, 0)
+        etInput.text = null
+        isSubmitting = true
+        refreshInputControls()
+        collapseAppBar()
+
+        val messageId = messageIdCounter++
+        pendingPrivacyAction = PendingPrivacyAction.SubmitPrompt(userMsg, messageId)
+        messages.add(
+            ChatMessage.UserMessage(
+                id = messageId,
+                text = userMsg,
+                requiresPrivacyConfirmation = true
+            )
+        )
+        chatAdapter.submitList(messages.toList()) { scrollToBottom() }
+    }
+
+    private fun handlePrivacyInputChoice(messageId: Long, approved: Boolean) {
+        val pending = pendingPrivacyAction as? PendingPrivacyAction.SubmitPrompt ?: return
+        when (
+            PrivacyInputConfirmationPolicy.resolve(
+                pendingMessageId = pending.messageId,
+                selectedMessageId = messageId,
+                approved = approved
+            )
+        ) {
+            PrivacyInputChoiceAction.SUBMIT -> {
+                val submissionStarted = submitPromptToModel(
+                    pending.prompt,
+                    pendingImageViewModel.uiState.value,
+                    displayUserMessage = false,
+                    existingUserMessageId = pending.messageId
+                )
+                if (submissionStarted) {
+                    pendingPrivacyAction = null
+                }
+            }
+            PrivacyInputChoiceAction.DELETE -> {
+                pendingPrivacyAction = null
+                val index = messages.indexOfFirst { it.id == pending.messageId }
+                if (index >= 0) {
+                    messages.removeAt(index)
+                }
+                chatAdapter.submitList(messages.toList())
+                isSubmitting = false
+                refreshInputControls()
+            }
+            PrivacyInputChoiceAction.IGNORE -> Unit
+        }
+    }
+
+    private fun submitPromptToModel(
+        userMsg: String,
+        pendingState: PendingImageUiState,
+        displayUserMessage: Boolean,
+        existingUserMessageId: Long? = null
+    ): Boolean {
 
         val attachment = if (pendingState is PendingImageUiState.Ready) {
             pendingImageViewModel.consumeReady().also { consumed ->
@@ -983,7 +1111,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 getString(R.string.toast_image_failed, getString(R.string.error_read_image)),
                 Toast.LENGTH_SHORT
             ).show()
-            return
+            return false
         }
         etInput.clearFocus()
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
@@ -995,18 +1123,31 @@ class MainActivity : StatusBarVisibleActivity() {
 
         collapseAppBar()
 
-        val msgId = messageIdCounter++
-        val userMessage = ChatMessage.UserMessage(
-            id = msgId,
-            text = userMsg,
-            imageBitmap = attachment?.thumbnail,
-            imageInfo = attachment?.imageInfo,
-            originalImageToken = attachment?.originalImageToken
-        )
         renderPendingImage(pendingImageViewModel.uiState.value)
-        messages.add(userMessage)
-        chatAdapter.submitList(messages.toList()) {
-            scrollToBottom()
+        if (displayUserMessage) {
+            val userMessage = ChatMessage.UserMessage(
+                id = messageIdCounter++,
+                text = userMsg,
+                imageBitmap = attachment?.thumbnail,
+                imageInfo = attachment?.imageInfo,
+                originalImageToken = attachment?.originalImageToken
+            )
+            messages.add(userMessage)
+            chatAdapter.submitList(messages.toList()) {
+                scrollToBottom()
+            }
+        } else if (existingUserMessageId != null) {
+            val existingIndex = messages.indexOfFirst { it.id == existingUserMessageId }
+            val existing = messages.getOrNull(existingIndex) as? ChatMessage.UserMessage
+            if (existingIndex >= 0 && existing != null) {
+                messages[existingIndex] = existing.copy(
+                    imageBitmap = attachment?.thumbnail,
+                    imageInfo = attachment?.imageInfo,
+                    originalImageToken = attachment?.originalImageToken,
+                    requiresPrivacyConfirmation = false
+                )
+                chatAdapter.submitList(messages.toList()) { scrollToBottom() }
+            }
         }
 
         val aiMsgId = messageIdCounter++
@@ -1024,21 +1165,6 @@ class MainActivity : StatusBarVisibleActivity() {
                 engine.sendUserPrompt(userMsg)
                     .collect { token ->
                         fullResponse.append(token)
-                        if (generationHadVisualContext) {
-                            withContext(Dispatchers.Main) {
-                                val currentText = fullResponse.toString()
-                                val index = messages.indexOfFirst { it.id == aiMsgId }
-                                if (index >= 0) {
-                                    messages[index] = ChatMessage.AiMessage(
-                                        id = aiMsgId,
-                                        text = currentText,
-                                        isGenerating = true
-                                    )
-                                }
-                                chatAdapter.updateStreamingText(aiMsgId, currentText)
-                                scrollToBottom()
-                            }
-                        }
                     }
             } catch (e: CancellationException) {
                 Log.i(TAG, "Text generation was cancelled")
@@ -1053,10 +1179,16 @@ class MainActivity : StatusBarVisibleActivity() {
                         response = candidateResponse,
                         hadVisualContext = generationHadVisualContext
                     )
-                    val displayedResponse = when (responseDecision) {
-                        VisualResponseDecision.ALLOW -> candidateResponse
-                        VisualResponseDecision.BLOCK_VISUAL_ASSERTION,
-                        VisualResponseDecision.BLOCK_UNCERTAIN_ASSERTION -> {
+                    val contentDecision = ContentSafetyPolicyEngine.evaluate(
+                        LocalContentSafetyClassifier.classify(candidateResponse)
+                    )
+                    val displayAction = ContentSafetyDisplayPolicy.plan(
+                        responseDecision,
+                        contentDecision
+                    )
+                    val displayedResponse = when (displayAction) {
+                        ContentDisplayAction.SHOW_CANDIDATE -> candidateResponse
+                        ContentDisplayAction.SHOW_VISUAL_GUARD -> {
                             Log.w(
                                 TAG,
                                 "Generated response hidden by visual grounding guard: " +
@@ -1064,13 +1196,34 @@ class MainActivity : StatusBarVisibleActivity() {
                             )
                             getString(R.string.response_blocked_no_visual_context)
                         }
+                        ContentDisplayAction.REQUEST_PRIVACY_CONFIRMATION -> {
+                            pendingPrivacyAction = PendingPrivacyAction.RevealResponse(
+                                candidateResponse
+                            )
+                            getString(R.string.response_privacy_output_confirmation)
+                        }
+                        ContentDisplayAction.SHOW_ILLEGAL_REFUSAL -> {
+                            Log.w(TAG, "Generated response hidden by local content safety policy")
+                            getString(R.string.response_illegal_refusal)
+                        }
+                        ContentDisplayAction.SHOW_REVIEW_FALLBACK -> {
+                            Log.w(TAG, "Generated response requires safety review and was hidden")
+                            getString(R.string.response_safety_review)
+                        }
                     }
                     if (index >= 0) {
                         val current = messages[index] as? ChatMessage.AiMessage
                         messages[index] = (current ?: aiMessage).copy(
-                            text = displayedResponse,
+                            text = if (displayAction == ContentDisplayAction.SHOW_CANDIDATE) {
+                                displayedResponse
+                            } else {
+                                ""
+                            },
                             isGenerating = false
                         )
+                    }
+                    if (displayAction != ContentDisplayAction.SHOW_CANDIDATE) {
+                        streamIntoAiMessage(aiMsgId, displayedResponse, aiMessage)
                     }
                     chatAdapter.setGeneratingDone(aiMsgId)
                     chatAdapter.clearActiveAiMessage()
@@ -1084,6 +1237,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 }
             }
         }
+        return true
     }
 
     private fun showLocalGuardReply(userMessageText: String, kind: LocalGuardReplyKind) {
@@ -1096,6 +1250,14 @@ class MainActivity : StatusBarVisibleActivity() {
             }
         )
 
+        showLocalOnlyConversation(userMessageText, replyText)
+    }
+
+    private fun showLocalOnlyConversation(
+        userMessageText: String,
+        replyText: String,
+        streamReply: Boolean = true
+    ) {
         etInput.clearFocus()
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
             .hideSoftInputFromWindow(etInput.windowToken, 0)
@@ -1122,23 +1284,15 @@ class MainActivity : StatusBarVisibleActivity() {
         }
 
         localGuardJob = lifecycleScope.launch {
-            var displayedText = ""
             try {
-                for (frame in LocalResponseStreamer.frames(replyText)) {
-                    displayedText = frame
-                    val index = messages.indexOfFirst { it.id == aiMessageId }
-                    if (index >= 0) {
-                        messages[index] = aiMessage.copy(text = frame)
-                    }
-                    chatAdapter.updateStreamingText(aiMessageId, frame)
-                    scrollToBottom()
-                    delay(LOCAL_GUARD_FRAME_DELAY_MS)
+                if (streamReply) {
+                    streamIntoAiMessage(aiMessageId, replyText, aiMessage)
                 }
             } finally {
                 val index = messages.indexOfFirst { it.id == aiMessageId }
                 if (index >= 0) {
                     messages[index] = aiMessage.copy(
-                        text = displayedText,
+                        text = replyText,
                         isGenerating = false
                     )
                 }
@@ -1152,6 +1306,22 @@ class MainActivity : StatusBarVisibleActivity() {
                     scrollToBottom()
                 }
             }
+        }
+    }
+
+    private suspend fun streamIntoAiMessage(
+        aiMessageId: Long,
+        text: String,
+        baseMessage: ChatMessage.AiMessage
+    ) {
+        for (frame in LocalResponseStreamer.frames(text)) {
+            val index = messages.indexOfFirst { it.id == aiMessageId }
+            if (index >= 0) {
+                messages[index] = baseMessage.copy(text = frame, isGenerating = true)
+            }
+            chatAdapter.updateStreamingText(aiMessageId, frame)
+            scrollToBottom()
+            delay(LOCAL_GUARD_FRAME_DELAY_MS)
         }
     }
 
