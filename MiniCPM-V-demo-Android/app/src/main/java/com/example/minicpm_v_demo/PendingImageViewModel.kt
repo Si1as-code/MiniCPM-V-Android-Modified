@@ -56,7 +56,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
     private val contentResolver = application.contentResolver
     private val engine by lazy { LlamaEngine.getInstance(appContext) }
     private val sourceCache = ImageSourceCache(
-        File(appContext.cacheDir, SOURCE_CACHE_DIRECTORY),
+        File(appContext.filesDir, SOURCE_CACHE_DIRECTORY),
         ImageDecodePolicy.MAX_SOURCE_BYTES
     )
     private val stateLock = Any()
@@ -152,12 +152,43 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             ready.attachment
         }
 
+    /** Rebuilds visual context from an app-private opaque source token. */
+    suspend fun replayCachedImage(originalImageToken: String) {
+        val source = sourceCache.resolve(originalImageToken)
+            ?: throw ImageSourceUnreadableException()
+        var bitmap: Bitmap? = null
+        var encodedFile: File? = null
+        try {
+            val metadata = readMetadata(source)
+            bitmap = decodeOrientedBitmap(
+                source = source,
+                metadata = metadata,
+                maxDimension = ImageDecodePolicy.MAX_DIMENSION,
+                maxPixelCount = ImageDecodePolicy.MAX_PIXEL_COUNT
+            )
+            encodedFile = encodeToPrivateCache(bitmap)
+            val encodedSize = encodedFile.length()
+            if (!ImageDecodePolicy.isSourceLengthAllowed(encodedSize)) {
+                throw ImageSourceTooLargeException()
+            }
+            bitmap.recycle()
+            bitmap = null
+            engine.prefillImage(encodedFile.readBytes())
+        } finally {
+            bitmap?.takeUnless { it.isRecycled }?.recycle()
+            encodedFile?.let(::deletePreparedCacheFile)
+        }
+    }
+
     /**
-     * Cancels and joins preprocessing before returning. Callers can safely invoke
-     * LlamaEngine.clearContext()/unloadModel() afterwards without racing a native
-     * image prefill that was already in flight.
+     * Cancels and joins preprocessing before returning. [PendingImageCancellationMode.USER_REMOVE]
+     * hides the attachment before waiting, while context resets keep a clearing indicator visible.
+     * Callers can safely invoke LlamaEngine.clearContext()/unloadModel() afterwards without racing
+     * a native image prefill that was already in flight.
      */
-    suspend fun cancelAndClear() {
+    suspend fun cancelAndClear(
+        mode: PendingImageCancellationMode = PendingImageCancellationMode.CONTEXT_RESET
+    ) {
         var retainedToken: String? = null
         val job = synchronized(stateLock) {
             activeRequestId = null
@@ -165,10 +196,14 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
             if (current == null) {
                 retainedToken = currentAttachmentToken()
             }
-            _uiState.value = if (current == null) {
-                PendingImageUiState.Empty
-            } else {
-                PendingImageUiState.Clearing
+            _uiState.value = when (
+                PendingImageCancellationPolicy.displayWhileCancelling(
+                    hasProcessingJob = current != null,
+                    mode = mode
+                )
+            ) {
+                PendingImageCancellationDisplay.HIDDEN -> PendingImageUiState.Empty
+                PendingImageCancellationDisplay.CLEARING -> PendingImageUiState.Clearing
             }
             current
         }
@@ -545,7 +580,7 @@ class PendingImageViewModel(application: Application) : AndroidViewModel(applica
         const val THUMBNAIL_MAX_PIXEL_COUNT = 512L * 512L
 
         private const val PREPARED_CACHE_DIRECTORY = "pending-images"
-        const val SOURCE_CACHE_DIRECTORY = "pending-image-sources"
+        const val SOURCE_CACHE_DIRECTORY = "conversation-images"
         private const val PREPARED_FILE_PREFIX = "prepared-"
         private const val CAMERA_CACHE_DIRECTORY = "camera"
         private const val JPEG_QUALITY = 95

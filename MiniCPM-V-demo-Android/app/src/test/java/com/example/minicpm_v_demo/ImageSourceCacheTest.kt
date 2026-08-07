@@ -80,4 +80,19 @@ class ImageSourceCacheTest {
 
         assertFalse(directory.listFiles().orEmpty().isNotEmpty())
     }
+
+    @Test
+    fun removesOnlyGeneratedFilesNotReferencedByArchive() {
+        val directory = temporaryFolder.newFolder("images")
+        val cache = ImageSourceCache(directory, 1024)
+        val retained = cache.cache { ByteArrayInputStream(byteArrayOf(1)) }
+        val orphan = cache.cache { ByteArrayInputStream(byteArrayOf(2)) }
+        val unrelated = directory.resolve("do-not-delete.txt").apply { writeText("keep") }
+
+        cache.deleteUnreferencedTokens(setOf(retained.token, "../${orphan.token}"))
+
+        assertEquals(retained.file.canonicalFile, cache.resolve(retained.token))
+        assertFalse(orphan.file.exists())
+        assertEquals("keep", unrelated.readText())
+    }
 }

@@ -35,7 +35,7 @@ class OriginalImageViewerActivity : StatusBarVisibleActivity() {
         val progress = findViewById<ProgressBar>(R.id.progress_original_image)
         val token = intent.getStringExtra(EXTRA_IMAGE_TOKEN)
         val cache = ImageSourceCache(
-            File(cacheDir, PendingImageViewModel.SOURCE_CACHE_DIRECTORY),
+            File(filesDir, PendingImageViewModel.SOURCE_CACHE_DIRECTORY),
             ImageDecodePolicy.MAX_SOURCE_BYTES
         )
         val source = cache.resolve(token)

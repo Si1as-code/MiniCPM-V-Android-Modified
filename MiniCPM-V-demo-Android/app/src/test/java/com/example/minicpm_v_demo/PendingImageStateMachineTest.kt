@@ -117,4 +117,33 @@ class PendingImageStateMachineTest {
         assertFalse(controls.mediaEnabled)
         assertFalse(controls.modelSettingsEnabled)
     }
+
+    @Test
+    fun userRemovalHidesPendingImageBeforeProcessingJobStops() {
+        assertEquals(
+            PendingImageCancellationDisplay.HIDDEN,
+            PendingImageCancellationPolicy.displayWhileCancelling(
+                hasProcessingJob = true,
+                mode = PendingImageCancellationMode.USER_REMOVE
+            )
+        )
+    }
+
+    @Test
+    fun contextResetShowsClearingOnlyWhileProcessingJobStops() {
+        assertEquals(
+            PendingImageCancellationDisplay.CLEARING,
+            PendingImageCancellationPolicy.displayWhileCancelling(
+                hasProcessingJob = true,
+                mode = PendingImageCancellationMode.CONTEXT_RESET
+            )
+        )
+        assertEquals(
+            PendingImageCancellationDisplay.HIDDEN,
+            PendingImageCancellationPolicy.displayWhileCancelling(
+                hasProcessingJob = false,
+                mode = PendingImageCancellationMode.CONTEXT_RESET
+            )
+        )
+    }
 }

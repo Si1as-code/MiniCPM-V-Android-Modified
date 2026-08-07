@@ -11,8 +11,10 @@ sealed class ChatMessage {
         val imageBitmap: Bitmap? = null,
         val imageInfo: String? = null,
         val originalImageToken: String? = null,
+        val previewImageToken: String? = null,
         val isPrefilling: Boolean = false,
         val requiresPrivacyConfirmation: Boolean = false,
+        val includeInModelContext: Boolean = true,
         // True when [imageBitmap] is a video's first frame and the
         // cell should overlay a play icon to communicate "this was a
         // video, the model saw N sampled frames".  Mirrors iOS
@@ -23,7 +25,8 @@ sealed class ChatMessage {
     data class AiMessage(
         override val id: Long,
         val text: String,
-        val isGenerating: Boolean = false
+        val isGenerating: Boolean = false,
+        val includeInModelContext: Boolean = true
     ) : ChatMessage()
 
     data class WelcomeCard(
@@ -31,4 +34,19 @@ sealed class ChatMessage {
         val isTextOnly: Boolean = false,
         val hasVisualContext: Boolean = false
     ) : ChatMessage()
+}
+
+fun ChatMessage.UserMessage.confirmedForSubmission(
+    attachment: PendingImageAttachment?,
+    persistedPreviewToken: String? = null
+): ChatMessage.UserMessage = if (attachment == null) {
+    copy(requiresPrivacyConfirmation = false)
+} else {
+    copy(
+        imageBitmap = attachment.thumbnail,
+        imageInfo = attachment.imageInfo,
+        originalImageToken = attachment.originalImageToken,
+        previewImageToken = persistedPreviewToken,
+        requiresPrivacyConfirmation = false
+    )
 }

@@ -46,7 +46,7 @@ class ImageSourceCache(
             val byteCount = try {
                 input.use { source ->
                     FileOutputStream(target).use { output ->
-                        copyBounded(source, output)
+                        copyBounded(source, output).also { output.fd.sync() }
                     }
                 }
             } catch (error: ImageSourceTooLargeException) {
@@ -96,6 +96,20 @@ class ImageSourceCache(
 
     fun deleteToken(token: String?) {
         delete(resolve(token))
+    }
+
+    /** Deletes only generated files that are not referenced by a loaded archive. */
+    fun deleteUnreferencedTokens(retainedTokens: Set<String>) {
+        directory.listFiles().orEmpty().forEach { candidate ->
+            val token = candidate.name
+            if (
+                token !in retainedTokens &&
+                token.startsWith(FILE_PREFIX) &&
+                token.endsWith(FILE_SUFFIX)
+            ) {
+                delete(candidate)
+            }
+        }
     }
 
     private fun copyBounded(input: InputStream, output: FileOutputStream): Long {

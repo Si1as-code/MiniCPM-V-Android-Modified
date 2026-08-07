@@ -60,6 +60,7 @@ class MainActivityUiTest {
                 val cameraButton = activity.findViewById<View>(R.id.btn_camera)
                 val sendButton = activity.findViewById<View>(R.id.btn_send)
                 val preprocessingStatus = activity.findViewById<View>(R.id.tv_pending_image_status)
+                val removePendingImage = activity.findViewById<View>(R.id.btn_remove_pending_image)
 
                 assertNotNull(pendingPanel)
                 assertNotNull(settingsButton)
@@ -67,6 +68,7 @@ class MainActivityUiTest {
                 assertNotNull(cameraButton)
                 assertNotNull(sendButton)
                 assertNotNull(preprocessingStatus)
+                assertNotNull(removePendingImage)
                 assertTrue(pendingPanel.visibility == View.GONE)
 
                 val parent = cameraButton.parent as ViewGroup

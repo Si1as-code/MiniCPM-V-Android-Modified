@@ -6,6 +6,9 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
+    <!-- Conversations can contain private text and identity data. Keep them only on-device. -->
+    <exclude domain="file" path="conversation-store/" />
+    <exclude domain="file" path="conversation-images/" />
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>

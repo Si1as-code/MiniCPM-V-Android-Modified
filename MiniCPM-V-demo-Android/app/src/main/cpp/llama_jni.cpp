@@ -340,15 +340,59 @@ static void shift_context() {
     LOGi("%s: Context shifting done! Current position: %d", __func__, current_position);
 }
 
-static std::string chat_add_and_format(const std::string &role, const std::string &content) {
+static std::string chat_add_and_format(
+        const std::string &role,
+        const std::string &content,
+        const bool add_assistant = true) {
     common_chat_msg new_msg;
     new_msg.role = role;
     new_msg.content = content;
     auto formatted = common_chat_format_single(
-            g_chat_templates.get(), chat_msgs, new_msg, role == ROLE_USER, true);
+            g_chat_templates.get(), chat_msgs, new_msg,
+            add_assistant && role == ROLE_USER, true);
     chat_msgs.push_back(new_msg);
     LOGi("%s: Formatted and added %s message: \n%s\n", __func__, role.c_str(), formatted.c_str());
     return formatted;
+}
+
+static int decode_tokens_in_batches(
+        llama_context *context,
+        llama_batch &batch,
+        const llama_tokens &tokens,
+        llama_pos start_pos,
+        bool compute_last_logit);
+
+static int decode_history_text(const std::string &formatted) {
+    if (g_ctx_vision) {
+        mtmd_input_text text;
+        text.text = formatted.c_str();
+        text.add_special = current_position == 0;
+        text.parse_special = true;
+
+        mtmd_input_chunks *chunks = mtmd_input_chunks_init();
+        const int32_t token_result = mtmd_tokenize(g_ctx_vision, chunks, &text, nullptr, 0);
+        if (token_result != 0) {
+            mtmd_input_chunks_free(chunks);
+            return 2;
+        }
+        llama_pos new_n_past;
+        const int eval_result = mtmd_helper_eval_chunks(
+                g_ctx_vision, g_context, chunks, current_position, 0,
+                BATCH_SIZE, true, &new_n_past);
+        mtmd_input_chunks_free(chunks);
+        if (eval_result != 0) return 2;
+        current_position = new_n_past;
+    } else {
+        const auto tokens = common_tokenize(
+                g_context, formatted, current_position == 0, true);
+        if ((int) tokens.size() > g_n_ctx - OVERFLOW_HEADROOM) return 1;
+        if (decode_tokens_in_batches(g_context, g_batch, tokens, current_position, true)) {
+            return 2;
+        }
+        current_position += (llama_pos) tokens.size();
+    }
+    generation_start_position = current_position;
+    return 0;
 }
 
 static llama_pos stop_generation_position;
@@ -691,6 +735,46 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processUserPrompt(
 
     stop_generation_position = current_position + n_predict;
     return 0;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_appendHistoryMessage(
+        JNIEnv *env,
+        jobject /*unused*/,
+        jint role_value,
+        jstring jcontent
+) {
+    reset_short_term_states();
+    if (role_value != 0 && role_value != 1) return 3;
+
+    const auto *raw_content = env->GetStringUTFChars(jcontent, nullptr);
+    if (!raw_content) return 4;
+    std::string content(raw_content);
+    env->ReleaseStringUTFChars(jcontent, raw_content);
+    if (content.empty()) content = " ";
+
+    const char *role = role_value == 0 ? ROLE_USER : ROLE_ASSISTANT;
+    std::string formatted;
+    if (g_ctx_vision) {
+        if (role_value == 0) {
+            formatted = "<|im_start|>user\n" + content + "<|im_end|>\n";
+            g_image_prefilled = false;
+        } else {
+            formatted = std::string(assistant_turn_prefix()) + content + "<|im_end|>\n";
+        }
+        common_chat_msg message;
+        message.role = role;
+        message.content = content;
+        chat_msgs.push_back(message);
+    } else if (common_chat_templates_was_explicit(g_chat_templates.get())) {
+        formatted = chat_add_and_format(role, content, false);
+    } else {
+        formatted = content;
+    }
+
+    LOGi("%s: Replaying %s history at position %d", __func__, role, current_position);
+    return decode_history_text(formatted);
 }
 
 static bool is_valid_utf8(const char *string) {

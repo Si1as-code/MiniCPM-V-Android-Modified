@@ -27,6 +27,7 @@ class ChatAdapter(
     private var onStopClick: (() -> Unit)? = null
     private var onImageClick: ((String) -> Unit)? = null
     private var onPrivacyInputChoice: ((Long, Boolean) -> Unit)? = null
+    private var onMessageLongClick: ((ChatMessage) -> Unit)? = null
 
     private var activeAiHolder: AiMessageViewHolder? = null
     private var activeAiId: Long = -1L
@@ -45,6 +46,10 @@ class ChatAdapter(
 
     fun setOnPrivacyInputChoice(listener: (Long, Boolean) -> Unit) {
         onPrivacyInputChoice = listener
+    }
+
+    fun setOnMessageLongClick(listener: (ChatMessage) -> Unit) {
+        onMessageLongClick = listener
     }
 
     fun setActiveAiMessage(id: Long) {
@@ -198,6 +203,10 @@ class ChatAdapter(
             itemView.findViewById(R.id.btn_privacy_approve)
 
         fun bind(item: ChatMessage.UserMessage) {
+            itemView.setOnLongClickListener {
+                onMessageLongClick?.invoke(item)
+                true
+            }
             tvText.text = item.text
             tvText.visibility = if (item.text.isNotBlank()) View.VISIBLE else View.GONE
 
@@ -242,6 +251,7 @@ class ChatAdapter(
     }
 
     inner class AiMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val messageBubble: ViewGroup = itemView.findViewById(R.id.ai_message_bubble)
         private val tvText: TextView = itemView.findViewById(R.id.tv_ai_text)
         private val btnStop: MaterialButton = itemView.findViewById(R.id.btn_stop_generating)
         private val layoutThinking: View = itemView.findViewById(R.id.layout_thinking)
@@ -255,6 +265,8 @@ class ChatAdapter(
         private var streamingMinWidth = 0
 
         fun bind(item: ChatMessage.AiMessage) {
+            itemView.setOnLongClickListener(null)
+            bindLongPressToWholeBubble(item)
             if (!item.isGenerating) {
                 streamingMinWidth = 0
                 (tvText.parent as? ViewGroup)?.minimumWidth = 0
@@ -263,6 +275,23 @@ class ChatAdapter(
             btnStop.visibility = if (item.isGenerating) View.VISIBLE else View.GONE
             btnStop.setOnClickListener {
                 onStopClick?.invoke()
+            }
+        }
+
+        private fun bindLongPressToWholeBubble(item: ChatMessage.AiMessage) {
+            val listener = View.OnLongClickListener {
+                if (!item.isGenerating) onMessageLongClick?.invoke(item)
+                !item.isGenerating
+            }
+            bindLongPressRecursively(messageBubble, listener)
+        }
+
+        private fun bindLongPressRecursively(view: View, listener: View.OnLongClickListener) {
+            view.setOnLongClickListener(listener)
+            if (view is ViewGroup) {
+                for (index in 0 until view.childCount) {
+                    bindLongPressRecursively(view.getChildAt(index), listener)
+                }
             }
         }
 
@@ -360,12 +389,15 @@ class ChatAdapter(
                             bitmapsHaveSameContent(oldItem.imageBitmap, newItem.imageBitmap) &&
                             oldItem.imageInfo == newItem.imageInfo &&
                             oldItem.originalImageToken == newItem.originalImageToken &&
+                            oldItem.previewImageToken == newItem.previewImageToken &&
                             oldItem.isPrefilling == newItem.isPrefilling &&
                             oldItem.requiresPrivacyConfirmation ==
                             newItem.requiresPrivacyConfirmation &&
+                            oldItem.includeInModelContext == newItem.includeInModelContext &&
                             oldItem.isVideo == newItem.isVideo
                 oldItem is ChatMessage.AiMessage && newItem is ChatMessage.AiMessage ->
                     oldItem.isGenerating == newItem.isGenerating &&
+                            oldItem.includeInModelContext == newItem.includeInModelContext &&
                             (oldItem.isGenerating || oldItem.text == newItem.text)
                 oldItem is ChatMessage.WelcomeCard && newItem is ChatMessage.WelcomeCard ->
                     oldItem.isTextOnly == newItem.isTextOnly &&

@@ -2,8 +2,10 @@ package com.example.minicpm_v_demo
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputFilter
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
@@ -37,7 +39,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 private sealed interface PendingPrivacyAction {
     data class SubmitPrompt(val prompt: String, val messageId: Long) : PendingPrivacyAction
@@ -64,6 +70,7 @@ class MainActivity : StatusBarVisibleActivity() {
     private lateinit var progressPendingImage: CircularProgressIndicator
     private lateinit var tvPendingImageStatus: TextView
     private lateinit var tvPendingImageInfo: TextView
+    private lateinit var btnRemovePendingImage: ImageButton
 
     private lateinit var engine: LlamaEngine
     private var generationJob: Job? = null
@@ -75,8 +82,23 @@ class MainActivity : StatusBarVisibleActivity() {
     private var isClearing = false
     private var hasAutoLoaded = false
     private var loadedModelId: String? = null
-    private var messageIdCounter = 1L
-    private val messages = mutableListOf<ChatMessage>()
+    private val conversationArchiveStore by lazy {
+        ConversationArchiveDiskStore(File(filesDir, CONVERSATION_STORE_DIRECTORY))
+    }
+    private val conversationWriterDelegate = lazy {
+        Executors.newSingleThreadExecutor { task ->
+            Thread(task, "conversation-persistence").apply { isDaemon = true }
+        }
+    }
+    private val conversationWriter by conversationWriterDelegate
+    private val conversationStoreDelegate = lazy {
+        ConversationStore { getString(R.string.new_conversation) }.also { store ->
+            loadConversationArchive()?.let(store::restore)
+        }
+    }
+    private val conversationStore by conversationStoreDelegate
+    private val messages: MutableList<ChatMessage>
+        get() = conversationStore.active.messages
     private var createdWithLocale: String? = null
     private var isLocaleRestart = false
     private var currentEngineState: LlamaState = LlamaState.Uninitialized
@@ -85,7 +107,7 @@ class MainActivity : StatusBarVisibleActivity() {
     private var pendingPrivacyAction: PendingPrivacyAction? = null
     private val originalImageCache by lazy {
         ImageSourceCache(
-            File(cacheDir, PendingImageViewModel.SOURCE_CACHE_DIRECTORY),
+            File(filesDir, PendingImageViewModel.SOURCE_CACHE_DIRECTORY),
             ImageDecodePolicy.MAX_SOURCE_BYTES
         )
     }
@@ -148,6 +170,7 @@ class MainActivity : StatusBarVisibleActivity() {
         progressPendingImage = findViewById(R.id.progress_pending_image)
         tvPendingImageStatus = findViewById(R.id.tv_pending_image_status)
         tvPendingImageInfo = findViewById(R.id.tv_pending_image_info)
+        btnRemovePendingImage = findViewById(R.id.btn_remove_pending_image)
     }
 
     private fun setupRecyclerView() {
@@ -162,6 +185,7 @@ class MainActivity : StatusBarVisibleActivity() {
         chatAdapter.setOnImageClick(::openOriginalImage)
         chatAdapter.setOnWelcomeAction(::handleWelcomeAction)
         chatAdapter.setOnPrivacyInputChoice(::handlePrivacyInputChoice)
+        chatAdapter.setOnMessageLongClick(::showMessageActions)
 
         recyclerChat.layoutManager = LinearLayoutManager(this)
         recyclerChat.adapter = chatAdapter
@@ -176,13 +200,117 @@ class MainActivity : StatusBarVisibleActivity() {
         }
 
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
-        messages.add(
-            ChatMessage.WelcomeCard(
-                isTextOnly = selectedModel.isTextOnly,
-                hasVisualContext = false
-            )
+        if (messages.isEmpty()) messages.add(createWelcomeMessage(selectedModel))
+        restorePendingPrivacyInput()
+        submitMessages()
+    }
+
+    private fun loadConversationArchive(): ConversationArchive? = try {
+        conversationWriter.submit<ConversationArchive?> {
+            conversationArchiveStore.load()?.let { archive ->
+                val retainedTokens = archive.conversations.asSequence()
+                    .flatMap { it.messages.asSequence() }
+                    .filterIsInstance<ChatMessage.UserMessage>()
+                    .flatMap { sequenceOf(it.originalImageToken, it.previewImageToken) }
+                    .filterNotNull()
+                    .toSet()
+                originalImageCache.deleteUnreferencedTokens(retainedTokens)
+                hydrateConversationArchive(archive)
+            }
+        }.get()
+    } catch (error: Exception) {
+        Log.e(TAG, "Could not load saved conversations", error)
+        null
+    }
+
+    private fun hydrateConversationArchive(archive: ConversationArchive): ConversationArchive =
+        archive.copy(
+            conversations = archive.conversations.map { conversation ->
+                conversation.copy(
+                    messages = conversation.messages.mapNotNull { message ->
+                        when (message) {
+                            is ChatMessage.UserMessage -> {
+                                val previewToken = message.previewImageToken
+                                    ?: message.originalImageToken
+                                message.copy(
+                                    imageBitmap = StoredImageThumbnailLoader.load(
+                                        originalImageCache,
+                                        previewToken
+                                    ),
+                                    isPrefilling = false
+                                )
+                            }
+                            is ChatMessage.AiMessage -> when {
+                                message.isGenerating && message.text.isBlank() -> null
+                                else -> message.copy(isGenerating = false)
+                            }
+                            is ChatMessage.WelcomeCard -> message
+                        }
+                    }.toMutableList()
+                )
+            }
         )
-        chatAdapter.submitList(messages.toList())
+
+    private fun restorePendingPrivacyInput() {
+        val pending = messages.lastOrNull() as? ChatMessage.UserMessage
+        if (pending?.requiresPrivacyConfirmation == true) {
+            pendingPrivacyAction = PendingPrivacyAction.SubmitPrompt(pending.text, pending.id)
+            isSubmitting = true
+        }
+    }
+
+    private fun submitMessages(commitCallback: (() -> Unit)? = null) {
+        val snapshot = messages.toList()
+        if (commitCallback == null) {
+            chatAdapter.submitList(snapshot)
+        } else {
+            chatAdapter.submitList(snapshot, commitCallback)
+        }
+        persistConversations()
+    }
+
+    private fun persistConversations() {
+        val archive = conversationStore.snapshot()
+        try {
+            conversationWriter.execute {
+                try {
+                    conversationArchiveStore.save(archive)
+                } catch (error: Exception) {
+                    Log.e(TAG, "Could not save conversations", error)
+                }
+            }
+        } catch (error: RuntimeException) {
+            Log.e(TAG, "Conversation writer is unavailable", error)
+        }
+    }
+
+    private fun cachePreview(bitmap: Bitmap?): String? {
+        if (bitmap == null) return null
+        return try {
+            val bytes = ByteArrayOutputStream().use { output ->
+                if (!bitmap.compress(Bitmap.CompressFormat.JPEG, PREVIEW_JPEG_QUALITY, output)) {
+                    throw IOException("Could not encode conversation thumbnail")
+                }
+                output.toByteArray()
+            }
+            originalImageCache.cache { ByteArrayInputStream(bytes) }.token
+        } catch (error: Exception) {
+            Log.w(TAG, "Could not persist conversation thumbnail", error)
+            null
+        }
+    }
+
+    private fun flushAndCloseConversationWriter() {
+        val archive = conversationStore.snapshot()
+        try {
+            conversationWriter.submit {
+                conversationArchiveStore.save(archive)
+            }.get(CONVERSATION_FLUSH_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (error: Exception) {
+            Log.e(TAG, "Could not flush conversations", error)
+        } finally {
+            conversationWriter.shutdown()
+        }
     }
 
     private fun handleWelcomeAction(action: WelcomeAction) {
@@ -247,6 +375,7 @@ class MainActivity : StatusBarVisibleActivity() {
             }
             token?.let(::openOriginalImage)
         }
+        btnRemovePendingImage.setOnClickListener { removePendingImage() }
 
         etInput.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
@@ -311,6 +440,7 @@ class MainActivity : StatusBarVisibleActivity() {
         val view = layoutInflater.inflate(R.layout.dialog_chat_settings, null, false)
         val rowModelManagement = view.findViewById<View>(R.id.row_model_management)
         val rowImageSlice = view.findViewById<View>(R.id.row_image_slice)
+        val rowConversationManagement = view.findViewById<View>(R.id.row_conversation_management)
         val rowClearChat = view.findViewById<View>(R.id.row_clear_chat)
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
 
@@ -346,14 +476,77 @@ class MainActivity : StatusBarVisibleActivity() {
             dialog.dismiss()
             showImageSliceDialog()
         }
+        rowConversationManagement.setOnClickListener {
+            dialog.dismiss()
+            showConversationManagementDialog()
+        }
         rowClearChat.setOnClickListener {
             dialog.dismiss()
             showClearChatDialog()
         }
         setSettingsRowEnabled(rowModelManagement, modelManagementEnabled)
         setSettingsRowEnabled(rowImageSlice, imageSliceEnabled)
+        setSettingsRowEnabled(rowConversationManagement, canMutateTimeline())
         setSettingsRowEnabled(rowClearChat, clearChatEnabled)
         dialog.show()
+    }
+
+    private fun showConversationManagementDialog() {
+        val conversations = conversationStore.all()
+        val labels = conversations.map { conversation ->
+            if (conversation.id == conversationStore.activeConversationId) {
+                "✓ ${conversation.title}"
+            } else {
+                conversation.title
+            }
+        }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.conversation_management)
+            .setItems(labels) { _, index ->
+                activateConversation(conversations[index].id)
+            }
+            .setPositiveButton(R.string.new_conversation) { _, _ ->
+                val id = conversationStore.createConversation(listOf(createWelcomeMessage()))
+                activateConversation(id)
+            }
+            .setNegativeButton(R.string.delete_current_conversation) { _, _ ->
+                confirmDeleteCurrentConversation()
+            }
+            .show()
+    }
+
+    private fun confirmDeleteCurrentConversation() {
+        val current = conversationStore.active
+        AlertDialog.Builder(this)
+            .setTitle(R.string.delete_current_conversation)
+            .setMessage(getString(R.string.delete_conversation_confirm, current.title))
+            .setPositiveButton(R.string.delete) { _, _ ->
+                val removed = conversationStore.deleteConversation(
+                    current.id,
+                    listOf(createWelcomeMessage())
+                ) ?: return@setPositiveButton
+                removed.messages.filterIsInstance<ChatMessage.UserMessage>()
+                    .flatMap { listOfNotNull(it.originalImageToken, it.previewImageToken) }
+                    .forEach(::deleteImageIfUnreferenced)
+                submitMessages()
+                rebuildActiveConversationContext()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun activateConversation(id: Long) {
+        if (!conversationStore.switchTo(id)) return
+        pendingPrivacyAction = null
+        submitMessages { scrollToBottom() }
+        rebuildActiveConversationContext {
+            Toast.makeText(
+                this,
+                getString(R.string.conversation_switched, conversationStore.active.title),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun setSettingsRowEnabled(row: View, enabled: Boolean) {
@@ -403,29 +596,357 @@ class MainActivity : StatusBarVisibleActivity() {
     private fun clearChatUI() {
         pendingPrivacyAction = null
         pendingImageViewModel.clearLocalAfterEngineReset()
-        releaseMessageOriginals()
+        val oldTokens = messages.filterIsInstance<ChatMessage.UserMessage>()
+            .flatMap { listOfNotNull(it.originalImageToken, it.previewImageToken) }
         messages.clear()
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
-        messages.add(
-            ChatMessage.WelcomeCard(
-                isTextOnly = selectedModel.isTextOnly,
-                hasVisualContext = false
-            )
-        )
-        messageIdCounter = 1L
-        chatAdapter.submitList(messages.toList())
+        messages.add(createWelcomeMessage(selectedModel))
+        oldTokens.forEach(::deleteImageIfUnreferenced)
+        submitMessages()
     }
 
     private fun openOriginalImage(token: String) {
         startActivity(OriginalImageViewerActivity.intent(this, token))
     }
 
-    private fun releaseMessageOriginals() {
-        messages.asSequence()
-            .filterIsInstance<ChatMessage.UserMessage>()
-            .mapNotNull { it.originalImageToken }
-            .distinct()
-            .forEach(originalImageCache::deleteToken)
+    private fun deleteImageIfUnreferenced(token: String) {
+        if (token !in conversationStore.referencedImageTokens()) {
+            val archiveWithoutImage = conversationStore.snapshot()
+            conversationWriter.execute {
+                try {
+                    conversationArchiveStore.save(archiveWithoutImage)
+                    originalImageCache.deleteToken(token)
+                } catch (error: Exception) {
+                    Log.e(TAG, "Could not remove an unreferenced conversation image", error)
+                }
+            }
+        }
+    }
+
+    private fun createWelcomeMessage(
+        model: ModelInfo = LlamaEngine.getSelectedModel(applicationContext)
+    ) = ChatMessage.WelcomeCard(
+        id = conversationStore.nextMessageId(),
+        isTextOnly = model.isTextOnly,
+        hasVisualContext = false
+    )
+
+    private fun canMutateTimeline(): Boolean =
+        canClearCurrentChat() &&
+            pendingImageViewModel.uiState.value is PendingImageUiState.Empty &&
+            !isProcessingVideo
+
+    private fun showMessageActions(message: ChatMessage) {
+        if (message is ChatMessage.WelcomeCard) return
+        val actions = MessageTimelineActionPolicy.availableActions(
+            mutationInProgress = isClearing,
+            destructiveMutationAllowed = canMutateTimeline()
+        )
+        if (actions.isEmpty()) {
+            Toast.makeText(this, R.string.toast_wait_image_preprocessing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = actions.map { action ->
+            when (action) {
+                MessageTimelineAction.EDIT -> getString(R.string.edit_message)
+                MessageTimelineAction.DELETE -> getString(R.string.delete_message)
+            }
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.message_actions)
+            .setItems(labels) { _, which ->
+                when (actions[which]) {
+                    MessageTimelineAction.EDIT -> showEditMessageDialog(message)
+                    MessageTimelineAction.DELETE -> confirmDeleteMessage(message)
+                }
+            }
+            .show()
+    }
+
+    private fun showEditMessageDialog(message: ChatMessage) {
+        val currentText = when (message) {
+            is ChatMessage.UserMessage -> message.text
+            is ChatMessage.AiMessage -> message.text
+            is ChatMessage.WelcomeCard -> return
+        }
+        val view = layoutInflater.inflate(R.layout.dialog_edit_message, null, false)
+        val editText = view.findViewById<TextInputEditText>(R.id.et_edit_message)
+        editText.filters = arrayOf(InputFilter.LengthFilter(MAX_EDIT_MESSAGE_CHARACTERS))
+        editText.setText(currentText)
+        editText.setSelection(editText.text?.length ?: 0)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.edit_message)
+            .setView(view)
+            .setPositiveButton(R.string.confirm, null)
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val replacement = editText.text?.toString()?.trim().orEmpty()
+                if (replacement.isEmpty()) {
+                    editText.error = getString(R.string.toast_empty_input)
+                    return@setOnClickListener
+                }
+                dialog.dismiss()
+                editMessage(message, replacement)
+            }
+        }
+        dialog.show()
+    }
+
+    private fun editMessage(message: ChatMessage, replacement: String) {
+        if (isClearing) return
+        isClearing = true
+        refreshInputControls()
+        lifecycleScope.launch {
+            var generationStarted = false
+            try {
+                cancelActiveWorkForTimelineEdit()
+                val current = messages.firstOrNull { it.id == message.id }
+                val mutation = when {
+                    message is ChatMessage.UserMessage && current is ChatMessage.UserMessage ->
+                        conversationStore.editUserAndTruncate(message.id, replacement)
+                    message is ChatMessage.AiMessage && current is ChatMessage.AiMessage ->
+                        conversationStore.editAssistantText(message.id, replacement)
+                    else -> null
+                } ?: return@launch
+                mutation.removed.filterIsInstance<ChatMessage.UserMessage>()
+                    .flatMap { listOfNotNull(it.originalImageToken, it.previewImageToken) }
+                    .forEach(::deleteImageIfUnreferenced)
+                submitMessages()
+
+                if (!::engine.isInitialized || !isModelReady) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        R.string.toast_load_model_first,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+
+                if (message is ChatMessage.AiMessage) {
+                    replayActiveConversationContext()
+                } else {
+                    replayActiveConversationContext(skipMessageId = message.id)
+                    val edited = messages.firstOrNull { it.id == message.id }
+                        as? ChatMessage.UserMessage
+                    edited?.originalImageToken?.takeUnless { edited.isVideo }?.let { token ->
+                        pendingImageViewModel.replayCachedImage(token)
+                    }
+                    isClearing = false
+                    refreshInputControls()
+                    submitEditedUserMessage(message.id, replacement)
+                    generationStarted = true
+                }
+            } catch (error: Exception) {
+                Log.e(TAG, "Failed to edit conversation message", error)
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(
+                        R.string.conversation_rebuild_failed,
+                        error.localizedMessage ?: getString(R.string.error_read_image)
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                if (!generationStarted) {
+                    isClearing = false
+                    refreshInputControls()
+                }
+            }
+        }
+    }
+
+    private suspend fun cancelActiveWorkForTimelineEdit() {
+        pendingImageViewModel.cancelAndClear(PendingImageCancellationMode.USER_REMOVE)
+        generationJob?.cancelAndJoin()
+        generationJob = null
+        localGuardJob?.cancelAndJoin()
+        localGuardJob = null
+        videoProcessingJob?.cancelAndJoin()
+        videoProcessingJob = null
+        isProcessingVideo = false
+        pendingPrivacyAction = null
+        isSubmitting = false
+    }
+
+    private suspend fun replayActiveConversationContext(skipMessageId: Long? = null) {
+        engine.clearContext()
+        for (message in conversationStore.replayMessages()) {
+            if (message.id == skipMessageId) continue
+            when (message) {
+                is ChatMessage.UserMessage -> {
+                    message.originalImageToken?.takeUnless { message.isVideo }?.let {
+                        pendingImageViewModel.replayCachedImage(it)
+                    }
+                    engine.replayHistoryMessage(ModelHistoryRole.USER, message.text)
+                }
+                is ChatMessage.AiMessage -> {
+                    val replayText = ModelHistoryText.assistant(message.text)
+                    if (replayText.isNotBlank()) {
+                        engine.replayHistoryMessage(ModelHistoryRole.ASSISTANT, replayText)
+                    }
+                }
+                is ChatMessage.WelcomeCard -> Unit
+            }
+        }
+    }
+
+    private fun confirmDeleteMessage(message: ChatMessage) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.delete_message)
+            .setMessage(R.string.delete_message_confirm)
+            .setPositiveButton(R.string.delete) { _, _ ->
+                val mutation = conversationStore.deleteMessage(message.id)
+                    ?: return@setPositiveButton
+                mutation.removed.filterIsInstance<ChatMessage.UserMessage>()
+                    .flatMap { listOfNotNull(it.originalImageToken, it.previewImageToken) }
+                    .forEach(::deleteImageIfUnreferenced)
+                submitMessages()
+                rebuildActiveConversationContext()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun submitEditedUserMessage(messageId: Long, prompt: String) {
+        val messageIndex = messages.indexOfFirst { it.id == messageId }
+        val original = messages.getOrNull(messageIndex) as? ChatMessage.UserMessage ?: return
+        val contentDecision = ContentSafetyPolicyEngine.evaluate(
+            LocalContentSafetyClassifier.classify(prompt)
+        )
+        if (contentDecision != ContentSafetyDecision.ALLOW) {
+            val reply = when (contentDecision) {
+                ContentSafetyDecision.WARNING -> {
+                    pendingPrivacyAction = PendingPrivacyAction.SubmitPrompt(prompt, messageId)
+                    messages[messageIndex] = original.copy(requiresPrivacyConfirmation = true)
+                    submitMessages()
+                    return
+                }
+                ContentSafetyDecision.BLOCK -> getString(R.string.response_illegal_refusal)
+                ContentSafetyDecision.REVIEW -> getString(R.string.response_safety_review)
+                ContentSafetyDecision.ALLOW -> error("unreachable")
+            }
+            messages[messageIndex] = original.copy(includeInModelContext = false)
+            appendLocalReply(reply)
+            return
+        }
+        val visualPlan = LocalGuardReplyPolicy.plan(engine.evaluateVisualPrompt(prompt))
+        if (visualPlan.destination == PromptDestination.LOCAL_ONLY) {
+            messages[messageIndex] = original.copy(includeInModelContext = false)
+            val reply = when (requireNotNull(visualPlan.localReplyKind)) {
+                LocalGuardReplyKind.NO_VISUAL_CONTEXT ->
+                    getString(R.string.response_blocked_no_visual_context)
+                LocalGuardReplyKind.UNCERTAIN_VISUAL_REQUEST ->
+                    getString(R.string.response_uncertain_visual_request)
+            }
+            appendLocalReply(reply)
+            return
+        }
+        submitPromptToModel(
+            prompt,
+            PendingImageUiState.Empty,
+            displayUserMessage = false,
+            existingUserMessageId = messageId
+        )
+    }
+
+    private fun appendLocalReply(reply: String) {
+        val aiId = conversationStore.nextMessageId()
+        messages.add(
+            ChatMessage.AiMessage(
+                id = aiId,
+                text = reply,
+                includeInModelContext = false
+            )
+        )
+        submitMessages { scrollToBottom() }
+        isSubmitting = false
+        refreshInputControls()
+    }
+
+    private fun rebuildActiveConversationContext(
+        skipMessageId: Long? = null,
+        onReady: (suspend () -> Unit)? = null
+    ) {
+        if (isClearing || !::engine.isInitialized || !isModelReady) return
+        isClearing = true
+        refreshInputControls()
+        lifecycleScope.launch {
+            try {
+                pendingImageViewModel.cancelAndClear()
+                videoProcessingJob?.cancelAndJoin()
+                videoProcessingJob = null
+                replayActiveConversationContext(skipMessageId)
+                submitMessages()
+                isClearing = false
+                refreshInputControls()
+                onReady?.invoke()
+            } catch (error: Exception) {
+                Log.e(TAG, "Failed to rebuild conversation context", error)
+                try {
+                    if (engine.state.value is LlamaState.ModelReady) engine.clearContext()
+                } catch (resetError: Exception) {
+                    Log.e(TAG, "Failed to recover after conversation rebuild", resetError)
+                }
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(
+                        R.string.conversation_rebuild_failed,
+                        error.localizedMessage ?: getString(R.string.error_read_image)
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+                isClearing = false
+                refreshInputControls()
+            }
+        }
+    }
+
+    private fun removePendingImage() {
+        if (isClearing) return
+        val token = when (val state = pendingImageViewModel.uiState.value) {
+            is PendingImageUiState.Preprocessing -> state.attachment.originalImageToken
+            is PendingImageUiState.Ready -> state.attachment.originalImageToken
+            else -> null
+        }
+        isClearing = true
+        refreshInputControls()
+        lifecycleScope.launch {
+            try {
+                pendingImageViewModel.cancelAndClear(PendingImageCancellationMode.USER_REMOVE)
+                engine.clearContext()
+                for (message in conversationStore.replayMessages()) {
+                    when (message) {
+                        is ChatMessage.UserMessage -> {
+                            message.originalImageToken?.takeUnless { message.isVideo }?.let {
+                                pendingImageViewModel.replayCachedImage(it)
+                            }
+                            engine.replayHistoryMessage(ModelHistoryRole.USER, message.text)
+                        }
+                        is ChatMessage.AiMessage -> {
+                            val replayText = ModelHistoryText.assistant(message.text)
+                            if (replayText.isNotBlank()) {
+                                engine.replayHistoryMessage(ModelHistoryRole.ASSISTANT, replayText)
+                            }
+                        }
+                        is ChatMessage.WelcomeCard -> Unit
+                    }
+                }
+                token?.let(::deleteImageIfUnreferenced)
+            } catch (error: Exception) {
+                Log.e(TAG, "Failed to remove pending image", error)
+                Toast.makeText(
+                    this@MainActivity,
+                    getString(R.string.conversation_rebuild_failed, error.localizedMessage ?: ""),
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                isClearing = false
+                renderPendingImage()
+                refreshInputControls()
+            }
+        }
     }
 
     private fun clearChat() {
@@ -597,7 +1118,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 isTextOnly = isTextOnly,
                 hasVisualContext = ::engine.isInitialized && engine.hasVisualContext.value
             )
-            chatAdapter.submitList(messages.toList())
+            submitMessages()
         }
     }
 
@@ -802,6 +1323,12 @@ class MainActivity : StatusBarVisibleActivity() {
             PendingImageUiState.Empty -> Unit
         }
         ivPendingImage.isClickable = attachment != null
+        btnRemovePendingImage.isEnabled = state !is PendingImageUiState.Clearing
+        btnRemovePendingImage.visibility = if (state is PendingImageUiState.Empty) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
     }
 
     private fun restorePendingCameraCapture(savedInstanceState: Bundle?) {
@@ -863,15 +1390,17 @@ class MainActivity : StatusBarVisibleActivity() {
         }
 
         isProcessingVideo = true
-        val msgId = messageIdCounter++
+        val msgId = conversationStore.nextMessageId()
         refreshInputControls()
         videoProcessingJob = lifecycleScope.launch(Dispatchers.IO) {
             val startNs = System.nanoTime()
             var completed = false
             var failure: Exception? = null
+            var videoPreviewToken: String? = null
             try {
                 val extracted = VideoFrameExtractor.extract(applicationContext, uri)
                 val info = VideoFrameExtractor.formatVideoInfo(applicationContext, extracted)
+                videoPreviewToken = cachePreview(extracted.thumbnail)
                 Log.i(TAG, "Video info: $info")
 
                 withContext(Dispatchers.Main) {
@@ -880,11 +1409,12 @@ class MainActivity : StatusBarVisibleActivity() {
                         text = "",
                         imageBitmap = extracted.thumbnail,
                         imageInfo = info,
+                        previewImageToken = videoPreviewToken,
                         isPrefilling = true,
                         isVideo = true
                     )
                     messages.add(videoMessage)
-                    chatAdapter.submitList(messages.toList()) {
+                    submitMessages {
                         scrollToBottom()
                     }
                 }
@@ -897,7 +1427,7 @@ class MainActivity : StatusBarVisibleActivity() {
                             messages[index] = cur.copy(
                                 imageInfo = getString(R.string.video_processing_progress, info, current, total)
                             )
-                            chatAdapter.submitList(messages.toList())
+                            submitMessages()
                         }
                     }
                 }
@@ -911,7 +1441,7 @@ class MainActivity : StatusBarVisibleActivity() {
                             imageInfo = getString(R.string.video_preprocessing_done, info, elapsedMs / 1000.0),
                             isPrefilling = false
                         )
-                        chatAdapter.submitList(messages.toList())
+                        submitMessages()
                     }
                 }
                 completed = true
@@ -928,8 +1458,9 @@ class MainActivity : StatusBarVisibleActivity() {
                         val index = messages.indexOfFirst { it.id == msgId }
                         if (index >= 0) {
                             messages.removeAt(index)
-                            chatAdapter.submitList(messages.toList())
+                            submitMessages()
                         }
+                        videoPreviewToken?.let(::deleteImageIfUnreferenced)
                     }
                     videoProcessingJob = null
                     refreshInputControls()
@@ -1043,7 +1574,7 @@ class MainActivity : StatusBarVisibleActivity() {
         refreshInputControls()
         collapseAppBar()
 
-        val messageId = messageIdCounter++
+        val messageId = conversationStore.nextMessageId()
         pendingPrivacyAction = PendingPrivacyAction.SubmitPrompt(userMsg, messageId)
         messages.add(
             ChatMessage.UserMessage(
@@ -1052,7 +1583,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 requiresPrivacyConfirmation = true
             )
         )
-        chatAdapter.submitList(messages.toList()) { scrollToBottom() }
+        submitMessages { scrollToBottom() }
     }
 
     private fun handlePrivacyInputChoice(messageId: Long, approved: Boolean) {
@@ -1081,7 +1612,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 if (index >= 0) {
                     messages.removeAt(index)
                 }
-                chatAdapter.submitList(messages.toList())
+                submitMessages()
                 isSubmitting = false
                 refreshInputControls()
             }
@@ -1124,37 +1655,39 @@ class MainActivity : StatusBarVisibleActivity() {
         collapseAppBar()
 
         renderPendingImage(pendingImageViewModel.uiState.value)
+        val previewToken = attachment?.thumbnail?.let(::cachePreview)
         if (displayUserMessage) {
             val userMessage = ChatMessage.UserMessage(
-                id = messageIdCounter++,
+                id = conversationStore.nextMessageId(),
                 text = userMsg,
                 imageBitmap = attachment?.thumbnail,
                 imageInfo = attachment?.imageInfo,
-                originalImageToken = attachment?.originalImageToken
+                originalImageToken = attachment?.originalImageToken,
+                previewImageToken = previewToken
             )
             messages.add(userMessage)
-            chatAdapter.submitList(messages.toList()) {
+            conversationStore.updateTitleFromFirstUserMessage()
+            submitMessages {
                 scrollToBottom()
             }
         } else if (existingUserMessageId != null) {
             val existingIndex = messages.indexOfFirst { it.id == existingUserMessageId }
             val existing = messages.getOrNull(existingIndex) as? ChatMessage.UserMessage
             if (existingIndex >= 0 && existing != null) {
-                messages[existingIndex] = existing.copy(
-                    imageBitmap = attachment?.thumbnail,
-                    imageInfo = attachment?.imageInfo,
-                    originalImageToken = attachment?.originalImageToken,
-                    requiresPrivacyConfirmation = false
+                messages[existingIndex] = existing.confirmedForSubmission(
+                    attachment = attachment,
+                    persistedPreviewToken = previewToken
                 )
-                chatAdapter.submitList(messages.toList()) { scrollToBottom() }
+                conversationStore.updateTitleFromFirstUserMessage()
+                submitMessages { scrollToBottom() }
             }
         }
 
-        val aiMsgId = messageIdCounter++
+        val aiMsgId = conversationStore.nextMessageId()
         val aiMessage = ChatMessage.AiMessage(id = aiMsgId, text = "", isGenerating = true)
         messages.add(aiMessage)
         chatAdapter.setActiveAiMessage(aiMsgId)
-        chatAdapter.submitList(messages.toList()) {
+        submitMessages {
             scrollToBottom()
         }
 
@@ -1219,7 +1752,10 @@ class MainActivity : StatusBarVisibleActivity() {
                             } else {
                                 ""
                             },
-                            isGenerating = false
+                            isGenerating = false,
+                            includeInModelContext =
+                                displayAction == ContentDisplayAction.SHOW_CANDIDATE &&
+                                    candidateResponse.isNotBlank()
                         )
                     }
                     if (displayAction != ContentDisplayAction.SHOW_CANDIDATE) {
@@ -1227,7 +1763,7 @@ class MainActivity : StatusBarVisibleActivity() {
                     }
                     chatAdapter.setGeneratingDone(aiMsgId)
                     chatAdapter.clearActiveAiMessage()
-                    chatAdapter.submitList(messages.toList())
+                    submitMessages()
                     isSubmitting = false
                     generationJob = null
                     refreshInputControls()
@@ -1267,19 +1803,21 @@ class MainActivity : StatusBarVisibleActivity() {
         collapseAppBar()
 
         val userMessage = ChatMessage.UserMessage(
-            id = messageIdCounter++,
-            text = userMessageText
+            id = conversationStore.nextMessageId(),
+            text = userMessageText,
+            includeInModelContext = false
         )
-        val aiMessageId = messageIdCounter++
+        val aiMessageId = conversationStore.nextMessageId()
         val aiMessage = ChatMessage.AiMessage(
             id = aiMessageId,
             text = "",
-            isGenerating = true
+            isGenerating = true,
+            includeInModelContext = false
         )
         messages.add(userMessage)
         messages.add(aiMessage)
         chatAdapter.setActiveAiMessage(aiMessageId)
-        chatAdapter.submitList(messages.toList()) {
+        submitMessages {
             scrollToBottom()
         }
 
@@ -1298,7 +1836,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 }
                 chatAdapter.setGeneratingDone(aiMessageId)
                 chatAdapter.clearActiveAiMessage()
-                chatAdapter.submitList(messages.toList())
+                submitMessages()
                 isSubmitting = false
                 localGuardJob = null
                 refreshInputControls()
@@ -1396,6 +1934,7 @@ class MainActivity : StatusBarVisibleActivity() {
 
     override fun onStop() {
         generationJob?.cancel()
+        if (conversationStoreDelegate.isInitialized()) persistConversations()
         super.onStop()
     }
 
@@ -1408,13 +1947,11 @@ class MainActivity : StatusBarVisibleActivity() {
     override fun onDestroy() {
         if (isFinishing) {
             clearPendingCameraCapture()
-            if (!isLocaleRestart) {
-                releaseMessageOriginals()
-            }
         }
         if (isFinishing && !isLocaleRestart && ::engine.isInitialized) {
             engine.destroy()
         }
+        if (conversationStoreDelegate.isInitialized()) flushAndCloseConversationWriter()
         super.onDestroy()
     }
 
@@ -1424,5 +1961,9 @@ class MainActivity : StatusBarVisibleActivity() {
         private const val STATE_CAMERA_URI = "pending_camera_uri"
         private const val STATE_CAMERA_FILE_NAME = "pending_camera_file_name"
         private const val LOCAL_GUARD_FRAME_DELAY_MS = 24L
+        private const val CONVERSATION_STORE_DIRECTORY = "conversation-store"
+        private const val PREVIEW_JPEG_QUALITY = 88
+        private const val CONVERSATION_FLUSH_TIMEOUT_SECONDS = 3L
+        private const val MAX_EDIT_MESSAGE_CHARACTERS = 250_000
     }
 }

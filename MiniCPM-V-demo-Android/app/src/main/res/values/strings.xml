@@ -16,6 +16,19 @@
     <string name="settings_model_summary">当前模型：%1$s</string>
     <string name="settings_slice_summary">当前切片数：%1$d · 越高细节越清晰</string>
     <string name="settings_clear_chat_summary">删除当前消息、图片缓存和模型上下文</string>
+    <string name="conversation_management">会话管理</string>
+    <string name="settings_conversation_summary">新建、切换或删除多个对话</string>
+    <string name="new_conversation">新建对话</string>
+    <string name="switch_conversation">切换</string>
+    <string name="delete_current_conversation">删除当前会话</string>
+    <string name="delete_conversation_confirm">确定删除“%1$s”及其中的消息吗？</string>
+    <string name="conversation_switched">已切换到“%1$s”</string>
+    <string name="message_actions">消息操作</string>
+    <string name="edit_message">编辑消息</string>
+    <string name="delete_message">删除这条消息</string>
+    <string name="edit_message_hint">修改内容后，此条之后的消息会被截断</string>
+    <string name="delete_message_confirm">只删除选中的这条消息，不会自动重新生成。是否继续？</string>
+    <string name="conversation_rebuild_failed">恢复会话上下文失败：%1$s</string>
     <string name="status_uninitialized">未初始化 - 请下载或加载模型</string>
     <string name="status_initializing">正在初始化...</string>
     <string name="status_initialized">已初始化 - 请加载模型</string>
@@ -86,6 +99,7 @@
     <string name="image_preprocessing_wait">图像预处理中，请耐心等待</string>
     <string name="image_ready_view_original">图像已准备好，点击查看原图</string>
     <string name="open_original_image">点击查看原图</string>
+    <string name="remove_pending_image">删除待发送图片</string>
     <string name="original_image_title">原图</string>
     <string name="original_image_unavailable">原图缓存已失效</string>
     <string name="pending_image_ready">图片预处理完成</string>

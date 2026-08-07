@@ -23,6 +23,28 @@ data class ChatInputControls(
     val modelSettingsEnabled: Boolean
 )
 
+enum class PendingImageCancellationMode {
+    CONTEXT_RESET,
+    USER_REMOVE
+}
+
+enum class PendingImageCancellationDisplay {
+    HIDDEN,
+    CLEARING
+}
+
+object PendingImageCancellationPolicy {
+    fun displayWhileCancelling(
+        hasProcessingJob: Boolean,
+        mode: PendingImageCancellationMode
+    ): PendingImageCancellationDisplay =
+        if (hasProcessingJob && mode == PendingImageCancellationMode.CONTEXT_RESET) {
+            PendingImageCancellationDisplay.CLEARING
+        } else {
+            PendingImageCancellationDisplay.HIDDEN
+        }
+}
+
 class PendingImageStateMachine {
     var state: PendingImageState = PendingImageState.Empty
         private set

@@ -43,6 +43,11 @@ sealed class LlamaState {
     data class Error(val exception: Exception) : LlamaState()
 }
 
+enum class ModelHistoryRole(val nativeValue: Int) {
+    USER(0),
+    ASSISTANT(1)
+}
+
 class LlamaEngine private constructor(
     private val context: Context,
     private val nativeLibDir: String
@@ -904,6 +909,7 @@ class LlamaEngine private constructor(
     private external fun systemInfo(): String
     private external fun processSystemPrompt(systemPrompt: String): Int
     private external fun processUserPrompt(userPrompt: String, predictLength: Int): Int
+    private external fun appendHistoryMessage(role: Int, content: String): Int
     private external fun generateNextToken(): String?
     private external fun prefillImage(imageData: ByteArray, imageSize: Int): Int
     private external fun fullReset()
@@ -1166,6 +1172,26 @@ class LlamaEngine private constructor(
                 setSystemPrompt(context.getString(R.string.visual_grounding_system_prompt))
             }
             Log.i(TAG, "Context fully reset - context recreated, ready for new conversation")
+        }
+
+    /** Replays one completed visible turn without sampling a new response. */
+    suspend fun replayHistoryMessage(role: ModelHistoryRole, content: String) =
+        withContext(llamaDispatcher) {
+            require(content.isNotBlank()) { "Cannot replay an empty history message" }
+            check(_state.value is LlamaState.ModelReady) {
+                "Cannot replay history in ${_state.value.javaClass.simpleName}"
+            }
+            _state.value = LlamaState.ProcessingUserPrompt
+            try {
+                val result = appendHistoryMessage(role.nativeValue, content)
+                if (result != 0) {
+                    throw RuntimeException("Failed to replay ${role.name} history (code: $result)")
+                }
+            } finally {
+                if (_state.value !is LlamaState.Error) {
+                    _state.value = LlamaState.ModelReady
+                }
+            }
         }
 
     fun sendUserPrompt(

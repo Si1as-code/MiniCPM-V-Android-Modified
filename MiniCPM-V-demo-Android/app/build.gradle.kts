@@ -40,6 +40,12 @@ android {
                 arguments += "-DGGML_NATIVE=OFF"
                 arguments += "-DGGML_LLAMAFILE=ON"
                 arguments += "-DLLAMA_CURL=OFF"
+                providers.environmentVariable("KLEIDIAI_SOURCE_DIR").orNull
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { sourceDirectory ->
+                        val cmakePath = file(sourceDirectory).absolutePath.replace('\\', '/')
+                        arguments += "-DFETCHCONTENT_SOURCE_DIR_KLEIDIAI_DOWNLOAD=$cmakePath"
+                    }
             }
         }
     }
@@ -161,14 +167,19 @@ tasks.register("buildGgmlCpu_v86") {
         val cmake = "$sdkRoot/cmake/4.1.2/bin/cmake"
         val ninja = File(cmake).parentFile.resolve("ninja.exe").absolutePath
         val toolchain = "$sdkRoot/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"
-        val kleidiAiSource = fileTree(file(".cxx/Release")) {
-            include("*/arm64-v8a/_deps/kleidiai_download-src/CMakeLists.txt")
-        }.files
-            .map { it.parentFile }
-            .maxByOrNull { it.lastModified() }
+        val configuredKleidiAiSource = System.getenv("KLEIDIAI_SOURCE_DIR")
+            ?.takeIf { it.isNotBlank() }
+            ?.let(::file)
+            ?.takeIf { it.resolve("CMakeLists.txt").isFile }
+        val kleidiAiSource = configuredKleidiAiSource
+            ?: fileTree(file(".cxx/Release")) {
+                include("*/arm64-v8a/_deps/kleidiai_download-src/CMakeLists.txt")
+            }.files
+                .map { it.parentFile }
+                .maxByOrNull { it.lastModified() }
             ?: error(
                 "KleidiAI source cache is missing. Run the standard Android native " +
-                    "build once before buildGgmlCpu_v86."
+                    "build once or set KLEIDIAI_SOURCE_DIR before buildGgmlCpu_v86."
             )
         val bd = File(project.layout.buildDirectory.asFile.get(), "v86-cmake/arm64-v8a")
         bd.mkdirs()

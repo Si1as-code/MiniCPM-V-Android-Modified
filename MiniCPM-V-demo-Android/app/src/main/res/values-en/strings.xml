@@ -14,6 +14,19 @@
     <string name="settings_model_summary">Current model: %1$s</string>
     <string name="settings_slice_summary">Current slices: %1$d · Higher preserves more detail</string>
     <string name="settings_clear_chat_summary">Delete current messages, image cache, and model context</string>
+    <string name="conversation_management">Conversation Management</string>
+    <string name="settings_conversation_summary">Create, switch, or delete conversations</string>
+    <string name="new_conversation">New conversation</string>
+    <string name="switch_conversation">Switch</string>
+    <string name="delete_current_conversation">Delete current</string>
+    <string name="delete_conversation_confirm">Delete “%1$s” and all its messages?</string>
+    <string name="conversation_switched">Switched to “%1$s”</string>
+    <string name="message_actions">Message actions</string>
+    <string name="edit_message">Edit message</string>
+    <string name="delete_message">Delete this message</string>
+    <string name="edit_message_hint">Messages after this one will be truncated</string>
+    <string name="delete_message_confirm">Only this message will be deleted; no response will be regenerated. Continue?</string>
+    <string name="conversation_rebuild_failed">Failed to restore conversation context: %1$s</string>
     <string name="status_uninitialized">Not initialized — download or load a model</string>
     <string name="status_initializing">Initializing…</string>
     <string name="status_initialized">Initialized — load a model</string>
@@ -83,6 +96,7 @@
     <string name="image_preprocessing_wait">Preprocessing image, please wait</string>
     <string name="image_ready_view_original">Image ready — tap to view original</string>
     <string name="open_original_image">Tap to view original image</string>
+    <string name="remove_pending_image">Remove pending image</string>
     <string name="original_image_title">Original image</string>
     <string name="original_image_unavailable">Original image cache is no longer available</string>
     <string name="pending_image_ready">Image preprocessing complete</string>
