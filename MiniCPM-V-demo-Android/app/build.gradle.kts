@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 android {
@@ -106,6 +108,10 @@ android {
     }
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -117,11 +123,25 @@ dependencies {
     implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
 
+    // Local, offline RAG storage, durable indexing, parsing, OCR and embedding runtime.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.sqlite.ktx)
+    implementation(libs.sqlcipher.android)
+    implementation(libs.onnxruntime.android)
+    implementation(libs.onnxruntime.extensions.android)
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.text.recognition.chinese)
+    implementation(libs.pdfbox.android)
+    ksp(libs.androidx.room.compiler)
+
     // Markdown rendering for AI streaming responses (headings, bold, lists, code, etc.)
     implementation("io.noties.markwon:core:4.6.2")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.room.testing)
 }
 
 // ---------------------------------------------------------------------------

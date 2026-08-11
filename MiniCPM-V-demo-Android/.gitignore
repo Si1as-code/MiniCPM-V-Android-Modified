@@ -22,6 +22,10 @@ local.properties
 app/build/
 app/.cxx/
 .kotlin/
+.gradle-user-home/
+.android-user-home/
+.gradle-local/
+.android-local/
 
 # Native libs produced by the buildGgmlCpu_v86 task (built per-machine).
 app/src/main/jniLibs/

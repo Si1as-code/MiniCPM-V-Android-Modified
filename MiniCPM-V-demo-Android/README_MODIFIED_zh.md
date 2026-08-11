@@ -123,6 +123,33 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 
 ## 构建
 
+## 本地 RAG（开发中）
+
+项目已开始按端侧离线 RAG 方案分阶段开发。目标是在不上传用户文档、不替换现有 MiniCPM-V/llama.cpp-omni 推理链路的前提下，支持办公文档导入、混合检索、严格来源引用和可恢复的后台索引。
+
+- 架构决策：[docs/architecture/ADR-001-local-rag-stack.md](docs/architecture/ADR-001-local-rag-stack.md)
+- 威胁模型：[docs/architecture/rag-threat-model.md](docs/architecture/rag-threat-model.md)
+- 完整实施计划：[docs/superpowers/plans/2026-08-10-android-local-rag.md](docs/superpowers/plans/2026-08-10-android-local-rag.md)
+
+当前阶段先建立固定依赖、版本化数据库和安全边界；RAG 功能在通过迁移、安全、检索质量和真机性能验证前不会标记为稳定功能。
+
+当前已经完成：
+
+- 固定 Room、WorkManager、SQLCipher、ONNX Runtime、ML Kit、PDFBox 和 KSP 版本；
+- 建立知识库、文档、文本块、FTS4、会话绑定和引用关系的 Room v1 schema；
+- 使用 Android Keystore AES-GCM 包装随机 SQLCipher 口令，数据库和 RAG 文件支持静态加密、篡改检测与原子替换；
+- 排除 RAG 数据库、加密原文和设备绑定密钥材料的云备份与设备迁移；
+- 建立解析限额、文档状态转换和基于文件魔数的初步类型识别。
+
+当前尚未完成，因而还不能在聊天中启用端到端 RAG：
+
+- SAF 安全文档导入、SHA-256 去重、可取消 WorkManager 索引任务和崩溃恢复；
+- TXT/Markdown/CSV/PDF/OOXML 解析、OCR、结构化切块与一致 tokenizer；
+- E5 ONNX 嵌入、加密 HNSW、FTS/向量混合检索、RRF/MMR 排序；
+- 临时证据 Prompt 注入、上下文重建、严格无答案策略和引用校验；
+- 知识库管理、会话绑定、索引进度、来源点击和删除 UI；
+- 迁移、恶意文件、检索质量、性能、内存与长时间运行验收。
+
 环境要求：
 
 - JDK 21
@@ -158,7 +185,7 @@ adb install app\build\outputs\apk\debug\app-debug.apk
 
 | 检查项 | 结果 |
 |---|---|
-| 单元测试 | 66/66 通过（新增多会话、原子存档与损坏恢复、消息角色编辑、上下文过滤、图片引用保留、预处理即时删除及 AI 整气泡长按回归） |
+| 单元测试 | 82/82 通过（含固定依赖、解析限额、文档状态机、文件类型识别，以及原有会话、图片和安全回归） |
 | Android Lint | 通过，0 errors（上游资源仍有 warnings） |
 | Android 测试代码编译 | 通过 |
 | Debug APK 组装 | 通过 |
@@ -175,5 +202,8 @@ adb install app\build\outputs\apk\debug\app-debug.apk
 | 预处理图片删除 | 处理中立即隐藏并安全取消，完成态同样可删除；上下文重置仍保持清理状态 |
 | AI 气泡长按 | 长按监听覆盖气泡及全部子视图，生成期间继续禁止编辑 |
 | 真机图片预处理 | 待人工复验暗化圆环、等待提示、完成态及两处原图点击 |
+| 本地 RAG 构建骨架 | 固定版本依赖、AGP 9 内置 Kotlin + KSP2、Room schema 导出和 ORT R8 规则通过编译与 Debug APK 构建 |
+| 本地 RAG 数据层 | 第 1 版知识库/文档/chunk/FTS4/引用 schema 已导出；Room/FTS 真机测试 2/2 通过 |
+| 本地 RAG 加密层 | Keystore、SQLCipher、AES-GCM 文件容器真机测试 4/4 通过；错误密钥和篡改数据均被拒绝 |
 
 仪器测试覆盖相机 `FileProvider` 的允许/拒绝路径，以及主界面拍照按钮、待发送区和状态栏可见状态。完整图像推理仍需要手机上存在兼容模型。
