@@ -2,7 +2,9 @@ package com.example.minicpm_v_demo
 
 import android.app.Application
 import com.example.minicpm_v_demo.rag.crypto.RagKeyManager
+import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
 import com.example.minicpm_v_demo.rag.db.RagDatabaseFactory
+import java.util.concurrent.Executors
 
 class MiniCPMApplication : Application() {
     val ragKeyManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
@@ -16,5 +18,12 @@ class MiniCPMApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         LocaleManager.applyOnAppStart(this)
+        ragMaintenanceExecutor.execute {
+            RagTempFileCleaner.cleanup(RagTempFileCleaner.stagingDirectory(noBackupFilesDir))
+        }
+    }
+
+    private val ragMaintenanceExecutor = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "rag-maintenance").apply { isDaemon = true }
     }
 }

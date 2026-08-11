@@ -53,8 +53,8 @@ class RagEncryptionTest {
 
         factory.open().let { database ->
             try {
-            database.knowledgeBaseDao().upsert(
-                KnowledgeBaseEntity("kb", "Encrypted", now, now),
+            database.knowledgeBaseDao().insert(
+                KnowledgeBaseEntity("kb", "Encrypted", "encrypted", now, now),
             )
             } finally {
                 database.close()

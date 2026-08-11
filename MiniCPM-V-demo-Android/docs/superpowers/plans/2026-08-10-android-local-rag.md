@@ -8,6 +8,8 @@
 
 **技术栈：** Kotlin、XML/ViewBinding、AndroidX Room 2.8.4、WorkManager 2.11.2、SQLCipher for Android 4.17.0、ONNX Runtime Android 1.25.0、ONNX Runtime Extensions Android 0.13.0、ML Kit Text Recognition 16.0.1、PDFBox-Android 2.0.27.0（受控使用）、C++17、hnswlib 0.9.0、现有 llama.cpp-omni/MiniCPM-V。
 
+**计划定位：** 本文既是总体设计，也是 RAG 主实施清单。实施人员必须先核对第 14 节的当前代码基线，不得把已经存在的文件重新创建或用旧设计覆盖。LoRA 动态加载和通用翻译术语纠错不属于 RAG 数据链路，需分别立项；状态栏、图片预处理/删除/原图查看、多会话、消息编辑回滚、视觉幻觉保护和内容安全属于现有基线，本计划必须通过回归测试证明它们没有退化。
+
 ---
 
 ## 1. 结论先行
@@ -104,7 +106,7 @@ rag/
   config/       RAG 配置、版本与限额
   crypto/       Keystore、数据库口令包装、索引文件加密
   db/           Room entities、DAO、迁移、FTS
-  import/       SAF 导入、安全复制、MIME 与哈希
+  importer/     SAF 导入、安全复制、MIME 与哈希
   parser/       TXT/Markdown/HTML/CSV/PDF/OOXML/图片解析
   chunk/        结构化切块、token 计数、中文 bigram
   embed/        模型包校验、tokenizer、ONNX 推理、池化
@@ -122,7 +124,9 @@ rag/
 app/src/main/cpp/rag/hnsw_index_jni.cpp
 app/src/main/cpp/rag/hnsw_index_store.cpp
 app/src/main/cpp/rag/hnsw_index_store.h
-app/src/main/cpp/third_party/hnswlib/...
+app/src/main/cpp/third_party/hnswlib/hnswlib/hnswlib.h
+app/src/main/cpp/third_party/hnswlib/LICENSE
+app/src/main/cpp/third_party/hnswlib/NOTICE
 ```
 
 ### 3.2 数据流
@@ -170,6 +174,7 @@ URI
 |---|---|---|
 | `id` | `String` UUID | 知识库 ID |
 | `name` | `String` | 用户可见名称 |
+| `normalizedName` | `String` | 名称规范化键，建立唯一索引，防止视觉上等价的重名 |
 | `createdAt`、`updatedAt` | `Long` | 时间戳 |
 | `enabled` | `Boolean` | 是否参与检索 |
 | `strictGrounding` | `Boolean` | 是否只允许按来源作答 |
@@ -213,22 +218,42 @@ URI
 
 `ConversationKnowledgeBaseCrossRef`
 
-- `conversationId`；
-- `knowledgeBaseId`；
-- `enabled`；
-- 联合主键，允许每个会话选择不同知识库。
+- `conversationId: Long`，必须与现有 `Conversation.id`、`ConversationArchive.activeConversationId` 类型一致；
+- `knowledgeBaseId: String`；
+- 联合主键，表示该知识库被当前会话选中；不再保存含义重复的 `enabled` 字段。
 
-`CitationEntity` 或会话归档内的 `CitationRef`
+`ConversationRagStateEntity`
 
-- `messageId`；
+- `conversationId: Long`，主键；
+- `ragEnabled: Boolean`，新建会话默认 `false`；
+- `updatedAt: Long`；
+- 该表是会话 RAG 开关的唯一事实来源，知识库关联表只表示选择集合。
+
+会话归档内的不可变 `CitationRef`
+
+- `messageId: Long`，与 `ChatMessage.id` 一致；
 - `sourceId`，例如 `S1`；
 - `chunkId`；
 - `documentId`；
+- `documentNameSnapshot`，生成时的显示名快照；
 - `locator`；
 - `quotedText`，只保存最终显示所需的短摘录；
 - `retrievalScore` 和 `retrievalVersion`，用于诊断。
 
-### 4.2 文档状态机
+Room 中现有 `CitationEntity` 可保留为本轮检索诊断/来源打开加速表，但不能作为历史消息显示的唯一来源。历史展示只读取 `AiMessage.citations`；删除文档造成 Room 引用级联删除后，归档快照仍存在，并根据 `DocumentDao.findById(documentId)` 是否为空显示“来源已删除”。
+
+### 4.2 知识库命名与唯一性
+
+- 创建知识库时必须先显示命名界面；用户确认名称并成功写入数据库后才创建记录，取消或离开界面不得产生空知识库。
+- 名称支持中文、英文、数字和常用符号；去除首尾空白，禁止空名称、控制字符和换行，最多允许 50 个 Unicode 字符（按 code point 计数）。
+- `normalizedName` 使用 Unicode NFKC、首尾裁剪、连续空白折叠及 `Locale.ROOT` 小写化生成。数据库对该列建立唯一索引，不能只依赖 UI 查询来防止并发重名。
+- 等价名称（例如大小写、全角/半角或多余空格不同）按重名处理，并在输入框下显示“该知识库名称已存在，请使用其他名称”；两个不同的规范化名称可以分别创建。
+- 输入框可预填可编辑的“知识库 1”建议名，但必须由用户明确确认；创建成功后，列表与当前会话的知识库选择器立即显示用户确认的名称。
+- 屏幕旋转、应用退后台或进程恢复时保留尚未确认的输入，但提交动作必须幂等，不能重复插入。
+- 现有 schema v1 升级到 v2 时新增 `normalizedName` 并回填；若历史数据存在等价重名，按创建时间和 ID 稳定排序，为后续项追加“ (2)”“ (3)”后重新规范化，禁止破坏性迁移或静默删除。
+- 创建知识库使用 `@Insert(onConflict = OnConflictStrategy.ABORT)`；重命名使用独立 `UPDATE`。禁止对 `KnowledgeBaseEntity` 使用 `REPLACE`，避免替换行触发外键级联删除已有文档。
+
+### 4.3 文档状态机
 
 ```text
 QUEUED -> COPYING -> PARSING -> OCR -> CHUNKING -> EMBEDDING
@@ -246,6 +271,35 @@ READY -> DELETING -> 已删除
 - Worker 重启时从数据库检查点继续，不能仅依赖 WorkManager 的进度 `Data`。
 - 删除操作先设置 `DELETING`，随后删除 HNSW 标签、块、FTS、私有原文，最后删除文档行。
 - 同一文档唯一工作名使用 `rag-index-{documentId}`，策略使用 `ExistingWorkPolicy.KEEP`，防止重复点击建立两条流水线。
+
+### 4.4 会话级 RAG 状态规则
+
+检索前必须同时满足以下条件：
+
+```text
+ConversationRagStateEntity.ragEnabled = true
+AND ConversationKnowledgeBaseCrossRef 包含该 knowledgeBaseId
+AND KnowledgeBaseEntity.enabled = true
+AND DocumentEntity.status = READY
+```
+
+- 新建会话默认 `ragEnabled=false` 且选择集合为空，不继承其他会话。
+- 空选择集合始终表示“不注入任何知识库”，绝不能解释为“查询全部知识库”。
+- 用户可以选择一个或多个知识库；chip 显示单库名称或“已选择 N 个知识库”。
+- 关闭 RAG 时保留选择集合，重新开启可恢复原选择，但不得执行查询、嵌入查询或注入证据。
+- 切换会话后立即读取该会话自己的状态；不能复用上一个会话的开关或选择集合。
+- 删除知识库时依赖外键清理关联；若某会话因此没有选中库，保持 `ragEnabled=true` 但显示“未选择知识库”，发送时提供普通聊天或选择知识库，不查询全部库。
+- 删除会话时在同一业务操作中删除 `ConversationRagStateEntity` 和全部 cross-ref；会话归档仍是聊天消息的事实来源，Room 是 RAG 开关和绑定的唯一事实来源。
+- 编辑历史用户消息并重新回答时使用编辑发生时的当前会话绑定；旧回答和旧引用随截断一起删除。仅编辑 AI 文本不重新检索，保留原引用并标记“回答已编辑”。
+
+### 4.5 schema v1 到 v2 的迁移契约
+
+- `RagDatabase.version` 从 1 升到 2，并同时提交 `app/schemas/com.example.minicpm_v_demo.rag.db.RagDatabase/2.json`。
+- 新建带唯一索引的 `knowledge_bases_v2`，逐行通过 `KnowledgeBaseNamePolicy` 产生 `normalizedName`；等价重名按 `createdAt ASC, id ASC` 稳定追加编号后再写入。
+- 新建 `conversation_rag_state`；将旧 cross-ref 的十进制 `conversationId` 转换为 `Long` 后复制到使用 INTEGER affinity 的新表，并为出现过的会话写入 `ragEnabled=true`。
+- 迁移前检查旧 `conversationId` 必须是可往返的非负十进制 `Long`；出现非法值时抛出包含行 ID、不含用户正文的迁移异常，禁止静默丢弃或强制映射到错误会话。
+- 重建 cross-ref 时去掉旧 `enabled=false` 行，只迁移旧 `enabled=true` 行；迁移后空选择不表示全局搜索。
+- 迁移测试必须覆盖空库、正常名称、等价重名、最大 `Long` 会话 ID、非法会话 ID 回滚、已有文档/块/FTS/引用行数量保持不变。
 
 ## 5. 文档导入与安全解析
 
@@ -407,7 +461,7 @@ $$
 \mathbf{e}=\frac{\sum_{i=1}^{n}m_i\mathbf{h}_i}{\sum_{i=1}^{n}m_i}
 $$
 
-再做 (L_2) 归一化：
+再做 \(L_2\) 归一化：
 
 $$
 \hat{\mathbf{e}}=\frac{\mathbf{e}}{\lVert\mathbf{e}\rVert_2+\varepsilon}
@@ -585,9 +639,11 @@ $$
 
 [EVIDENCE]
 <source id="S1" document="采购合同.docx" locator="第 12 页">
-...
+交付日期为 2026 年 9 月 30 日，验收地点为上海办公室。
 </source>
-...
+<source id="S2" document="项目变更记录.md" locator="交付计划/第二版">
+经双方确认，软件验收窗口调整为五个工作日。
+</source>
 [/EVIDENCE]
 
 [USER]
@@ -607,6 +663,8 @@ XML 风格分隔符只用于清晰边界；所有文档文本必须作为普通�
 5. AI 消息只保存自然语言答案和 `CitationRef`；检索证据本身标记为 ephemeral，不写入会话消息。
 6. 下一轮重复重建，保证证据可替换。
 
+调用顺序固定为：输入内容安全/隐私确认 → 判断会话 RAG 状态 → 检索与构建临时证据 → 重放有效历史 → 发送当前问题与证据 → 流式生成 → 输出视觉断言/内容安全策略 → 引用校验 → 保存自然语言答案和引用快照。任何本地固定提示均使用 `includeInModelContext=false`，不会进入后续上下文。
+
 若后续性能不足，再设计 llama.cpp state snapshot；首版先保证语义正确，不能为省一次重放而污染上下文。
 
 ### 10.4 引用校验
@@ -617,7 +675,7 @@ XML 风格分隔符只用于清晰边界；所有文档文本必须作为普通�
 - 拒绝不存在于本轮检索结果的编号；
 - 无合法引用但回答包含知识库事实时，在 UI 标记“未找到可验证引用”；严格模式改为固定不足提示；
 - 引用只展示短摘录，点击后从加密数据库读取完整块并打开原文定位；
-- 不把模型生成的文件名当作真实来源，所有显示信息从 `CitationRef` 查库获得。
+- 不把模型生成的文件名当作真实来源；名称、定位和短摘录从不可变 `CitationRef` 快照读取，只有打开完整原文时才查询 Room。文档已删除时不查询 chunk，直接显示“来源已删除”。
 
 流式阶段可暂时显示编号；结束后一次性完成校验和来源 chip 绑定。
 
@@ -670,6 +728,7 @@ Android Keystore 可保持密钥材料不可导出，并可在支持设备上绑
 
 在现有左上角设置对话框加入“知识库”行，进入 `KnowledgeBaseActivity`：
 
+- 点击“新建知识库”先打开必填名称输入框；名称通过本地校验和数据库唯一约束后才进入知识库详情页并允许添加文档。
 - 知识库列表：名称、文档数、索引状态、占用空间、启用开关。
 - 知识库详情：添加文档、文档状态/进度、失败原因、取消、重试、删除、重建。
 - 嵌入模型：未安装/下载中/已校验/损坏，支持联网下载和离线导入。
@@ -767,12 +826,61 @@ $$
 
 以下路径均相对于 `MiniCPM-V-demo-Android/`。
 
+### 14.1 当前代码基线（每次继续开发前重新核对）
+
+截至本计划最近一次校准，以下内容已经存在，后续任务必须使用 **Modify/Test**，不能重新创建：
+
+| 状态 | 文件/能力 |
+|---|---|
+| 已有 schema v1 | `rag/db/RagDatabase.kt`、`RagEntities.kt`、`RagDaos.kt`、`DocumentStatus.kt`、`app/schemas/com.example.minicpm_v_demo.rag.db.RagDatabase/1.json` |
+| 已有安全存储 | `rag/crypto/RagKeyManager.kt`、`EncryptedFileStore.kt`、`rag/db/RagDatabaseFactory.kt` |
+| 已有导入探测 | `rag/importer/FileTypeDetector.kt` 及 `FileTypeDetectorTest.kt` |
+| 已有测试 | `RagLimitsTest.kt`、`DocumentStatusTransitionPolicyTest.kt`、`RagDatabaseDaoTest.kt`、`RagEncryptionTest.kt` |
+| 已有聊天基线 | `MainActivity.kt`、`LlamaEngine.kt`、`ChatMessage.kt`、`ConversationStore.kt`、`ConversationArchive.kt`、`ChatAdapter.kt` |
+| 尚未完成 | 知识库命名 UI/schema v2、完整导入 Worker 链、解析器、嵌入、HNSW、混合检索、会话级注入、引用 UI、端到端测试 |
+
+每次开始一个 Task 前执行：
+
+```powershell
+git status --short
+rg --files app/src/main app/src/test app/src/androidTest | rg "rag|MainActivity|LlamaEngine|ChatMessage|Conversation"
+```
+
+预期：确认真实文件状态；工作树中的用户改动不得被覆盖。若计划中的 Create 文件已经存在，先阅读并将动作改为 Modify。
+
+### 14.2 通用执行纪律和完成定义
+
+每个未完成 Task 都按以下顺序执行，不允许跳过红灯测试：
+
+1. 写一个只针对本 Task 的失败测试。
+2. 运行测试并记录预期失败原因，不接受编译环境以外的无关失败。
+3. 实现最小生产代码。
+4. 重新运行目标测试，预期全部通过。
+5. 运行 `./gradlew.bat testDebugUnitTest`；涉及 Room、WorkManager、ONNX、JNI、OCR 或 UI 时再运行指定的真机测试。
+6. 运行 `./gradlew.bat :app:assembleDebug`，预期生成可安装 Debug APK。
+7. 检查 `git diff --check`，只暂存本 Task 文件并提交计划中给出的 commit。
+
+Task 的“完成”必须同时满足：代码、失败/通过证据、进程恢复或错误分支测试、中文用户文案、无障碍标签、对应文档和无现有能力回退。仅能编译不算完成。
+
+### 14.3 因果验收链
+
+每个实现项必须能映射到可观测结果：
+
+| 实施动作 | 必须出现的结果 | 反例测试 |
+|---|---|---|
+| 创建时确认唯一名称 | 只生成一个命名知识库 | 取消、双击、等价重名均不插入 |
+| 文档选择后排入唯一工作链 | 自动到达 READY 或明确 FAILED/PARTIAL | 退后台、强杀、重复选择不重复索引 |
+| 当前会话打开 RAG 并选库 | 只检索所选知识库 | 关闭、空选择、切换会话均不注入 |
+| 本轮注入证据 | 回答只引用本轮真实 source ID | 下一轮、编辑回滚、伪造编号不能复用旧证据 |
+| 保存引用快照 | 重启后引用仍显示 | 删除源文档后显示“来源已删除”而非丢失 |
+| 执行既有安全策略 | 非法内容阻断、隐私确认和视觉保护保持原行为 | 固定安全提示不得进入模型上下文 |
+
 ### Task 0：建立基线与架构决策记录
 
 **Files:**
 
-- Create: `docs/architecture/ADR-001-local-rag-stack.md`
-- Create: `docs/architecture/rag-threat-model.md`
+- Modify: `docs/architecture/ADR-001-local-rag-stack.md`
+- Modify: `docs/architecture/rag-threat-model.md`
 - Modify: `README_MODIFIED_zh.md`
 
 - [x] 记录本文选型、备选项、版本、许可证和弃用风险。
@@ -814,57 +922,127 @@ $$
 
 **Files:**
 
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/config/RagLimits.kt`
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDatabase.kt`
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagEntities.kt`
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDaos.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/config/RagLimits.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDatabase.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagEntities.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDaos.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagMigrations.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/naming/KnowledgeBaseNamePolicy.kt`
+- Create: `app/src/test/java/com/example/minicpm_v_demo/rag/naming/KnowledgeBaseNamePolicyTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/db/RagDatabaseMigrationTest.kt`
-- Create: `app/schemas/...`
+- Preserve: `app/schemas/com.example.minicpm_v_demo.rag.db.RagDatabase/1.json`
+- Generate: `app/schemas/com.example.minicpm_v_demo.rag.db.RagDatabase/2.json`
+- Modify: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/db/RagDatabaseDaoTest.kt`
 
-- [ ] 先写 DAO、级联删除、FTS 同步、READY 过滤和迁移失败测试。
-- [x] 实现第 1 版 schema 与索引：`knowledgeBaseId`、`documentId`、`status`、`ordinal`。
-- [x] FTS 使用 external-content 模式并用事务维护一致性。
-- [x] 明确禁止 `fallbackToDestructiveMigration()`。
-- [ ] 测试：
+- [x] **Step 1：写名称策略红灯测试。** 覆盖 `normalize("  项目　资料  ") == "项目 资料"`、空白/控制字符/换行/超过 50 code point 拒绝、中文保留、`ＡＢＣ` 与 `abc` 等价、不同名称不等价。
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.naming.KnowledgeBaseNamePolicyTest"
+```
+
+预期：因 `KnowledgeBaseNamePolicy` 尚不存在而失败。
+
+- [x] **Step 2：实现确定性名称 API。** 固定以下接口，UI、迁移和 DAO 上层只能调用同一实现：
+
+```kotlin
+object KnowledgeBaseNamePolicy {
+    const val MAX_CODE_POINTS = 50
+    fun validateAndNormalize(raw: String): ValidatedKnowledgeBaseName
+}
+
+data class ValidatedKnowledgeBaseName(
+    val displayName: String,
+    val normalizedName: String,
+)
+```
+
+实现顺序为 NFKC → 首尾裁剪 → 连续 Unicode 空白折叠为一个 ASCII 空格 → 验证 → `lowercase(Locale.ROOT)` 生成规范化键。
+
+- [x] **Step 3：写 schema v2 和 DAO 红灯测试。** 测试名称至少包含：`insertDifferentNamesSucceeds`、`insertEquivalentNameAbortsWithoutDeletingExistingDocuments`、`emptySelectionDoesNotReturnAllKnowledgeBases`、`conversationIdsUseLong`、`deletingConversationClearsRagStateAndBindings`。
+- [x] **Step 4：修改实体和 DAO。** `KnowledgeBaseEntity` 增加唯一 `normalizedName`；新增 `ConversationRagStateEntity`；cross-ref 的 `conversationId` 改为 `Long` 并删除 `enabled`。`KnowledgeBaseDao` 固定使用以下分离写入接口，删除现有 `REPLACE upsert`：
+
+```kotlin
+@Insert(onConflict = OnConflictStrategy.ABORT)
+suspend fun insert(entity: KnowledgeBaseEntity)
+
+@Query("UPDATE knowledge_bases SET name = :name, normalizedName = :normalizedName, updatedAt = :updatedAt WHERE id = :id")
+suspend fun updateName(id: String, name: String, normalizedName: String, updatedAt: Long): Int
+```
+
+- [x] **Step 5：实现 `MIGRATION_1_2`。** 事务内重建知识库和 cross-ref 表、回填规范名称、稳定解决历史重名、验证并转换 `conversationId`，创建 `conversation_rag_state`，重建全部外键和索引；任一步失败必须回滚。`RagDatabase` 升到 version 2，数据库构建器显式注册迁移，继续禁止 `fallbackToDestructiveMigration()`。
+- [x] **Step 6：写并运行迁移矩阵。** 使用 schema 1 JSON 建库，覆盖空库、正常数据、等价重名、最大会话 ID、非法会话 ID、文档/块/FTS/引用计数保持。
 
 ```powershell
 .\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.minicpm_v_demo.rag.db.RagDatabaseMigrationTest
 ```
 
-- [ ] Commit：`feat(rag): add versioned knowledge base database`
+预期：全部通过，并生成与实体一致的 `2.json`；`1.json` 不发生变化。
+
+- [x] **Step 7：运行完整数据库回归。**
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest
+.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.example.minicpm_v_demo.rag.db
+.\gradlew.bat :app:assembleDebug
+```
+
+预期：全部通过；Debug APK 构建成功；重名尝试不会删除已有知识库或文档。
+
+完成记录（2026-08-11，vivo V2359A）：名称策略 5/5、迁移矩阵 3/3、Schema/检索/加密回归 10/10 通过，`assembleDebug` 成功。设备安装统一使用 `verifyInstallationSigning` 固定证书预检；签名不匹配时禁止自动卸载。
+
+- [ ] Commit：`feat(rag): migrate named per-conversation knowledge bases to schema v2`
 
 ### Task 3：Keystore、SQLCipher 与加密文件
 
 **Files:**
 
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/crypto/RagKeyManager.kt`
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/crypto/EncryptedFileStore.kt`
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDatabaseFactory.kt`
-- Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/crypto/RagEncryptionTest.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/crypto/RagKeyManager.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/crypto/EncryptedFileStore.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDatabaseFactory.kt`
+- Modify: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/crypto/RagEncryptionTest.kt`
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt`
 
 - [x] 先写错误密钥、篡改 tag、nonce 不重复、原子替换和数据库重开测试；vivo V2359A 真机 4/4 通过。
 - [x] 使用 Keystore AES/GCM 主密钥包装随机 SQLCipher 口令，不能把固定密码、Android ID 或用户 PIN 直接作为数据库密码。
 - [x] `System.loadLibrary("sqlcipher")` 后通过 `SupportOpenHelperFactory` 创建 Room。
 - [x] 原文和 HNSW 使用带文件头版本、nonce、ciphertext、tag 的加密容器。
-- [ ] 清理明文临时文件，并在启动时回收上次崩溃残留。
+- [x] 清理明文临时文件，并在启动时回收上次崩溃残留；仅删除 RAG staging 中超过 24 小时的常规 `.part` 文件，不跟随符号链接，不触碰加密原文和活跃任务文件。
 - [ ] Commit：`feat(rag): encrypt knowledge base data at rest`
 
 ### Task 4：安全导入和 WorkManager 编排
 
 **Files:**
 
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/import/DocumentImporter.kt`
-- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/import/FileTypeDetector.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/importer/DocumentImporter.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/importer/FileTypeDetector.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/ImportCopyWorker.kt`
-- Create: `app/src/test/java/com/example/minicpm_v_demo/rag/import/FileTypeDetectorTest.kt`
+- Modify: `app/src/test/java/com/example/minicpm_v_demo/rag/importer/FileTypeDetectorTest.kt`
+- Create: `app/src/test/java/com/example/minicpm_v_demo/rag/importer/DocumentImporterTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/work/RagWorkRecoveryTest.kt`
 
-- [ ] 先写超限、中途取消、重复哈希、伪扩展名、进程重启恢复测试。
-- [ ] 实现 SAF 多选、持久权限、流式复制、SHA-256、`.part` 原子提交。
-- [ ] 以唯一工作链防重复；前台长任务显示可取消通知。
-- [ ] WorkManager 只传 `documentId`，不在 `Data` 中传正文或大对象。
+- [x] **Step 1：写导入红灯测试。** 覆盖超限、复制中取消、重复 SHA-256、伪扩展名、无法持久授权、`.part` 清理和两个不同 URI 同名文件；已完成红灯验证并随核心导入器转绿。
+- [ ] **Step 2：实现 SAF 多选入口。** UI 使用 `ActivityResultContracts.OpenMultipleDocuments()`；回调只把 URI 和目标 `knowledgeBaseId` 交给 `DocumentImporter.enqueue()`，不得在主线程读取正文。
+- [ ] **Step 3：实现隔离区复制。** 使用 64 KiB 固定缓冲区流式计算 SHA-256，持续检查 `isStopped`，写入 `noBackupFilesDir/rag/source/{documentId}.part`，`fsync` 后原子改名为 `{documentId}.src.enc`；失败和取消删除 `.part`。
+- [ ] **Step 4：建立唯一工作 API。** 固定接口如下；所有 Worker 输入 `Data` 只包含 `documentId`：
+
+```kotlin
+interface RagWorkCoordinator {
+    fun enqueue(documentId: String): Operation
+    fun cancel(documentId: String): Operation
+    fun observe(documentId: String): Flow<RagWorkUiState>
+}
+```
+
+首个提交使用 `beginUniqueWork("rag-index-$documentId", ExistingWorkPolicy.KEEP, importCopyRequest)` 只运行 `ImportCopyWorker`；Task 5–9 每完成一个阶段就修改同一 coordinator 并追加对应 `OneTimeWorkRequest`，最终链必须与第 3.2 节一致。
+- [ ] **Step 5：写恢复测试。** 验证重复点击只有一条 unique work、Worker 重建后从 Room 状态继续、取消进入 `CANCELLED`、前台长任务通知可取消、通知权限被拒绝时仍提供应用内进度。
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.importer.*"
+.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.minicpm_v_demo.rag.work.RagWorkRecoveryTest
+```
+
+预期：全部通过；Logcat 中不存在 URI、正文、OCR 文本或 SQLCipher 口令。
 - [ ] Commit：`feat(rag): add resumable secure document import`
 
 ### Task 5：解析器接口和基础文本格式
@@ -877,11 +1055,30 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/parser/MarkdownParser.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/parser/CsvParser.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/parser/HtmlParser.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/ParseWorker.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/parser/BasicParserTest.kt`
 
-- [ ] 先为编码、CSV 引号换行、Markdown 代码块、HTML 外链不加载写测试。
-- [ ] `DocumentParser` 使用 `Sequence<ParsedBlock>` 或回调流式输出，禁止返回整份文档巨型字符串。
-- [ ] 每个 `ParsedBlock` 必须带 locator 和结构类型。
+- [ ] **Step 1：写基础解析红灯测试。** 覆盖 UTF-8/BOM、非法编码、CSV 引号内换行、Markdown 标题/代码块、HTML script/style 丢弃、外链不访问和超过字符限额停止；预期因解析器不存在而失败。
+- [ ] **Step 2：固定流式接口。** 所有格式实现同一接口，不允许返回整份文档字符串：
+
+```kotlin
+interface DocumentParser {
+    fun parse(input: ParserInput): Sequence<ParsedBlock>
+}
+
+data class ParsedBlock(
+    val text: String,
+    val structure: BlockStructure,
+    val titlePath: String?,
+    val locatorType: String,
+    val locatorValue: String,
+)
+```
+
+- [ ] **Step 3：逐格式实现。** Text 按检测编码流式读取；Markdown 保留标题路径和代码块边界；CSV 按记录解析并携带行号；HTML 只解析本地字节，禁用脚本、样式、实体外部访问和网络请求。
+- [ ] **Step 4：接入 `ParseWorker`。** 只按 `documentId` 从加密存储读取，逐块提交中间结果；扩展 unique work 为 `ImportCopyWorker -> ParseWorker`，重跑时跳过已原子提交的复制阶段。
+- [ ] **Step 5：运行测试。** `./gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.parser.BasicParserTest"`，预期全部通过且超限输入不会产生巨型内存对象。
 - [ ] Commit：`feat(rag): parse bounded text and tabular documents`
 
 ### Task 6：PDF、OCR 与 OOXML 安全解析
@@ -894,14 +1091,23 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/parser/DocxParser.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/parser/XlsxParser.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/parser/PptxParser.kt`
-- Create: `app/src/test/resources/rag/malicious/...`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/OcrWorker.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
+- Create: `app/src/test/resources/rag/malicious/zip-slip.docx`
+- Create: `app/src/test/resources/rag/malicious/zip-bomb.xlsx`
+- Create: `app/src/test/resources/rag/malicious/xxe.docx`
+- Create: `app/src/test/resources/rag/malicious/deep-xml.pptx`
+- Create: `app/src/test/resources/rag/malicious/corrupt.pdf`
+- Create: `app/src/test/resources/rag/malicious/scanned-one-page.pdf`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/parser/OoxmlSecurityTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/parser/PdfOcrInstrumentedTest.kt`
 
-- [ ] 先写 Zip Slip、超压缩比、XXE、超深 XML、损坏 PDF、扫描页回退测试。
-- [ ] 使用受限 ZIP/XML reader；所有计数在解压过程中累加，不能只相信 ZIP header。
-- [ ] PDFBox 按页提取；低质量页用 `PdfRenderer + ML Kit`，释放每页 bitmap。
-- [ ] 明确拒绝宏、OLE 和外链资源。
+- [ ] **Step 1：写恶意文件红灯测试。** 六个固定资源分别验证 Zip Slip、超压缩比、XXE、超深 XML、损坏 PDF 和扫描页 OCR 回退，错误码必须稳定且不包含正文。
+- [ ] **Step 2：实现 `SafeOoxmlReader`。** 解压过程中逐项累加 entry 数、实际解压字节、压缩比和 XML 深度；规范化目标路径并确认仍在隔离目录；禁用 DTD、外部实体、宏、OLE 和外链资源。
+- [ ] **Step 3：实现 OOXML 解析。** DOCX 输出段落/表格与标题路径；XLSX 按工作表/行流式输出并保留单元格范围；PPTX 按幻灯片和形状顺序输出，三者都遵守全局限额。
+- [ ] **Step 4：实现 PDF/OCR。** PDFBox 按页提取；文本质量低于第 5.3 节阈值才使用 `PdfRenderer + ML Kit`；每页在 `finally` 中关闭 page、bitmap 和 recognizer result，不同时保留文本层与 OCR 重复内容。
+- [ ] **Step 5：接入 `OcrWorker`。** 不需要 OCR 时幂等成功；需要时按页检查取消并提交检查点，扩展链为 `ImportCopyWorker -> ParseWorker -> OcrWorker`。
+- [ ] **Step 6：运行 JVM 与真机测试。** 运行 `OoxmlSecurityTest` 和 `PdfOcrInstrumentedTest`；预期恶意文件全部被有界拒绝，文本 PDF 不 OCR，扫描 PDF 触发 OCR，取消后无 bitmap 或临时明文残留。
 - [ ] Commit：`feat(rag): safely parse PDF and OOXML documents`
 
 ### Task 7：tokenizer、切块和中文检索文本
@@ -911,12 +1117,16 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/chunk/DocumentChunker.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/chunk/CjkBigramEncoder.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/embed/E5Tokenizer.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/ChunkWorker.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/chunk/DocumentChunkerTest.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/chunk/CjkBigramEncoderTest.kt`
 
-- [ ] 先写中英混合、emoji、超长段落、表头重复、页边界和重叠测试。
-- [ ] token 数必须来自与 ONNX 模型一致的 tokenizer。
-- [ ] 相同输入和版本必须产生相同 chunk ID 顺序与内容哈希。
+- [ ] **Step 1：写切块红灯测试。** 覆盖中英混合、emoji、超长段落、表头重复、页边界、重叠、稳定顺序和版本变化触发重切。
+- [ ] **Step 2：实现 tokenizer 和 bigram。** token 数只来自与 ONNX 包同版本 tokenizer；`CjkBigramEncoder` 保留原词并追加连续汉字 bigram，不修改存档原文。
+- [ ] **Step 3：实现确定性切块。** 使用第 6 节固定预算和重叠；`DocumentChunker.chunk(blocks, config)` 返回有序 `Sequence<ChunkDraft>`，相同输入/版本产生相同 ordinal、内容哈希和 locator。
+- [ ] **Step 4：接入 `ChunkWorker`。** 每批在单事务写 chunk 与 FTS 行，失败不留半批；扩展链到 `ChunkWorker`，重复运行通过内容哈希跳过一致块。
+- [ ] **Step 5：运行两组单测和数据库一致性测试。** 预期 chunk/FTS 数量相同、顺序稳定、超长输入保持内存有界。
 - [ ] Commit：`feat(rag): add structure-aware multilingual chunking`
 
 ### Task 8：嵌入模型管理和 ONNX 推理
@@ -927,15 +1137,18 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/embed/EmbeddingModelManager.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/embed/E5Embedder.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/EmbedWorker.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
 - Create: `tools/export_multilingual_e5_small_onnx.py`
 - Create: `tools/verify_embedding_model.py`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/embed/E5PoolingTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/embed/E5EmbedderInstrumentedTest.kt`
 
-- [ ] 先保存桌面 PyTorch 的 golden 向量和相似度排序，再实现 Android 推理对齐测试。
-- [ ] 导出 INT8 ONNX，固定 opset、动态轴和 tokenizer 文件；记录量化前后 nDCG 变化。
-- [ ] 实现 `query: ` / `passage: `、mean pooling、(L_2) 归一化。
-- [ ] Worker 每批事务提交 embeddingState；崩溃后跳过已完成块。
+- [ ] **Step 1：生成可复现 golden 数据。** 桌面脚本固定模型 revision、opset、tokenizer 哈希和随机种子，输出至少 20 个中英样本的 FP32/INT8 向量及相似度排序。
+- [ ] **Step 2：先写对齐红灯测试。** `E5PoolingTest` 手算 attention-mask mean pooling；真机测试断言维度、有限值、\(L_2\) 范数和与 golden 的余弦误差范围。
+- [ ] **Step 3：导出并签名模型包。** 包含 manifest、INT8 ONNX、tokenizer、逐文件 SHA-256 和项目签名；导入时全部校验后原子安装，损坏文件进入隔离区。
+- [ ] **Step 4：实现 `E5Embedder`。** 固定 `embedQueries()` 加 `query: `、`embedPassages()` 加 `passage: `，执行 mean pooling 和 \(L_2\) 归一化；每批关闭 tensor/result，session 由模型管理器串行拥有。
+- [ ] **Step 5：接入 `EmbedWorker`。** 每批事务提交 `embeddingState`，崩溃后跳过完成块；模型未安装返回 `MODEL_REQUIRED`，UI 只在用户进入知识库或主动重试时显示一次安装入口。
+- [ ] **Step 6：运行桌面校验、JVM pooling 和真机 ONNX 测试。** 预期哈希一致、排序门槛达标、重复前后台切换不重复弹窗且 native 内存稳定。
 - [ ] Commit：`feat(rag): run multilingual E5 embeddings on device`
 
 ### Task 9：HNSW native 索引
@@ -947,14 +1160,18 @@ $$
 - Create: `app/src/main/cpp/rag/hnsw_index_jni.cpp`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndex.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/VectorIndexWorker.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/work/FinalizeIndexWorker.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/index/IndexMetadataTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexInstrumentedTest.kt`
 - Modify: `app/src/main/cpp/CMakeLists.txt`
 
-- [ ] 先写 add/search/delete/save/load/损坏文件/维度错误/native handle 关闭测试。
-- [ ] JNI 只允许专用目录路径，所有 vector 长度必须等于 \(384\)。
-- [ ] 索引保存后加密并原子替换；元数据不一致触发重建。
-- [ ] 使用 brute-force 小集合计算 exact top-K，验证 HNSW Recall@K。
+- [ ] **Step 1：写 native 红灯测试。** 覆盖 add/search/delete/save/load、重复 label、损坏文件、错误维度、关闭后调用、双重关闭和并发查询/关闭。
+- [ ] **Step 2：固定 JNI 边界。** 只接受应用解析后的专用目录绝对路径；所有 label 非负且 vector 长度为 \(384\)；每个入口检查 handle，异常映射为稳定 Kotlin 异常，析构幂等。
+- [ ] **Step 3：实现索引持久化。** 临时明文索引只存在受控缓存目录，保存后立即用 `EncryptedFileStore` 加密并原子替换；数据库 chunk 数、模型哈希或 indexVersion 不一致时标记 STALE 并重建。
+- [ ] **Step 4：验证召回。** 使用同一小集合计算 brute-force exact top-K，与 HNSW 比较 Recall@K；低于第 13 节门槛测试失败。
+- [ ] **Step 5：完成 Worker 链。** 固定为 `ImportCopyWorker -> ParseWorker -> OcrWorker -> ChunkWorker -> EmbedWorker -> VectorIndexWorker -> FinalizeIndexWorker`；Finalize 只有在数据库 chunk、embedding 和索引元数据一致时置 READY。
+- [ ] **Step 6：运行恢复矩阵。** 每阶段强制终止后恢复、重复 enqueue、取消、索引损坏重建；最终只能有一份 chunk 和一个有效加密索引文件，ASan/HWASan 不报错。
 - [ ] Commit：`feat(rag): add persistent encrypted HNSW search`
 
 ### Task 10：FTS4 BM25、RRF 和 MMR
@@ -968,10 +1185,11 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieve/QueryAnalyzer.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/retrieve/HybridRetrieverTest.kt`
 
-- [ ] 先用手算小样本验证 BM25、RRF、MMR；所有浮点比较使用明确误差范围。
-- [ ] DAO 绑定参数，FTS query 做语法转义，禁止字符串拼 SQL。
-- [ ] dense/FTS 任一失败可降级，二者都失败才返回检索错误。
-- [ ] 结果写诊断结构但不写用户正文日志。
+- [ ] **Step 1：写融合算法红灯测试。** 使用手算小样本分别验证 BM25、RRF、MMR、相邻块扩展、每文档上限和稳定 tie-break；所有浮点比较给出误差。
+- [ ] **Step 2：实现安全查询分析。** 精确短语、编号、日期和显式文档名分别建结构字段；FTS 运算符和引号转义，所有 SQL 使用 DAO 绑定参数。
+- [ ] **Step 3：固定检索接口。** `HybridRetriever.retrieve(conversationId: Long, question: String): RetrievalResult` 必须先从 Room 得到当前会话选中的全局启用知识库 ID，再执行 dense top-40 与 FTS top-40，RRF top-24，MMR/邻块最终不超过 12。
+- [ ] **Step 4：实现降级语义。** dense 失败只用 FTS，FTS 失败只用 dense，两者失败返回 `RetrievalFailed`；两者成功但阈值不足返回 `NoEvidence`，不得混为同一种状态。
+- [ ] **Step 5：运行测试。** 额外断言关闭 RAG、空选择、未 READY、全局停用和未选知识库均不会出现在结果；诊断只记耗时、计数、版本和匿名 ID，不记录问题或正文。
 - [ ] Commit：`feat(rag): add hybrid dense and lexical retrieval`
 
 ### Task 11：prompt、上下文重建和引用验证
@@ -982,15 +1200,29 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/prompt/RagPromptBuilder.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/prompt/CitationValidator.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/RagCoordinator.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/RagComponent.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt`
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/LlamaEngine.kt`
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt`
+- Modify specifically: `MainActivity.handleUserInput()`、`submitPromptToModel()`、`replayActiveConversationContext()`、`rebuildActiveConversationContext()`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/prompt/RagPromptSecurityTest.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/prompt/CitationValidatorTest.kt`
+- Create: `app/src/test/java/com/example/minicpm_v_demo/rag/RagCoordinatorTest.kt`
 
-- [ ] 先写文档闭合标签注入、伪造 `[S99]`、无来源、超预算和历史安全提示排除测试。
-- [ ] 每轮清 context 并重放有效消息，再注入当前轮证据。
-- [ ] 严格模式无足够来源时使用本地固定流式提示，`includeInModelContext=false`。
-- [ ] 回答完成后校验引用，只能绑定本轮真实 `CitationRef`。
+- [ ] **Step 1：写状态决策红灯测试。** 固定 `RagCoordinator.prepareTurn(conversationId: Long, question: String): RagTurnPlan`，覆盖 `Disabled`、`NoSelection`、`Indexing`、`NoEvidence`、`Ready` 和 `RetrievalFailed`；断言 Disabled/NoSelection 不调用 embedder/retriever。
+- [ ] **Step 2：实现单一状态决策接口。** `RagTurnPlan.Ready` 只携带本轮 `ragRunId`、转义后的 prompt 和合法 `CitationRef` 候选；不得直接操作聊天列表或 LlamaEngine。`RagComponent` 通过构造参数提供 state DAO、embedder、retriever、prompt builder 和 clock，生产环境由 `MiniCPMApplication` 创建，测试环境替换为可计数 fake，以便证明关闭 RAG 时没有检索调用。
+- [ ] **Step 3：写 prompt 安全红灯测试。** 覆盖文档闭合标签、伪造 `[S99]`、无来源、超预算、历史本地安全提示排除，以及文档内违法/提示注入文字不能改变系统策略。
+- [ ] **Step 4：接入现有输入链。** 保持顺序：`ContentSafetyPolicyEngine` 和隐私确认先执行；只有用户输入确定可以送模后才调用 `prepareTurn`。Disabled 直接进入原普通聊天；NoSelection/Indexing 提供明确本地选择；严格 NoEvidence 使用本地固定流式提示且 `includeInModelContext=false`。
+- [ ] **Step 5：重建本轮上下文。** 调用 `engine.clearContext()`，按原顺序重放 `includeInModelContext=true` 的历史消息，随后只发送本轮 prompt。RAG 证据不得写入 `ChatMessage`，不得残留到下一轮 KV 上下文。
+- [ ] **Step 6：校验输出。** 先执行现有输出视觉断言和内容安全策略，再使用 `CitationValidator` 过滤本轮不存在的 source ID；保存的引用只能来自同一 `ragRunId`。
+- [ ] **Step 7：运行目标测试。**
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.RagCoordinatorTest"
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.prompt.*"
+```
+
+预期：关闭/空选时 retriever 调用次数为 0；下一轮不含上一轮 evidence；固定安全提示不进入模型上下文；伪造引用被剔除。
 - [ ] Commit：`feat(rag): generate grounded answers with verified citations`
 
 ### Task 12：会话归档升级
@@ -1002,11 +1234,21 @@ $$
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/ConversationStore.kt`
 - Modify: `app/src/test/java/com/example/minicpm_v_demo/ConversationArchiveCodecTest.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/ConversationRagStateTest.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/db/RagDaos.kt`
 
-- [ ] `AiMessage` 增加不可变 `citations: List<CitationRef>` 和 `ragRunId`。
-- [ ] 归档格式升级一版，并能读取现有旧归档；旧消息 citations 为空。
-- [ ] 编辑/回滚用户消息后，截断消息对应的旧引用；编辑 AI 文字只改变显示和上下文，引用标记为“回答已编辑”。
-- [ ] 知识库绑定随会话永久保存。
+- [ ] **Step 1：写归档 v2 红灯测试。** 使用固定 v1 二进制 fixture 验证向后读取；写入 v2 后验证 citations、`ragRunId`、`answerEdited` 完整往返，截断文件和超长字段被拒绝且原归档备份仍可恢复。
+- [ ] **Step 2：定义引用快照。** `AiMessage` 增加 `citations: List<CitationRef> = emptyList()`、`ragRunId: String? = null`、`answerEdited: Boolean = false`；`CitationRef` 包含第 4.1 节全部快照字段，所有集合在写入消息前复制为不可变列表。
+- [ ] **Step 3：升级归档格式。** `ConversationArchiveCodec.VERSION` 从 1 升到 2；读取器接受 1 和 2，v1 消息填默认空引用，写入器只写 v2，并限制引用数量、摘录长度和文档名长度以防损坏文件导致内存放大。
+- [ ] **Step 4：明确编辑语义。** `editUserAndTruncate` 删除目标用户消息后的全部消息及其引用；AI 文本编辑只替换文字并设 `answerEdited=true`，不改变 `ragRunId` 和 citations；删除 AI 回答只删除该回答，不重新检索。
+- [ ] **Step 5：永久保存会话 RAG 状态。** Room 的 `ConversationRagStateEntity` 与 cross-ref 是绑定唯一事实来源；创建会话写默认关闭状态，切换会话加载对应状态，删除会话清理状态/绑定，归档不重复保存绑定。
+- [ ] **Step 6：运行测试。**
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.ConversationArchiveCodecTest"
+.\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.ConversationRagStateTest"
+```
+
+预期：v1/v2 均可读；重启后消息引用和绑定恢复；会话间状态隔离；编辑/删除规则与定义一致。
 - [ ] Commit：`feat(rag): persist citations and conversation knowledge scope`
 
 ### Task 13：知识库与来源 UI
@@ -1019,36 +1261,64 @@ $$
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/ui/KnowledgeBaseViewModel.kt`
 - Create: `app/src/main/java/com/example/minicpm_v_demo/rag/ui/SourceViewerActivity.kt`
 - Create: `app/src/main/res/layout/activity_knowledge_base.xml`
+- Create: `app/src/main/res/layout/item_knowledge_base.xml`
+- Create: `app/src/main/res/layout/dialog_create_knowledge_base.xml`
+- Create: `app/src/main/res/layout/dialog_select_conversation_knowledge_bases.xml`
 - Create: `app/src/main/res/layout/activity_source_viewer.xml`
 - Create: `app/src/main/res/layout/item_knowledge_document.xml`
 - Modify: `app/src/main/res/layout/item_ai_message.xml`
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/ChatAdapter.kt`
 - Modify: `app/src/main/AndroidManifest.xml`
 - Modify: `app/src/main/res/values/strings.xml`
-- Modify: `app/src/main/res/values-zh-rCN/strings.xml`
+- Modify: `app/src/main/res/values-en/strings.xml`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/ui/KnowledgeBaseUiTest.kt`
 
-- [ ] 先写导入、取消、失败重试、知识库选择、来源点击、来源删除状态 UI 测试。
-- [ ] 进度绑定 Room/WorkManager Flow，旋转屏幕或退后台不重复弹窗。
-- [ ] 来源 chip 点击区域和无障碍描述完整；长文件名省略但详情页可看全名。
-- [ ] 保持当前状态栏、消息编辑、图片缓存和隐私确认行为不回退。
+- [ ] **Step 1：写知识库 UI 红灯测试。** 覆盖必填命名、取消不创建、等价重名内联报错、旋转保留输入、双击确认不重复插入、不同名称成功，以及创建完成前不能导入文档。
+- [ ] **Step 2：实现命名创建页。** 使用 `KnowledgeBaseNamePolicy` 做即时校验，最终以 DAO ABORT 为准；捕获唯一约束错误并保留输入。创建成功后使用新 ID 打开详情，不自动绑定任何会话。
+- [ ] **Step 3：实现手机文档导入。** 详情页“添加文档”启动多选系统文件器；返回后立即创建 `DocumentEntity` 并 enqueue，页面从 Room/WorkManager Flow 显示阶段、真实计数、取消、重试和失败原因。
+- [ ] **Step 4：实现会话级开关和多选。** 聊天页分别提供 RAG 开关和知识库 chip；关闭保留选择，开启但空选显示“请选择知识库”；单选显示名称，多选显示数量。切换/新建/删除会话后立即刷新。
+- [ ] **Step 5：实现来源生命周期。** 来源 chip 的点击区域和无障碍描述覆盖整个 chip；存在原文时打开并定位，不存在时保留名称/定位/摘录并显示“来源已删除”。长文件名在列表省略、详情可完整查看。
+- [ ] **Step 6：生命周期测试。** 旋转、退后台、进程恢复不得重复弹窗、重复导入或丢失输入；模型包下载状态只由持久状态驱动，不在每次 `onResume` 重复提示。
+- [ ] **Step 7：运行 UI 测试和构建。**
+
+```powershell
+.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.minicpm_v_demo.rag.ui.KnowledgeBaseUiTest
+.\gradlew.bat :app:assembleDebug
+```
+
+预期：测试全部通过，APK 可安装；当前状态栏、整气泡长按、消息编辑、图片预处理期间删除、原图查看和隐私确认行为不回退。
 - [ ] Commit：`feat(rag): add knowledge base and source citation UI`
 
 ### Task 14：安全回归、评测和性能门槛
 
 **Files:**
 
-- Create: `app/src/test/resources/rag/eval/corpus/...`
+- Create: `app/src/test/resources/rag/eval/corpus/employee-handbook-zh.md`
+- Create: `app/src/test/resources/rag/eval/corpus/project-plan-en.md`
+- Create: `app/src/test/resources/rag/eval/corpus/conflicting-policies.md`
+- Create: `app/src/test/resources/rag/eval/corpus/no-answer-control.md`
 - Create: `app/src/test/resources/rag/eval/questions.jsonl`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/eval/RetrievalEvaluationTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/eval/RagPerformanceBenchmark.kt`
-- Modify: `.github/workflows/android.yml`（若仓库已有 CI；没有则新建）
+- Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/e2e/RagDocumentToChatE2eTest.kt`
+- Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/e2e/RagExistingFeaturesRegressionTest.kt`
+- Create: `.github/workflows/android.yml`
 
-- [ ] 写 Recall@K、MRR、nDCG、引用合法率和无答案准确率计算器。
-- [ ] 每个真实错误先脱敏并最小化成样本，再加入回归集。
-- [ ] CI 跑纯 JVM 解析/检索测试；真机 nightly 跑 OCR、ONNX、JNI、恢复和性能。
-- [ ] 使用 AddressSanitizer/HWASan 的测试构建检查 native 索引边界。
-- [ ] 生成 `build/reports/rag-eval.md`，发布门槛失败则 CI 失败。
+- [ ] **Step 1：建立确定性评测集。** `questions.jsonl` 每行包含 `question`、`knowledgeBaseIds`、`relevantChunkIds`、`requiredAnswerPoints`、`forbiddenClaims`、`mustAbstain`；语料全部为合成数据，不包含真实公司隐私。
+- [ ] **Step 2：实现并验证指标。** 用手算小集合测试 Recall@K、MRR、nDCG、引用合法率和无答案准确率；浮点比较给出明确误差。低于第 13 节门槛时测试失败并生成 `build/reports/rag-eval.md`。
+- [ ] **Step 3：建立完整手机端到端测试。** `RagDocumentToChatE2eTest` 必须按顺序验证：创建并命名两个知识库 → 上传文档 → 自动到 READY → 当前会话只选择其中一个 → 开启 RAG → 提问并捕获传给 LlamaEngine 的 prompt → 只含所选库证据 → 保存/点击引用 → 关闭 RAG 后同题不调用 retriever → 切换会话状态隔离 → 强杀/重启恢复 → 删除文档后显示“来源已删除”。
+- [ ] **Step 4：建立安全和既有能力回归。** 覆盖违法输入固定流式拒绝、隐私输入只有确认“是”才送模、隐私输出确认、无图视觉意图/断言拦截、固定提示 `includeInModelContext=false`、状态栏保留、图片预处理期间删除、原图打开、多会话、用户消息编辑重答、AI 文本编辑和整气泡长按。
+- [ ] **Step 5：加入历史绕过回归集。** 每个新发现的视觉/隐私/违法/RAG 提示注入绕过语句先脱敏并最小化，写入固定 JSONL 资源，再提交修复；CI 必须在旧样本重新失败时阻止合并。
+- [ ] **Step 6：运行性能和 native 安全测试。** 真机 nightly 跑 OCR、ONNX、JNI、Worker 恢复、内存/温度和性能；AddressSanitizer/HWASan 构建检查 native 索引越界和 use-after-free。
+- [ ] **Step 7：配置 CI。** 每次提交运行 JVM 测试、lint、Debug 构建和 schema 校验；具备真机 runner 时运行 e2e，普通 PR 至少使用 fake embedder/retriever 跑完整状态机。
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest
+.\gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.example.minicpm_v_demo.rag.e2e
+.\gradlew.bat :app:assembleDebug
+```
+
+预期：全部通过并生成评测报告；任何检索越权、旧证据泄漏、引用伪造或既有功能回退都会导致测试失败。
 - [ ] Commit：`test(rag): enforce retrieval safety and quality gates`
 
 ### Task 15：发布与运维文档
@@ -1061,9 +1331,12 @@ $$
 - Create: `docs/rag/安全与隐私说明.md`
 - Modify: `README_MODIFIED_zh.md`
 
-- [ ] 记录支持格式、大小限制、离线模型安装、索引状态和删除语义。
+- [ ] 按真实 UI 路径记录“新建并命名知识库 → 上传文档 → 等待 READY → 当前会话开启 RAG → 选择一个或多个知识库 → 提问 → 查看引用 → 关闭 RAG”的完整操作。
+- [ ] 记录支持格式、大小限制、离线模型安装、索引状态、取消/重试、删除语义、空选择行为和会话间状态隔离。
 - [ ] 记录模型/依赖许可证和供应链校验方式。
 - [ ] 写清“RAG 降低幻觉但不能保证答案正确”，办公决策仍需核对来源。
+- [ ] 记录 schema v1 到 v2、会话归档 v1 到 v2 的升级/回滚验证，以及数据库无法解密、模型损坏、索引损坏时不覆盖原数据的处理流程。
+- [ ] 明确 LoRA 动态加载与通用翻译术语纠错不在本计划内，分别链接后续独立计划，避免用户把上传文档建 RAG 误解为训练或安装 LoRA。
 - [ ] 分阶段发布：内部 \(10\) 人 -> \(50\) 人灰度 -> 正式版；每阶段观察崩溃、索引失败、无答案误判和引用点击率。
 - [ ] Commit：`docs(rag): document offline knowledge base operations`
 
@@ -1072,9 +1345,14 @@ $$
 ### 功能
 
 - [ ] 断网情况下可导入、索引并问答中文/英文文档。
+- [ ] 用户在手机上选择文档后无需手动运行编译命令，应用自动完成复制、解析/OCR、切块、嵌入、索引并进入 READY；失败时停在可诊断状态。
 - [ ] 应用退后台、强杀、重启后任务恢复，不重复索引。
 - [ ] 可取消、重试、删除单个文档或整个知识库。
+- [ ] 新建知识库必须先命名；可创建多个不同名称的知识库，等价重名被阻止，重启应用后名称和会话绑定保持不变。
+- [ ] 每个会话有独立 RAG 开关和知识库选择；新会话默认关闭，空选择绝不查询全部库，关闭时 retriever 调用次数为 0。
+- [ ] 同一会话可选择多个知识库，检索结果不得包含未选择、全局停用或未 READY 文档。
 - [ ] 每个知识库事实回答都有可点击的真实来源。
+- [ ] 删除原文后历史回答和引用快照仍保留，点击显示“来源已删除”；编辑用户问题重新回答时旧引用随截断删除，编辑 AI 文本不重新检索。
 - [ ] 无足够证据时严格模式不调用模型编造答案。
 - [ ] 会话编辑、删除、回滚、永久保存与当前版本行为兼容。
 
@@ -1084,6 +1362,7 @@ $$
 - [ ] 数据库密码、正文、OCR、查询不进入 Logcat。
 - [ ] Zip Slip、ZIP bomb、XXE、损坏 PDF、超长输入测试全部通过。
 - [ ] 文档提示注入不能调用工具、网络、文件操作或伪造合法来源。
+- [ ] RAG 接入前后的违法内容、隐私输入/输出确认和无图视觉幻觉回归集通过率不得下降；本地固定提示不进入模型上下文。
 - [ ] 所有模型和第三方 native 源码都有版本、许可证、SHA-256 和升级流程。
 
 ### 质量和性能
@@ -1105,6 +1384,10 @@ $$
 | 扫描 PDF OCR 失败 | “第 N 页无法识别，可跳过或重试” | 文档保持 PARTIAL，不标 READY |
 | 索引中断 | “索引已暂停，将从上次进度继续” | 保留已提交 chunk/embedding |
 | 数据库无法解密 | “本地知识库密钥不可用，无法读取原数据” | 禁止覆盖，提供删除重建 |
+| 知识库名称重复 | “该知识库名称已存在，请使用其他名称” | 保留当前输入，不创建记录 |
+| RAG 已开启但未选库 | “当前会话尚未选择知识库” | 不检索；提供选择知识库或关闭 RAG |
+| 所选知识库仍在索引 | “知识库正在建立索引，可等待完成或继续普通聊天” | 不无限转圈，不重复 enqueue |
+| 检索组件失败 | “本地知识库暂时无法检索，请重试或关闭 RAG” | 不把空结果伪装成有依据回答 |
 | 检索无依据 | “在已选择的知识库中没有找到足够依据” | 严格模式不调用模型 |
 | 来源已删除 | “该回答引用的来源已删除” | 保留历史答案，禁用打开 |
 
@@ -1112,9 +1395,9 @@ $$
 
 建议按四个里程碑交付：
 
-1. **M1 文本 RAG：** Task 0–5、7–11；先支持 TXT/MD/CSV，完成端到端检索与引用。
-2. **M2 办公格式：** Task 6、13；加入 PDF/OCR/OOXML 与完整 UI。
-3. **M3 办公安全：** Task 3、12、14；加密、归档迁移、恶意文件和提示注入回归。
+1. **M1 文本 RAG：** Task 0–5、7–13；先支持 TXT/MD/CSV，从手机创建命名知识库、上传文档、按会话选择并完成端到端检索与引用。
+2. **M2 办公格式：** Task 6，并补跑 Task 13 UI；加入 PDF/OCR/OOXML、按页进度和来源定位。
+3. **M3 办公安全：** Task 14；完成恶意文件、提示注入、既有安全能力、全链恢复和性能回归。
 4. **M4 灰度发布：** Task 15；真机性能调优和使用反馈闭环。
 
 单人实现的合理工作量约为 \(6\) 至 \(10\) 周，取决于 PDF/OOXML 兼容范围、目标机型数量和企业安全审计强度。不要同时实现所有格式后才验证检索；先用纯文本打通闭环，再逐个增加解析器。

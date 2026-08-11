@@ -17,6 +17,7 @@ class RagDatabaseFactory(
         val passphrase = keyManager.getOrCreateDatabasePassphrase()
         return Room.databaseBuilder(applicationContext, RagDatabase::class.java, databaseName)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
+            .addMigrations(RagMigrations.MIGRATION_1_2)
             .build()
     }
 

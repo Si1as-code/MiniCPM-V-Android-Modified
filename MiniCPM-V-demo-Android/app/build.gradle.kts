@@ -1,8 +1,36 @@
+import java.security.KeyStore
+import java.security.MessageDigest
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
+
+val localSigningProperties = Properties().apply {
+    val propertiesFile = rootProject.file("signing.local.properties")
+    if (propertiesFile.isFile) propertiesFile.inputStream().use(::load)
+}
+
+fun signingProperty(name: String): String? =
+    providers.gradleProperty(name).orNull?.takeIf { it.isNotBlank() }
+        ?: localSigningProperties.getProperty(name)?.takeIf { it.isNotBlank() }
+
+val installationKeystorePath = signingProperty("MINICPMV_KEYSTORE")
+val installationKeystorePassword = signingProperty("MINICPMV_KEYSTORE_PASSWORD")
+val installationKeyAlias = signingProperty("MINICPMV_KEY_ALIAS")
+val installationKeyPassword = signingProperty("MINICPMV_KEY_PASSWORD")
+val installationSigningIsConfigured = listOf(
+    installationKeystorePath,
+    installationKeystorePassword,
+    installationKeyAlias,
+    installationKeyPassword,
+).all { !it.isNullOrBlank() } && installationKeystorePath?.let(::file)?.isFile == true
+
+// Certificate of the one canonical key accepted by existing development installs.
+val expectedInstallationCertificateSha256 =
+    "12BEFEDA42FECFE1F9A268466B85906E0B18E13C960B7217487FC6145166EB85"
 
 android {
     namespace = "com.example.minicpm_v_demo"
@@ -52,23 +80,25 @@ android {
         }
     }
 
-    // Release signing config. Credentials live in ~/.gradle/gradle.properties
-    // (outside any git repo, only readable by your local mac account).
-    // If those properties aren't set the release build still works but produces
-    // an unsigned apk - useful e.g. on CI without secrets.
+    // Debug and release installs must share one explicit, stable signing source.
+    // Credentials live in ignored signing.local.properties or Gradle properties.
     signingConfigs {
-        create("release") {
-            val keystorePath = providers.gradleProperty("MINICPMV_KEYSTORE").orNull
-            if (!keystorePath.isNullOrBlank()) {
-                storeFile = file(keystorePath)
-                storePassword = providers.gradleProperty("MINICPMV_KEYSTORE_PASSWORD").orNull
-                keyAlias = providers.gradleProperty("MINICPMV_KEY_ALIAS").orNull
-                keyPassword = providers.gradleProperty("MINICPMV_KEY_PASSWORD").orNull
+        create("installation") {
+            if (installationSigningIsConfigured) {
+                storeFile = file(requireNotNull(installationKeystorePath))
+                storePassword = installationKeystorePassword
+                keyAlias = installationKeyAlias
+                keyPassword = installationKeyPassword
             }
         }
     }
 
     buildTypes {
+        debug {
+            if (installationSigningIsConfigured) {
+                signingConfig = signingConfigs.getByName("installation")
+            }
+        }
         release {
             // Keep ProGuard/R8 disabled: the app calls native JNI symbols and
             // shrinking the Kotlin side has no measurable benefit here, while
@@ -82,8 +112,8 @@ android {
             // Only attach the signing config when the keystore actually exists,
             // so contributors without the secret can still run :assembleRelease
             // (it'll produce an unsigned apk in that case).
-            val signingCfg = signingConfigs.getByName("release")
-            if (signingCfg.storeFile?.exists() == true) {
+            val signingCfg = signingConfigs.getByName("installation")
+            if (installationSigningIsConfigured) {
                 signingConfig = signingCfg
             }
         }
@@ -105,6 +135,41 @@ android {
     androidResources {
         noCompress.add("gguf")
         noCompress.add("bin")
+    }
+}
+
+val verifyInstallationSigning = tasks.register("verifyInstallationSigning") {
+    group = "verification"
+    description = "Fail before device installation when the canonical signing key is absent or wrong."
+    doLast {
+        check(installationSigningIsConfigured) {
+            "Stable installation signing is required. Configure MINICPMV_KEYSTORE, " +
+                "MINICPMV_KEYSTORE_PASSWORD, MINICPMV_KEY_ALIAS and MINICPMV_KEY_PASSWORD " +
+                "in ignored signing.local.properties or Gradle properties."
+        }
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+            file(requireNotNull(installationKeystorePath)).inputStream().use { input ->
+                load(input, requireNotNull(installationKeystorePassword).toCharArray())
+            }
+        }
+        val certificate = requireNotNull(keyStore.getCertificate(requireNotNull(installationKeyAlias))) {
+            "Configured installation key alias does not exist."
+        }
+        val fingerprint = MessageDigest.getInstance("SHA-256")
+            .digest(certificate.encoded)
+            .joinToString("") { byte -> "%02X".format(byte) }
+        check(fingerprint == expectedInstallationCertificateSha256) {
+            "Installation signing certificate mismatch. Refusing to build/install an incompatible APK. " +
+                "Expected $expectedInstallationCertificateSha256, got $fingerprint."
+        }
+    }
+}
+
+tasks.configureEach {
+    val installsOnDevice = name.startsWith("install", ignoreCase = true) ||
+        (name.startsWith("connected", ignoreCase = true) && name.endsWith("AndroidTest"))
+    if (installsOnDevice && name != verifyInstallationSigning.name) {
+        dependsOn(verifyInstallationSigning)
     }
 }
 

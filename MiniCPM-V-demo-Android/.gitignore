@@ -18,6 +18,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+signing.local.properties
 
 app/build/
 app/.cxx/

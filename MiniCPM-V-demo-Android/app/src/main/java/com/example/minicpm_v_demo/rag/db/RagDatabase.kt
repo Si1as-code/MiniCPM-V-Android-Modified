@@ -12,9 +12,10 @@ import androidx.room.TypeConverters
         ChunkEntity::class,
         ChunkFtsEntity::class,
         ConversationKnowledgeBaseCrossRef::class,
+        ConversationRagStateEntity::class,
         CitationEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(RagDatabaseConverters::class)
@@ -22,6 +23,7 @@ abstract class RagDatabase : RoomDatabase() {
     abstract fun knowledgeBaseDao(): KnowledgeBaseDao
     abstract fun documentDao(): DocumentDao
     abstract fun chunkDao(): ChunkDao
+    abstract fun conversationRagDao(): ConversationRagDao
 
     companion object {
         const val DATABASE_NAME = "local-rag.db"

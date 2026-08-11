@@ -34,10 +34,11 @@ class RagDatabaseDaoTest {
     @Test
     fun retrievalOnlyReturnsChunksFromReadyEnabledDocuments() = runBlocking {
         val now = 1_723_200_000_000L
-        database.knowledgeBaseDao().upsert(
+        database.knowledgeBaseDao().insert(
             KnowledgeBaseEntity(
                 id = "kb-1",
                 name = "Office",
+                normalizedName = "office",
                 createdAt = now,
                 updatedAt = now,
             ),
@@ -59,8 +60,14 @@ class RagDatabaseDaoTest {
     @Test
     fun deletingKnowledgeBaseCascadesDocumentsChunksAndFtsRows() = runBlocking {
         val now = 1_723_200_000_000L
-        database.knowledgeBaseDao().upsert(
-            KnowledgeBaseEntity(id = "kb-delete", name = "Delete me", createdAt = now, updatedAt = now),
+        database.knowledgeBaseDao().insert(
+            KnowledgeBaseEntity(
+                id = "kb-delete",
+                name = "Delete me",
+                normalizedName = "delete me",
+                createdAt = now,
+                updatedAt = now,
+            ),
         )
         database.documentDao().upsert(document("doc-delete", DocumentStatus.READY, now, "kb-delete"))
         database.chunkDao().insertAll(listOf(chunk(3, "doc-delete", "confidential payroll", "kb-delete")))

@@ -7,10 +7,14 @@ import androidx.room.Fts4
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "knowledge_bases")
+@Entity(
+    tableName = "knowledge_bases",
+    indices = [Index(value = ["normalizedName"], unique = true)],
+)
 data class KnowledgeBaseEntity(
     @PrimaryKey val id: String,
     val name: String,
+    val normalizedName: String,
     val createdAt: Long,
     val updatedAt: Long,
     val enabled: Boolean = true,
@@ -121,9 +125,15 @@ data class ChunkFtsEntity(
     indices = [Index("knowledgeBaseId")],
 )
 data class ConversationKnowledgeBaseCrossRef(
-    val conversationId: String,
+    val conversationId: Long,
     val knowledgeBaseId: String,
-    val enabled: Boolean = true,
+)
+
+@Entity(tableName = "conversation_rag_state")
+data class ConversationRagStateEntity(
+    @PrimaryKey val conversationId: Long,
+    val ragEnabled: Boolean = false,
+    val updatedAt: Long,
 )
 
 @Entity(
