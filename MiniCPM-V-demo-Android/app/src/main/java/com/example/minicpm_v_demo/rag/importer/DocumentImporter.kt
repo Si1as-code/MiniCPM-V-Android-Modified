@@ -29,7 +29,7 @@ data class ImportedDocument(
 )
 
 fun interface EncryptedDocumentWriter {
-    fun write(plaintext: InputStream, target: File)
+    fun write(plaintext: InputStream, target: File, shouldContinue: () -> Boolean)
 }
 
 enum class DocumentImportError {
@@ -84,13 +84,19 @@ class DocumentImporter(
             }
             if (!shouldContinue()) fail(DocumentImportError.CANCELLED)
             partFile.inputStream().use { plaintext ->
-                encryptedDocumentWriter.write(plaintext, encryptedTarget)
+                encryptedDocumentWriter.write(plaintext, encryptedTarget) {
+                    if (!shouldContinue()) fail(DocumentImportError.CANCELLED)
+                    true
+                }
             }
             completed = true
             return ImportedDocument(privateFileName, copied.sha256, copied.sizeBytes, detection.type)
         } finally {
             partFile.delete()
-            if (!completed) File(encryptedTarget.parentFile, encryptedTarget.name + ".new").delete()
+            if (!completed) {
+                encryptedTarget.delete()
+                File(encryptedTarget.parentFile, encryptedTarget.name + ".new").delete()
+            }
         }
     }
 

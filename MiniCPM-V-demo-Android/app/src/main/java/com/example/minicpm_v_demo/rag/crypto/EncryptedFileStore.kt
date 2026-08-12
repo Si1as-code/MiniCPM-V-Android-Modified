@@ -19,7 +19,11 @@ class EncryptedFileStore(
     private val keyProvider: () -> SecretKey,
     private val secureRandom: SecureRandom = SecureRandom(),
 ) {
-    fun encrypt(source: InputStream, target: File) {
+    fun encrypt(
+        source: InputStream,
+        target: File,
+        shouldContinue: () -> Boolean = { true },
+    ) {
         val parent = target.parentFile
         require(parent == null || parent.isDirectory || parent.mkdirs()) {
             "Unable to create encrypted file directory"
@@ -34,7 +38,7 @@ class EncryptedFileStore(
                 output.writeByte(FORMAT_VERSION)
                 output.writeByte(nonce.size)
                 output.write(nonce)
-                transform(source, output, cipher)
+                transform(source, output, cipher, shouldContinue)
                 output.flush()
             }
             atomicFile.finishWrite(fileOutput)
@@ -68,14 +72,21 @@ class EncryptedFileStore(
             updateAAD(FILE_AAD)
         }
 
-    private fun transform(source: InputStream, destination: OutputStream, cipher: Cipher) {
+    private fun transform(
+        source: InputStream,
+        destination: OutputStream,
+        cipher: Cipher,
+        shouldContinue: () -> Boolean = { true },
+    ) {
         val inputBuffer = ByteArray(BUFFER_BYTES)
         while (true) {
+            if (!shouldContinue()) throw IOException("Encrypted file operation cancelled")
             val count = source.read(inputBuffer)
             if (count < 0) break
             if (count == 0) continue
             cipher.update(inputBuffer, 0, count)?.takeIf { it.isNotEmpty() }?.let(destination::write)
         }
+        if (!shouldContinue()) throw IOException("Encrypted file operation cancelled")
         cipher.doFinal()?.takeIf { it.isNotEmpty() }?.let(destination::write)
     }
 

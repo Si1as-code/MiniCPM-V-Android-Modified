@@ -439,6 +439,7 @@ class MainActivity : StatusBarVisibleActivity() {
     private fun showChatSettingsDialog() {
         val view = layoutInflater.inflate(R.layout.dialog_chat_settings, null, false)
         val rowModelManagement = view.findViewById<View>(R.id.row_model_management)
+        val rowKnowledgeBases = view.findViewById<View>(R.id.row_knowledge_bases)
         val rowImageSlice = view.findViewById<View>(R.id.row_image_slice)
         val rowConversationManagement = view.findViewById<View>(R.id.row_conversation_management)
         val rowClearChat = view.findViewById<View>(R.id.row_clear_chat)
@@ -471,6 +472,10 @@ class MainActivity : StatusBarVisibleActivity() {
         rowModelManagement.setOnClickListener {
             dialog.dismiss()
             startActivity(Intent(this, ModelManagerActivity::class.java))
+        }
+        rowKnowledgeBases.setOnClickListener {
+            dialog.dismiss()
+            startActivity(Intent(this, KnowledgeBaseActivity::class.java))
         }
         rowImageSlice.setOnClickListener {
             dialog.dismiss()

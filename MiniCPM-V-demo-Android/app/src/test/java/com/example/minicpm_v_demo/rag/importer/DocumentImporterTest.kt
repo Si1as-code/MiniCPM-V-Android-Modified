@@ -96,6 +96,41 @@ class DocumentImporterTest {
         assertFalse(staging.listFiles().orEmpty().any { it.name.endsWith(".part") })
     }
 
+    @Test
+    fun `cancellation remains active while encrypted output is written`() {
+        val staging = Files.createTempDirectory("document-importer-encryption-cancel").toFile()
+        try {
+            val importer = DocumentImporter(
+                stagingDirectory = staging,
+                encryptedDocumentWriter = EncryptedDocumentWriter { plaintext, target, shouldContinue ->
+                    target.outputStream().use { output ->
+                        val buffer = ByteArray(4)
+                        while (true) {
+                            if (!shouldContinue()) throw DocumentImportException(DocumentImportError.CANCELLED)
+                            val count = plaintext.read(buffer)
+                            if (count < 0) break
+                            output.write(buffer, 0, count)
+                        }
+                    }
+                },
+                duplicateShaExists = { _, _ -> false },
+            )
+            var checks = 0
+            val error = assertThrows(DocumentImportException::class.java) {
+                importer.copy(
+                    request("encrypt-cancel", source("cancel.txt", "text/plain", null) {
+                        ByteArrayInputStream("content that reaches encryption".toByteArray())
+                    }),
+                ) { checks++ < 3 }
+            }
+
+            assertEquals(DocumentImportError.CANCELLED, error.error)
+            assertTrue(staging.listFiles().orEmpty().isEmpty())
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
+
     private fun request(id: String, source: DocumentImportSource) = DocumentImportRequest(
         documentId = id,
         knowledgeBaseId = "kb-1",
@@ -120,7 +155,7 @@ class DocumentImporterTest {
             block(
                 DocumentImporter(
                     stagingDirectory = staging,
-                    encryptedDocumentWriter = EncryptedDocumentWriter { plaintext, target ->
+                    encryptedDocumentWriter = EncryptedDocumentWriter { plaintext, target, _ ->
                         target.outputStream().use { output -> plaintext.copyTo(output) }
                     },
                     duplicateShaExists = duplicateSha,

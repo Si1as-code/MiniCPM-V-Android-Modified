@@ -13,6 +13,17 @@
     <string name="suggestion_2_text" translatable="false">Explain AI in brief.</string>
     <string name="model_management">模型管理</string>
     <string name="chat_settings">设置</string>
+    <string name="rag_knowledge_bases">知识库</string>
+    <string name="rag_settings_summary">创建知识库并从手机批量导入文档</string>
+    <string name="rag_knowledge_base_summary">选择知识库后可批量提交文档。正文会在后台复制、校验并加密保存。</string>
+    <string name="rag_create_knowledge_base">新建知识库</string>
+    <string name="rag_import_documents">导入文档</string>
+    <string name="rag_knowledge_base_name_hint">知识库名称</string>
+    <string name="rag_invalid_knowledge_base_name">名称无效，请输入 1–50 个安全字符</string>
+    <string name="rag_duplicate_knowledge_base_name">该知识库名称已存在</string>
+    <string name="rag_select_knowledge_base_first">请先选择或新建知识库</string>
+    <string name="rag_selected_name">✓ %1$s</string>
+    <string name="rag_documents_queued">已加入后台队列：%1$d/%2$d 个文档</string>
     <string name="settings_model_summary">当前模型：%1$s</string>
     <string name="settings_slice_summary">当前切片数：%1$d · 越高细节越清晰</string>
     <string name="settings_clear_chat_summary">删除当前消息、图片缓存和模型上下文</string>

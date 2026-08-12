@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/rag_knowledge_bases"
+        android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/rag_knowledge_base_summary" />
+
+    <ListView
+        android:id="@+id/list_knowledge_bases"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btn_create_knowledge_base"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/rag_create_knowledge_base" />
+
+    <Button
+        android:id="@+id/btn_import_documents"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/rag_import_documents" />
+</LinearLayout>

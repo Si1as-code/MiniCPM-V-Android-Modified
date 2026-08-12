@@ -83,6 +83,42 @@ interface DocumentDao {
 
     @Query(
         """
+        SELECT EXISTS(
+            SELECT 1 FROM documents
+            WHERE knowledgeBaseId = :knowledgeBaseId
+              AND sha256 = :sha256
+              AND id != :excludingDocumentId
+        )
+        """,
+    )
+    suspend fun contentHashExists(
+        knowledgeBaseId: String,
+        sha256: String,
+        excludingDocumentId: String,
+    ): Boolean
+
+    @Query(
+        """
+        UPDATE documents
+        SET privateFileName = :privateFileName,
+            detectedType = :detectedType,
+            sha256 = :sha256,
+            sizeBytes = :sizeBytes,
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateImportedMetadata(
+        id: String,
+        privateFileName: String,
+        detectedType: String,
+        sha256: String,
+        sizeBytes: Long,
+        updatedAt: Long,
+    ): Int
+
+    @Query(
+        """
         UPDATE documents
         SET status = :status,
             progressDone = :progressDone,

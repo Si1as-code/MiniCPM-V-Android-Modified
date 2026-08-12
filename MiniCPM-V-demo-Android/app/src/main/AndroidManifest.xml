@@ -71,6 +71,11 @@
             android:label="@string/tts_title"
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".KnowledgeBaseActivity"
+            android:exported="false"
+            android:label="@string/rag_knowledge_bases"
+            android:parentActivityName=".MainActivity" />
 
         <service
             android:name=".ModelDownloadService"

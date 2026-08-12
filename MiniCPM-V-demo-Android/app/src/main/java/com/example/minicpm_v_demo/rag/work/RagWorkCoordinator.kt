@@ -1,0 +1,59 @@
+package com.example.minicpm_v_demo.rag.work
+
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Operation
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+data class RagWorkUiState(
+    val state: WorkInfo.State,
+    val progressDone: Int,
+    val progressTotal: Int,
+)
+
+interface RagWorkCoordinator {
+    fun enqueue(documentId: String): Operation
+    fun cancel(documentId: String): Operation
+    fun observe(documentId: String): Flow<RagWorkUiState?>
+}
+
+class WorkManagerRagWorkCoordinator(
+    private val workManager: WorkManager,
+) : RagWorkCoordinator {
+    override fun enqueue(documentId: String): Operation {
+        val input = RagWorkContract.inputValues(documentId)
+        val request = OneTimeWorkRequestBuilder<ImportCopyWorker>()
+            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+            .addTag(RagWorkContract.uniqueWorkName(documentId))
+            .build()
+        return workManager.enqueueUniqueWork(
+            RagWorkContract.uniqueWorkName(documentId),
+            ExistingWorkPolicy.KEEP,
+            request,
+        )
+    }
+
+    override fun cancel(documentId: String): Operation =
+        workManager.cancelUniqueWork(RagWorkContract.uniqueWorkName(documentId))
+
+    override fun observe(documentId: String): Flow<RagWorkUiState?> =
+        workManager.getWorkInfosForUniqueWorkFlow(RagWorkContract.uniqueWorkName(documentId))
+            .map { workInfos ->
+                workInfos.lastOrNull()?.let { info ->
+                    RagWorkUiState(
+                        state = info.state,
+                        progressDone = info.progress.getInt(KEY_PROGRESS_DONE, 0),
+                        progressTotal = info.progress.getInt(KEY_PROGRESS_TOTAL, 0),
+                    )
+                }
+            }
+
+    companion object {
+        const val KEY_PROGRESS_DONE = "progressDone"
+        const val KEY_PROGRESS_TOTAL = "progressTotal"
+    }
+}

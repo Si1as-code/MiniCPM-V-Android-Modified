@@ -1022,9 +1022,9 @@ suspend fun updateName(id: String, name: String, normalizedName: String, updated
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/work/RagWorkRecoveryTest.kt`
 
 - [x] **Step 1：写导入红灯测试。** 覆盖超限、复制中取消、重复 SHA-256、伪扩展名、无法持久授权、`.part` 清理和两个不同 URI 同名文件；已完成红灯验证并随核心导入器转绿。
-- [ ] **Step 2：实现 SAF 多选入口。** UI 使用 `ActivityResultContracts.OpenMultipleDocuments()`；回调只把 URI 和目标 `knowledgeBaseId` 交给 `DocumentImporter.enqueue()`，不得在主线程读取正文。
-- [ ] **Step 3：实现隔离区复制。** 使用 64 KiB 固定缓冲区流式计算 SHA-256，持续检查 `isStopped`，写入 `noBackupFilesDir/rag/source/{documentId}.part`，`fsync` 后原子改名为 `{documentId}.src.enc`；失败和取消删除 `.part`。
-- [ ] **Step 4：建立唯一工作 API。** 固定接口如下；所有 Worker 输入 `Data` 只包含 `documentId`：
+- [x] **Step 2：实现 SAF 多选入口。** 已新增独立知识库页，使用 `ActivityResultContracts.OpenMultipleDocuments()`；回调仅在 `Dispatchers.IO` 将 URI 和目标 `knowledgeBaseId` 交给 `DocumentImportQueue.enqueue()`，不在主线程读取正文。
+- [x] **Step 3：实现隔离区复制。** 已使用 64 KiB 固定缓冲区流式计算 SHA-256，复制和加密两个阶段均持续检查 `isStopped`，写入 `noBackupFilesDir/rag/source/{documentId}.part`，`fsync` 后加密原子写入 `{documentId}.src.enc`；失败和取消删除 `.part`、目标和原子临时文件。
+- [x] **Step 4：建立唯一工作 API。** 已实现固定接口；所有 Worker 输入 `Data` 只包含 `documentId`：
 
 ```kotlin
 interface RagWorkCoordinator {
@@ -1036,6 +1036,8 @@ interface RagWorkCoordinator {
 
 首个提交使用 `beginUniqueWork("rag-index-$documentId", ExistingWorkPolicy.KEEP, importCopyRequest)` 只运行 `ImportCopyWorker`；Task 5–9 每完成一个阶段就修改同一 coordinator 并追加对应 `OneTimeWorkRequest`，最终链必须与第 3.2 节一致。
 - [ ] **Step 5：写恢复测试。** 验证重复点击只有一条 unique work、Worker 重建后从 Room 状态继续、取消进入 `CANCELLED`、前台长任务通知可取消、通知权限被拒绝时仍提供应用内进度。
+
+阶段记录（2026-08-12）：已实现 `DocumentImportQueue`、`WorkManagerRagWorkCoordinator`、`ImportCopyWorker` 和知识库 SAF 多选入口；全量 JVM 单元测试与 `assembleDebug` 通过。恢复测试、启动扫描补偿、前台通知和应用内详细进度仍归 Step 5，尚未标记完成。
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.importer.*"

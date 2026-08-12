@@ -11,6 +11,17 @@
     <string name="suggestion_1_text">Write a poem on spring.</string>
     <string name="model_management">Model Management</string>
     <string name="chat_settings">Settings</string>
+    <string name="rag_knowledge_bases">Knowledge bases</string>
+    <string name="rag_settings_summary">Create knowledge bases and import documents from this device</string>
+    <string name="rag_knowledge_base_summary">Select a knowledge base, then submit multiple documents. Content is copied, validated, and encrypted in the background.</string>
+    <string name="rag_create_knowledge_base">Create knowledge base</string>
+    <string name="rag_import_documents">Import documents</string>
+    <string name="rag_knowledge_base_name_hint">Knowledge base name</string>
+    <string name="rag_invalid_knowledge_base_name">Enter 1–50 safe characters</string>
+    <string name="rag_duplicate_knowledge_base_name">That knowledge base name already exists</string>
+    <string name="rag_select_knowledge_base_first">Select or create a knowledge base first</string>
+    <string name="rag_selected_name">✓ %1$s</string>
+    <string name="rag_documents_queued">Queued for background import: %1$d/%2$d documents</string>
     <string name="settings_model_summary">Current model: %1$s</string>
     <string name="settings_slice_summary">Current slices: %1$d · Higher preserves more detail</string>
     <string name="settings_clear_chat_summary">Delete current messages, image cache, and model context</string>
