@@ -109,6 +109,23 @@ class RagEncryptionTest {
     }
 
     @Test
+    fun productionKeystoreKeyEncryptsFileInNoBackupRagDirectory() {
+        val manager = RagKeyManager(context)
+        val targetDirectory = File(context.noBackupFilesDir, "rag/source").apply { mkdirs() }
+        val target = File(targetDirectory, "keystore-${UUID.randomUUID()}.src.enc")
+        val plaintext = "production keystore probe".toByteArray()
+        try {
+            val store = EncryptedFileStore(manager::getOrCreateMasterKey)
+            store.encrypt(ByteArrayInputStream(plaintext), target)
+            val restored = ByteArrayOutputStream()
+            store.decrypt(target, restored)
+            assertArrayEquals(plaintext, restored.toByteArray())
+        } finally {
+            target.delete()
+        }
+    }
+
+    @Test
     fun failedReplacementPreservesPreviousAuthenticatedFile() {
         val key = generatedAesKey()
         val store = EncryptedFileStore(keyProvider = { key })

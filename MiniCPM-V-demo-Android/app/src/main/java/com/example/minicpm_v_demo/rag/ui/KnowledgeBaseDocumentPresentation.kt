@@ -1,0 +1,34 @@
+package com.example.minicpm_v_demo.rag.ui
+
+import com.example.minicpm_v_demo.rag.db.DocumentStatus
+
+sealed interface KnowledgeBaseDocumentPresentation {
+    data object Processing : KnowledgeBaseDocumentPresentation
+    data object Uploaded : KnowledgeBaseDocumentPresentation
+    data class Failure(val reason: String) : KnowledgeBaseDocumentPresentation
+
+    companion object {
+        fun from(status: DocumentStatus, errorCode: String?): KnowledgeBaseDocumentPresentation? = when (status) {
+            DocumentStatus.QUEUED,
+            DocumentStatus.COPYING,
+            -> Processing
+
+            DocumentStatus.PARSING -> Uploaded
+            DocumentStatus.FAILED -> Failure(ERROR_REASONS[errorCode] ?: "导入失败")
+            else -> null
+        }
+
+        private val ERROR_REASONS = mapOf(
+            "SOURCE_PERMISSION_LOST" to "文件访问权限已失效",
+            "SOURCE_UNAVAILABLE" to "无法读取文件",
+            "SOURCE_TOO_LARGE" to "文件超过大小限制",
+            "EMPTY_SOURCE" to "文件内容为空",
+            "UNSUPPORTED_TYPE" to "暂不支持此文件格式",
+            "DECLARATION_MISMATCH" to "文件格式与扩展名不一致",
+            "DUPLICATE_CONTENT" to "知识库中已有相同内容",
+            "ENCRYPTION_FAILED" to "加密失败",
+            "IO_FAILED" to "文件读写失败",
+            "IMPORT_COPY_FAILED" to "导入失败",
+        )
+    }
+}

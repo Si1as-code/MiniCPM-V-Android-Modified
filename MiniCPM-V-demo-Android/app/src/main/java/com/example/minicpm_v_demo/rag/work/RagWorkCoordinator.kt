@@ -37,13 +37,23 @@ class WorkManagerRagWorkCoordinator(
         )
     }
 
-    override fun cancel(documentId: String): Operation =
-        workManager.cancelUniqueWork(RagWorkContract.uniqueWorkName(documentId))
+    override fun cancel(documentId: String): Operation {
+        RagWorkContract.requireValidDocumentId(documentId)
+        val request = OneTimeWorkRequestBuilder<CancelImportWorker>()
+            .setInputData(Data.Builder().putString(RagWorkContract.KEY_DOCUMENT_ID, documentId).build())
+            .build()
+        return workManager.beginUniqueWork(
+            RagWorkContract.uniqueWorkName(documentId),
+            ExistingWorkPolicy.REPLACE,
+            request,
+        ).enqueue()
+    }
 
     override fun observe(documentId: String): Flow<RagWorkUiState?> =
         workManager.getWorkInfosForUniqueWorkFlow(RagWorkContract.uniqueWorkName(documentId))
             .map { workInfos ->
-                workInfos.lastOrNull()?.let { info ->
+                RagWorkRecoveryPolicy.selectObservable(workInfos) { it.state.isFinished }
+                    ?.let { info ->
                     RagWorkUiState(
                         state = info.state,
                         progressDone = info.progress.getInt(KEY_PROGRESS_DONE, 0),
@@ -56,4 +66,5 @@ class WorkManagerRagWorkCoordinator(
         const val KEY_PROGRESS_DONE = "progressDone"
         const val KEY_PROGRESS_TOTAL = "progressTotal"
     }
+
 }

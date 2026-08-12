@@ -1,4 +1,5 @@
 <resources>
+    <string name="back">Back</string>
     <!-- Keys not listed here fall back to values/strings.xml (Chinese default).
          Brand names (app_name, app_title, welcome_title, etc.), preset English
          prompts (suggestion_2, suggestion_2_text, disclaimer), and other strings
@@ -22,6 +23,16 @@
     <string name="rag_select_knowledge_base_first">Select or create a knowledge base first</string>
     <string name="rag_selected_name">✓ %1$s</string>
     <string name="rag_documents_queued">Queued for background import: %1$d/%2$d documents</string>
+    <string name="rag_import_notification_channel">Knowledge base imports</string>
+    <string name="rag_import_notification_title">Importing knowledge base document</string>
+    <string name="rag_import_notification_body">Securely copying and encrypting the document</string>
+    <string name="rag_empty_knowledge_bases">No knowledge bases yet\nCreate one using the button below</string>
+    <string name="rag_delete_knowledge_base">Delete knowledge base</string>
+    <string name="rag_delete_knowledge_base_confirm">Delete “%1$s”? Its documents and index will also be deleted. This cannot be undone.</string>
+    <string name="rag_knowledge_base_deleted">Knowledge base deleted</string>
+    <string name="rag_document_processing">%1$s\nImporting securely…</string>
+    <string name="rag_document_uploaded">%1$s\nUploaded</string>
+    <string name="rag_document_failed">%1$s\nFailed: %2$s</string>
     <string name="settings_model_summary">Current model: %1$s</string>
     <string name="settings_slice_summary">Current slices: %1$d · Higher preserves more detail</string>
     <string name="settings_clear_chat_summary">Delete current messages, image cache, and model context</string>

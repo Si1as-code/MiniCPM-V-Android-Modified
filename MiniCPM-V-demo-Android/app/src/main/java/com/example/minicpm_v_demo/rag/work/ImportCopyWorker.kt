@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.example.minicpm_v_demo.MiniCPMApplication
 import com.example.minicpm_v_demo.rag.crypto.EncryptedFileStore
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
@@ -36,11 +37,16 @@ class ImportCopyWorker(
         if (sourceUri.scheme != "content") return@withContext Result.failure()
 
         try {
+            setForeground(RagImportNotifications.foregroundInfo(applicationContext, documentId))
             if (document.status == DocumentStatus.QUEUED) {
                 dao.transition(documentId, DocumentStatus.COPYING, 0, 1, System.currentTimeMillis())
             } else if (document.status != DocumentStatus.COPYING) {
                 return@withContext Result.failure()
             }
+            setProgress(workDataOf(
+                WorkManagerRagWorkCoordinator.KEY_PROGRESS_DONE to 0,
+                WorkManagerRagWorkCoordinator.KEY_PROGRESS_TOTAL to 1,
+            ))
             val importer = DocumentImporter(
                 stagingDirectory = RagTempFileCleaner.stagingDirectory(applicationContext.noBackupFilesDir),
                 encryptedDocumentWriter = EncryptedDocumentWriter { plaintext, target, shouldContinue ->
@@ -80,6 +86,10 @@ class ImportCopyWorker(
                 ) == 1,
             )
             dao.transition(documentId, DocumentStatus.PARSING, 1, 1, System.currentTimeMillis())
+            setProgress(workDataOf(
+                WorkManagerRagWorkCoordinator.KEY_PROGRESS_DONE to 1,
+                WorkManagerRagWorkCoordinator.KEY_PROGRESS_TOTAL to 1,
+            ))
             Result.success()
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { markCancelled(documentId) }
@@ -88,8 +98,8 @@ class ImportCopyWorker(
             val cancelled = error.error.name == "CANCELLED"
             if (cancelled) markCancelled(documentId) else markFailed(documentId, error.error.name)
             if (cancelled) Result.failure() else Result.failure()
-        } catch (_: Exception) {
-            markFailed(documentId, "IMPORT_COPY_FAILED")
+        } catch (error: Exception) {
+            markFailed(documentId, RagImportFailureClassifier.code(error))
             Result.failure()
         }
     }

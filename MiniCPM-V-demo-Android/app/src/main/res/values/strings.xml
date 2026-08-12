@@ -1,4 +1,5 @@
 <resources>
+    <string name="back">返回</string>
     <string name="app_name" translatable="false">MiniCPM-V-demo</string>
     <string name="app_title" translatable="false">MiniCPM-V</string>
     <string name="app_title_text" translatable="false">MiniCPM</string>
@@ -24,6 +25,16 @@
     <string name="rag_select_knowledge_base_first">请先选择或新建知识库</string>
     <string name="rag_selected_name">✓ %1$s</string>
     <string name="rag_documents_queued">已加入后台队列：%1$d/%2$d 个文档</string>
+    <string name="rag_import_notification_channel">知识库文档导入</string>
+    <string name="rag_import_notification_title">正在导入知识库文档</string>
+    <string name="rag_import_notification_body">正在安全复制并加密文档</string>
+    <string name="rag_empty_knowledge_bases">还没有知识库\n点击下方按钮新建一个</string>
+    <string name="rag_delete_knowledge_base">删除知识库</string>
+    <string name="rag_delete_knowledge_base_confirm">确定删除“%1$s”吗？其中的文档和索引也会一并删除，此操作无法撤销。</string>
+    <string name="rag_knowledge_base_deleted">知识库已删除</string>
+    <string name="rag_document_processing">%1$s\n正在安全导入…</string>
+    <string name="rag_document_uploaded">%1$s\n上传成功</string>
+    <string name="rag_document_failed">%1$s\n失败：%2$s</string>
     <string name="settings_model_summary">当前模型：%1$s</string>
     <string name="settings_slice_summary">当前切片数：%1$d · 越高细节越清晰</string>
     <string name="settings_clear_chat_summary">删除当前消息、图片缓存和模型上下文</string>

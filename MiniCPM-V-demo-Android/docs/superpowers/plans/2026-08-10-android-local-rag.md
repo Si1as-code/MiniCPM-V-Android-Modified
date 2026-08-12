@@ -1035,9 +1035,11 @@ interface RagWorkCoordinator {
 ```
 
 首个提交使用 `beginUniqueWork("rag-index-$documentId", ExistingWorkPolicy.KEEP, importCopyRequest)` 只运行 `ImportCopyWorker`；Task 5–9 每完成一个阶段就修改同一 coordinator 并追加对应 `OneTimeWorkRequest`，最终链必须与第 3.2 节一致。
-- [ ] **Step 5：写恢复测试。** 验证重复点击只有一条 unique work、Worker 重建后从 Room 状态继续、取消进入 `CANCELLED`、前台长任务通知可取消、通知权限被拒绝时仍提供应用内进度。
+- [ ] **Step 5：写恢复测试。** 已实现 unique work `KEEP` 去重、启动时恢复 `QUEUED/COPYING`、取消替换链写入 `CANCELLED`、固定安全文案前台通知及通知取消入口；知识库页从加密 Room 状态轮询显示应用内进度，拒绝通知权限不影响。已在 vivo V2359A 真机验证 Room 重建只恢复 `QUEUED/COPYING`（1/1 通过）。仍需增加“实际运行中取消”和“通知权限拒绝”端到端真机用例后标记完成。
 
 阶段记录（2026-08-12）：已实现 `DocumentImportQueue`、`WorkManagerRagWorkCoordinator`、`ImportCopyWorker` 和知识库 SAF 多选入口；全量 JVM 单元测试与 `assembleDebug` 通过。恢复测试、启动扫描补偿、前台通知和应用内详细进度仍归 Step 5，尚未标记完成。
+
+恢复阶段记录（2026-08-12）：应用启动会扫描加密 Room 中 `QUEUED/COPYING` 文档并用同一 unique work 名恢复；取消操作使用 `REPLACE` 停止旧导入并运行 `CancelImportWorker` 持久化终态；导入 Worker 提供前台通知与 WorkManager 进度，知识库页直接显示 Room 进度作为通知权限拒绝时的降级路径。JVM 全量测试、`assembleDebug` 及 vivo V2359A 的 `RagWorkRecoveryTest` 通过。
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.importer.*"

@@ -10,14 +10,12 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.GeneralSecurityException
-import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 class EncryptedFileStore(
     private val keyProvider: () -> SecretKey,
-    private val secureRandom: SecureRandom = SecureRandom(),
 ) {
     fun encrypt(
         source: InputStream,
@@ -31,8 +29,12 @@ class EncryptedFileStore(
         val atomicFile = AtomicFile(target)
         val fileOutput = atomicFile.startWrite()
         try {
-            val nonce = ByteArray(GCM_NONCE_BYTES).also(secureRandom::nextBytes)
-            val cipher = newCipher(Cipher.ENCRYPT_MODE, nonce)
+            // Android Keystore keys with randomized encryption enabled reject caller-provided
+            // IVs. Let the provider generate the nonce, then persist it in the authenticated
+            // file header for decryption.
+            val cipher = newEncryptCipher()
+            val nonce = cipher.iv
+            check(nonce.size == GCM_NONCE_BYTES) { "Unexpected AES-GCM nonce length" }
             DataOutputStream(BufferedOutputStream(fileOutput)).useWithoutClosingUnderlying { output ->
                 output.write(MAGIC)
                 output.writeByte(FORMAT_VERSION)
@@ -58,17 +60,24 @@ class EncryptedFileStore(
                 val nonceLength = input.readUnsignedByte()
                 require(nonceLength == GCM_NONCE_BYTES) { "Invalid encrypted RAG file nonce" }
                 val nonce = ByteArray(nonceLength).also(input::readFully)
-                transform(input, destination, newCipher(Cipher.DECRYPT_MODE, nonce))
+                transform(input, destination, newDecryptCipher(nonce))
             }
         } catch (error: GeneralSecurityException) {
             throw IOException("Encrypted RAG file authentication failed", error)
         }
     }
 
-    private fun newCipher(mode: Int, nonce: ByteArray): Cipher = Cipher
+    private fun newEncryptCipher(): Cipher = Cipher
         .getInstance(AES_GCM_TRANSFORMATION)
         .apply {
-            init(mode, keyProvider(), GCMParameterSpec(GCM_TAG_BITS, nonce))
+            init(Cipher.ENCRYPT_MODE, keyProvider())
+            updateAAD(FILE_AAD)
+        }
+
+    private fun newDecryptCipher(nonce: ByteArray): Cipher = Cipher
+        .getInstance(AES_GCM_TRANSFORMATION)
+        .apply {
+            init(Cipher.DECRYPT_MODE, keyProvider(), GCMParameterSpec(GCM_TAG_BITS, nonce))
             updateAAD(FILE_AAD)
         }
 
