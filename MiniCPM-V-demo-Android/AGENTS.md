@@ -7,3 +7,10 @@
 - Use the canonical certificate pinned in `app/build.gradle.kts`; keep the keystore and credentials outside Git via `signing.local.properties` or Gradle properties.
 - Before changing the pinned certificate, compare it with the installed package certificate and obtain explicit approval for any uninstall that could erase application data.
 - On `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, stop. Do not uninstall automatically and do not generate another key.
+
+## Canonical Windows Android environment
+
+- Run Gradle through `gradlew.bat`; it loads `android-env.bat` and the ignored machine-specific `environment.local.bat`.
+- Keep the single Gradle user home at the workspace root `.gradle-user-home` and the single Android user home at `.android`.
+- Do not create `.gradle-user-home`, `.gradle-local`, `.android-local`, `.android`, or `.android-user-home` inside `MiniCPM-V-demo-Android`.
+- Use JDK 21 and `D:\Android\Sdk`; do not rely on the older outer `D:\Android\platform-tools` PATH entry.

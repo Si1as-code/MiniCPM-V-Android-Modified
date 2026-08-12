@@ -19,11 +19,13 @@
 .cxx
 local.properties
 signing.local.properties
+environment.local.bat
 
 app/build/
 app/.cxx/
 .kotlin/
 .gradle-user-home/
+.android/
 .android-user-home/
 .gradle-local/
 .android-local/

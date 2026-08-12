@@ -34,12 +34,8 @@ val expectedInstallationCertificateSha256 =
 
 android {
     namespace = "com.example.minicpm_v_demo"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
-    ndkVersion = "27.0.12077973"
+    compileSdk = 37
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         applicationId = "com.example.minicpm_v_demo"
@@ -49,7 +45,7 @@ android {
         // placed under mipmap-anydpi-v26/ so pre-Oreo devices fall back
         // to the WebP icons in mipmap-{m,h,xh,xxh,xxxh}dpi/.
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 15
         versionName = "2.3"
 
@@ -185,8 +181,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.activity.ktx)
-    implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
-    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.coordinatorlayout:coordinatorlayout:1.3.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
 
     // Local, offline RAG storage, durable indexing, parsing, OCR and embedding runtime.
     implementation(libs.androidx.room.runtime)
@@ -251,7 +247,7 @@ tasks.register("buildGgmlCpu_v86") {
     doLast {
         val cmake = "$sdkRoot/cmake/4.1.2/bin/cmake"
         val ninja = File(cmake).parentFile.resolve("ninja.exe").absolutePath
-        val toolchain = "$sdkRoot/ndk/27.0.12077973/build/cmake/android.toolchain.cmake"
+        val toolchain = "$sdkRoot/ndk/29.0.14206865/build/cmake/android.toolchain.cmake"
         val configuredKleidiAiSource = System.getenv("KLEIDIAI_SOURCE_DIR")
             ?.takeIf { it.isNotBlank() }
             ?.let(::file)
