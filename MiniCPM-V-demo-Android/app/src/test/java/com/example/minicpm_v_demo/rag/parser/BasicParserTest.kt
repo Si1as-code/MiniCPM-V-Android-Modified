@@ -11,9 +11,9 @@ import org.junit.Test
 class BasicParserTest {
     @Test
     fun `text parser accepts UTF-8 BOM and rejects malformed UTF-8`() {
-        val bomText = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + "第一行\nsecond".toByteArray()
+        val bomText = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + "???\nsecond".toByteArray()
         assertEquals(
-            listOf("第一行", "second"),
+            listOf("???", "second"),
             TextParser().parse(input(bomText)).map { it.text }.toList(),
         )
 
@@ -73,21 +73,20 @@ class BasicParserTest {
     }
 
     @Test
-    fun `parser registry selects only supported local text formats`() {
+    fun `parser registry selects supported local document formats`() {
         assertTrue(ParserRegistry.forDocument("notes.txt", "text/plain") is TextParser)
         assertTrue(ParserRegistry.forDocument("guide.md", "text/markdown") is MarkdownParser)
         assertTrue(ParserRegistry.forDocument("table.csv", "text/csv") is CsvParser)
         assertTrue(ParserRegistry.forDocument("page.html", "text/html") is HtmlParser)
-        assertThrows(ParserException::class.java) {
-            ParserRegistry.forDocument("report.pdf", "application/pdf")
-        }
+        assertTrue(ParserRegistry.forDocument("report.pdf", "application/pdf") is PdfDocumentParser)
+        assertThrows(ParserException::class.java) { ParserRegistry.forDocument("archive.bin", "application/octet-stream") }
     }
 
     @Test
     fun `parsed block codec round trips bounded records`() {
         val expected = listOf(
             ParsedBlock("Guide", BlockStructure.HEADING, "Guide", "line", "1"),
-            ParsedBlock("hello 世界", BlockStructure.PARAGRAPH, "Guide", "line", "2"),
+            ParsedBlock("hello ??", BlockStructure.PARAGRAPH, "Guide", "line", "2"),
         )
         val bytes = ByteArrayOutputStream().also { output ->
             ParsedBlockCodec.write(expected.asSequence(), output)

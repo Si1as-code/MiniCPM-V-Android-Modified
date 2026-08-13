@@ -8,6 +8,7 @@ import com.example.minicpm_v_demo.rag.crypto.EncryptedFileStore
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
 import com.example.minicpm_v_demo.rag.db.DocumentStatus
 import com.example.minicpm_v_demo.rag.parser.ParsedBlockCodec
+import com.example.minicpm_v_demo.rag.parser.OcrAwareDocumentParser
 import com.example.minicpm_v_demo.rag.parser.ParserException
 import com.example.minicpm_v_demo.rag.parser.ParserInput
 import com.example.minicpm_v_demo.rag.parser.ParserRegistry
@@ -28,6 +29,9 @@ class ParseWorker(
         val app = applicationContext as? MiniCPMApplication ?: return@withContext Result.failure()
         val dao = app.ragDatabase.documentDao()
         val document = dao.findById(documentId) ?: return@withContext Result.failure()
+        if (document.status in setOf(DocumentStatus.OCR, DocumentStatus.CHUNKING)) {
+            return@withContext Result.success()
+        }
         if (document.status != DocumentStatus.PARSING) return@withContext Result.failure()
         val staging = RagTempFileCleaner.stagingDirectory(applicationContext.noBackupFilesDir)
         val source = staging.resolve(document.privateFileName)
@@ -54,7 +58,12 @@ class ParseWorker(
                     encodeFailure?.let { throw it }
                 }
             }
-            dao.transition(documentId, DocumentStatus.CHUNKING, 1, 1, System.currentTimeMillis())
+            val next = if ((parser as? OcrAwareDocumentParser)?.requiresOcr == true) {
+                DocumentStatus.OCR
+            } else {
+                DocumentStatus.CHUNKING
+            }
+            dao.transition(documentId, next, 1, 1, System.currentTimeMillis())
             Result.success()
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) { terminal(documentId, DocumentStatus.CANCELLED, "CANCELLED") }

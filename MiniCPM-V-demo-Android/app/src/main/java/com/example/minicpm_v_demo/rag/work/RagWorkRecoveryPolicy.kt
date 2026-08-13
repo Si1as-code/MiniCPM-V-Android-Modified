@@ -4,7 +4,7 @@ import com.example.minicpm_v_demo.rag.db.DocumentStatus
 
 object RagWorkRecoveryPolicy {
     fun shouldReschedule(status: DocumentStatus): Boolean =
-        status in setOf(DocumentStatus.QUEUED, DocumentStatus.COPYING, DocumentStatus.PARSING)
+        status in setOf(DocumentStatus.QUEUED, DocumentStatus.COPYING, DocumentStatus.PARSING, DocumentStatus.OCR)
 
     fun <T> selectObservable(items: List<T>, isFinished: (T) -> Boolean): T? =
         items.firstOrNull { !isFinished(it) } ?: items.firstOrNull()

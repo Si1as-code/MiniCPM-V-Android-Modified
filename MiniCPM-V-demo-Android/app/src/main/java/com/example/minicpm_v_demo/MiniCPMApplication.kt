@@ -9,6 +9,7 @@ import com.example.minicpm_v_demo.rag.work.WorkManagerRagWorkCoordinator
 import androidx.work.WorkManager
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 class MiniCPMApplication : Application() {
     val ragKeyManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
@@ -21,6 +22,7 @@ class MiniCPMApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        PDFBoxResourceLoader.init(this)
         LocaleManager.applyOnAppStart(this)
         ragMaintenanceExecutor.execute {
             RagTempFileCleaner.cleanup(RagTempFileCleaner.stagingDirectory(noBackupFilesDir))

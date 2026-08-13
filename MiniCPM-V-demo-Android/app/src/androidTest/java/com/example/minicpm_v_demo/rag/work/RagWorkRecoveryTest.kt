@@ -38,14 +38,15 @@ class RagWorkRecoveryTest {
             document("queued", DocumentStatus.QUEUED, now),
             document("copying", DocumentStatus.COPYING, now + 1),
             document("parsing", DocumentStatus.PARSING, now + 2),
-            document("cancelled", DocumentStatus.CANCELLED, now + 3),
-            document("failed", DocumentStatus.FAILED, now + 4),
+            document("ocr", DocumentStatus.OCR, now + 3),
+            document("cancelled", DocumentStatus.CANCELLED, now + 4),
+            document("failed", DocumentStatus.FAILED, now + 5),
         ).forEach { database.documentDao().upsert(it) }
 
         // Use the database query itself as the persistence boundary. The coordinator contract
         // is covered by JVM tests; this connected test verifies Room reconstruction semantics.
         val recoverable = database.documentDao().findRecoverableImports().map { it.id }
-        assertEquals(listOf("queued", "copying", "parsing"), recoverable)
+        assertEquals(listOf("queued", "copying", "parsing", "ocr"), recoverable)
     }
 
     private fun document(id: String, status: DocumentStatus, now: Long) = DocumentEntity(

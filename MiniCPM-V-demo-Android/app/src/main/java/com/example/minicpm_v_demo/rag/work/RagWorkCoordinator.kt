@@ -34,11 +34,15 @@ class WorkManagerRagWorkCoordinator(
             .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
             .addTag(RagWorkContract.uniqueWorkName(documentId))
             .build()
+        val ocrRequest = OneTimeWorkRequestBuilder<OcrWorker>()
+            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+            .addTag(RagWorkContract.uniqueWorkName(documentId))
+            .build()
         return workManager.beginUniqueWork(
             RagWorkContract.uniqueWorkName(documentId),
             ExistingWorkPolicy.KEEP,
             copyRequest,
-        ).then(parseRequest).enqueue()
+        ).then(parseRequest).then(ocrRequest).enqueue()
     }
 
     override fun cancel(documentId: String): Operation {
