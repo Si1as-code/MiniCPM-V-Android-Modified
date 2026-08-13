@@ -136,9 +136,13 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
                 documents.forEach { document ->
                     coordinator.cancel(document.id).result.get()
                     if (isSafePrivateFileName(document.privateFileName)) {
-                        com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
+                        val staging = com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
                             .stagingDirectory(noBackupFilesDir)
+                        staging
                             .resolve(document.privateFileName)
+                            .delete()
+                        com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
+                            .parsedBlockFile(staging, document.id)
                             .delete()
                     }
                 }

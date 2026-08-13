@@ -9,6 +9,8 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 import java.security.GeneralSecurityException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
@@ -67,6 +69,28 @@ class EncryptedFileStore(
         }
     }
 
+    fun <T> withDecryptedInput(source: File, block: (InputStream) -> T): T {
+        val plaintextInput = PipedInputStream(PIPE_BUFFER_BYTES)
+        val plaintextOutput = PipedOutputStream(plaintextInput)
+        var decryptFailure: Throwable? = null
+        val decryptThread = Thread({
+            try {
+                plaintextOutput.use { decrypt(source, it) }
+            } catch (error: Throwable) {
+                decryptFailure = error
+                runCatching { plaintextOutput.close() }
+            }
+        }, "rag-decrypt-stream").apply { isDaemon = true; start() }
+        var consumerCompleted = false
+        try {
+            return plaintextInput.use(block).also { consumerCompleted = true }
+        } finally {
+            plaintextInput.close()
+            decryptThread.join()
+            if (consumerCompleted) decryptFailure?.let { throw it }
+        }
+    }
+
     private fun newEncryptCipher(): Cipher = Cipher
         .getInstance(AES_GCM_TRANSFORMATION)
         .apply {
@@ -110,6 +134,7 @@ class EncryptedFileStore(
         private const val GCM_NONCE_BYTES = 12
         private const val GCM_TAG_BITS = 128
         private const val BUFFER_BYTES = 64 * 1024
+        private const val PIPE_BUFFER_BYTES = 64 * 1024
         private val FILE_AAD = "MiniCPM-RAG-FILE-v1".toByteArray(Charsets.UTF_8)
     }
 }

@@ -126,6 +126,37 @@ class RagEncryptionTest {
     }
 
     @Test
+    fun encryptedFileCanBeConsumedAsAStreamWithoutPlaintextFile() {
+        val key = generatedAesKey()
+        val store = EncryptedFileStore(keyProvider = { key })
+        val target = File(testDirectory, "stream.rag")
+        val plaintext = "streamed parsed blocks 世界".toByteArray()
+        store.encrypt(ByteArrayInputStream(plaintext), target)
+
+        val restored = store.withDecryptedInput(target) { it.readBytes() }
+
+        assertArrayEquals(plaintext, restored)
+        assertEquals(listOf("stream.rag"), testDirectory.listFiles().orEmpty().map(File::getName))
+    }
+
+    @Test
+    fun decryptedStreamPreservesConsumerFailureInsteadOfBrokenPipeFailure() {
+        val key = generatedAesKey()
+        val store = EncryptedFileStore(keyProvider = { key })
+        val target = File(testDirectory, "consumer-error.rag")
+        store.encrypt(ByteArrayInputStream(ByteArray(256 * 1024) { 7 }), target)
+
+        val failure = assertThrows(ConsumerProbeException::class.java) {
+            store.withDecryptedInput(target) { input ->
+                input.read()
+                throw ConsumerProbeException()
+            }
+        }
+
+        assertEquals("consumer failed", failure.message)
+    }
+
+    @Test
     fun failedReplacementPreservesPreviousAuthenticatedFile() {
         val key = generatedAesKey()
         val store = EncryptedFileStore(keyProvider = { key })
@@ -170,4 +201,6 @@ class RagEncryptionTest {
             return prefix[index++].toInt() and 0xff
         }
     }
+
+    private class ConsumerProbeException : RuntimeException("consumer failed")
 }

@@ -26,15 +26,19 @@ class WorkManagerRagWorkCoordinator(
 ) : RagWorkCoordinator {
     override fun enqueue(documentId: String): Operation {
         val input = RagWorkContract.inputValues(documentId)
-        val request = OneTimeWorkRequestBuilder<ImportCopyWorker>()
+        val copyRequest = OneTimeWorkRequestBuilder<ImportCopyWorker>()
             .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
             .addTag(RagWorkContract.uniqueWorkName(documentId))
             .build()
-        return workManager.enqueueUniqueWork(
+        val parseRequest = OneTimeWorkRequestBuilder<ParseWorker>()
+            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+            .addTag(RagWorkContract.uniqueWorkName(documentId))
+            .build()
+        return workManager.beginUniqueWork(
             RagWorkContract.uniqueWorkName(documentId),
             ExistingWorkPolicy.KEEP,
-            request,
-        )
+            copyRequest,
+        ).then(parseRequest).enqueue()
     }
 
     override fun cancel(documentId: String): Operation {

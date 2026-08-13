@@ -28,11 +28,14 @@ class KnowledgeBaseDocumentPresentationTest {
             KnowledgeBaseDocumentPresentation.Uploaded,
             KnowledgeBaseDocumentPresentation.from(DocumentStatus.PARSING, null),
         )
+        assertEquals(
+            KnowledgeBaseDocumentPresentation.Uploaded,
+            KnowledgeBaseDocumentPresentation.from(DocumentStatus.CHUNKING, null),
+        )
     }
 
     @Test
     fun `terminal non-failure documents do not remain in the status list`() {
-        assertNull(KnowledgeBaseDocumentPresentation.from(DocumentStatus.READY, null))
         assertNull(KnowledgeBaseDocumentPresentation.from(DocumentStatus.CANCELLED, "CANCELLED"))
     }
 }

@@ -13,7 +13,12 @@ sealed interface KnowledgeBaseDocumentPresentation {
             DocumentStatus.COPYING,
             -> Processing
 
-            DocumentStatus.PARSING -> Uploaded
+            DocumentStatus.PARSING,
+            DocumentStatus.CHUNKING,
+            DocumentStatus.EMBEDDING,
+            DocumentStatus.INDEXING,
+            DocumentStatus.READY,
+            -> Uploaded
             DocumentStatus.FAILED -> Failure(ERROR_REASONS[errorCode] ?: "导入失败")
             else -> null
         }
@@ -29,6 +34,12 @@ sealed interface KnowledgeBaseDocumentPresentation {
             "ENCRYPTION_FAILED" to "加密失败",
             "IO_FAILED" to "文件读写失败",
             "IMPORT_COPY_FAILED" to "导入失败",
+            "PARSE_INVALID_ENCODING" to "文本编码无效，请另存为 UTF-8",
+            "PARSE_TEXT_LIMIT_EXCEEDED" to "文档文字超过处理上限",
+            "PARSE_RECORD_TOO_LARGE" to "文档中存在过大的记录",
+            "PARSE_MALFORMED_DOCUMENT" to "文档结构损坏或不完整",
+            "PARSE_UNSUPPORTED_FORMAT" to "此格式的解析功能尚未完成",
+            "PARSE_FAILED" to "文档解析失败",
         )
     }
 }

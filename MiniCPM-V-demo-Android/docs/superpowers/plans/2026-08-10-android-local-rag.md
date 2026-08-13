@@ -1063,8 +1063,8 @@ interface RagWorkCoordinator {
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/parser/BasicParserTest.kt`
 
-- [ ] **Step 1：写基础解析红灯测试。** 覆盖 UTF-8/BOM、非法编码、CSV 引号内换行、Markdown 标题/代码块、HTML script/style 丢弃、外链不访问和超过字符限额停止；预期因解析器不存在而失败。
-- [ ] **Step 2：固定流式接口。** 所有格式实现同一接口，不允许返回整份文档字符串：
+- [x] **Step 1：写基础解析红灯测试。** 覆盖 UTF-8/BOM、非法编码、CSV 引号内换行、Markdown 标题/代码块、HTML script/style 丢弃、外链不访问和超过字符限额停止；预期因解析器不存在而失败。
+- [x] **Step 2：固定流式接口。** 所有格式实现同一接口，不允许返回整份文档字符串：
 
 ```kotlin
 interface DocumentParser {
@@ -1080,9 +1080,9 @@ data class ParsedBlock(
 )
 ```
 
-- [ ] **Step 3：逐格式实现。** Text 按检测编码流式读取；Markdown 保留标题路径和代码块边界；CSV 按记录解析并携带行号；HTML 只解析本地字节，禁用脚本、样式、实体外部访问和网络请求。
-- [ ] **Step 4：接入 `ParseWorker`。** 只按 `documentId` 从加密存储读取，逐块提交中间结果；扩展 unique work 为 `ImportCopyWorker -> ParseWorker`，重跑时跳过已原子提交的复制阶段。
-- [ ] **Step 5：运行测试。** `./gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.parser.BasicParserTest"`，预期全部通过且超限输入不会产生巨型内存对象。
+- [x] **Step 3：逐格式实现。** Text 按检测编码流式读取；Markdown 保留标题路径和代码块边界；CSV 按记录解析并携带行号；HTML 只解析本地字节，禁用脚本、样式、实体外部访问和网络请求。
+- [x] **Step 4：接入 `ParseWorker`。** 只按 `documentId` 从加密存储读取，逐块提交中间结果；扩展 unique work 为 `ImportCopyWorker -> ParseWorker`，重跑时跳过已原子提交的复制阶段。解析块以有界二进制流再次加密落盘，不生成明文中间文件；`PARSING` 状态可在应用重启后恢复。
+- [x] **Step 5：运行测试。** `./gradlew.bat :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.parser.BasicParserTest"`，预期全部通过且超限输入不会产生巨型内存对象。另已通过全量 JVM 测试、APK/测试 APK 构建、签名一致性检查，以及 vivo V2359A 上的 7 项加密流测试和 `PARSING` 重启恢复测试。
 - [ ] Commit：`feat(rag): parse bounded text and tabular documents`
 
 ### Task 6：PDF、OCR 与 OOXML 安全解析

@@ -29,5 +29,11 @@ object RagTempFileCleaner {
     fun stagingDirectory(noBackupFilesDirectory: File): File =
         noBackupFilesDirectory.resolve("rag").resolve("source")
 
+    fun parsedBlockFile(stagingDirectory: File, documentId: String): File {
+        require(SAFE_DOCUMENT_ID.matches(documentId)) { "Invalid document ID" }
+        return stagingDirectory.resolve("$documentId.blocks.enc")
+    }
+
     private const val PART_SUFFIX = ".part"
+    private val SAFE_DOCUMENT_ID = Regex("[A-Za-z0-9_-]{1,128}")
 }

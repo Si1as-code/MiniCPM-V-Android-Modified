@@ -33,6 +33,7 @@ class ImportCopyWorker(
         val app = applicationContext as? MiniCPMApplication ?: return@withContext Result.failure()
         val dao = app.ragDatabase.documentDao()
         val document = dao.findById(documentId) ?: return@withContext Result.failure()
+        if (document.status == DocumentStatus.PARSING) return@withContext Result.success()
         val sourceUri = document.sourceUri?.let(Uri::parse) ?: return@withContext Result.failure()
         if (sourceUri.scheme != "content") return@withContext Result.failure()
 

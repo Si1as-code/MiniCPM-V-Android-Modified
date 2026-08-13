@@ -81,7 +81,7 @@ interface DocumentDao {
     @Query("SELECT * FROM documents WHERE knowledgeBaseId = :knowledgeBaseId ORDER BY createdAt")
     suspend fun findByKnowledgeBase(knowledgeBaseId: String): List<DocumentEntity>
 
-    @Query("SELECT * FROM documents WHERE status IN ('QUEUED', 'COPYING') ORDER BY createdAt")
+    @Query("SELECT * FROM documents WHERE status IN ('QUEUED', 'COPYING', 'PARSING') ORDER BY createdAt")
     suspend fun findRecoverableImports(): List<DocumentEntity>
 
     @Query(

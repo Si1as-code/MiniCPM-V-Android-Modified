@@ -8,12 +8,12 @@ import org.junit.Test
 
 class RagWorkRecoveryPolicyTest {
     @Test
-    fun `only queued and copying documents are rescheduled after app restart`() {
+    fun `copying and parsing documents are rescheduled after app restart`() {
         assertTrue(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.QUEUED))
         assertTrue(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.COPYING))
+        assertTrue(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.PARSING))
         assertFalse(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.CANCELLED))
         assertFalse(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.FAILED))
-        assertFalse(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.PARSING))
     }
 
     @Test
