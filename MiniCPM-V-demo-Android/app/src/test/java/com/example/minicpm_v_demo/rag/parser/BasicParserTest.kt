@@ -11,9 +11,9 @@ import org.junit.Test
 class BasicParserTest {
     @Test
     fun `text parser accepts UTF-8 BOM and rejects malformed UTF-8`() {
-        val bomText = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + "???\nsecond".toByteArray()
+        val bomText = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + "第一行\nsecond".toByteArray()
         assertEquals(
-            listOf("???", "second"),
+            listOf("第一行", "second"),
             TextParser().parse(input(bomText)).map { it.text }.toList(),
         )
 
@@ -86,7 +86,7 @@ class BasicParserTest {
     fun `parsed block codec round trips bounded records`() {
         val expected = listOf(
             ParsedBlock("Guide", BlockStructure.HEADING, "Guide", "line", "1"),
-            ParsedBlock("hello ??", BlockStructure.PARAGRAPH, "Guide", "line", "2"),
+            ParsedBlock("hello 世界", BlockStructure.PARAGRAPH, "Guide", "line", "2"),
         )
         val bytes = ByteArrayOutputStream().also { output ->
             ParsedBlockCodec.write(expected.asSequence(), output)
