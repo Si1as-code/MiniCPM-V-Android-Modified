@@ -2,6 +2,24 @@ package com.example.minicpm_v_demo
 
 import android.graphics.Bitmap
 
+data class CitationRef(
+    val messageId: Long,
+    val sourceId: String,
+    val chunkId: Long,
+    val documentId: String,
+    val documentNameSnapshot: String,
+    val locator: String,
+    val quotedText: String,
+    val retrievalScore: Double,
+    val retrievalVersion: Int,
+) {
+    init {
+        require(messageId >= 0 && chunkId > 0)
+        require(sourceId.isNotBlank() && documentId.isNotBlank() && documentNameSnapshot.isNotBlank())
+        require(retrievalScore.isFinite() && retrievalVersion >= 0)
+    }
+}
+
 sealed class ChatMessage {
     abstract val id: Long
 
@@ -26,7 +44,10 @@ sealed class ChatMessage {
         override val id: Long,
         val text: String,
         val isGenerating: Boolean = false,
-        val includeInModelContext: Boolean = true
+        val includeInModelContext: Boolean = true,
+        val citations: List<CitationRef> = emptyList(),
+        val ragRunId: String? = null,
+        val answerEdited: Boolean = false,
     ) : ChatMessage()
 
     data class WelcomeCard(

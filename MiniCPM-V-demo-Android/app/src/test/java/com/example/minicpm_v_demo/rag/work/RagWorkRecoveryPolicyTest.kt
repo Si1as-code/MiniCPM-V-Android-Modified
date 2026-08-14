@@ -10,6 +10,7 @@ class RagWorkRecoveryPolicyTest {
     @Test
     fun `OCR work is recoverable after process restart`() {
         assertTrue(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.OCR))
+        assertTrue(RagWorkRecoveryPolicy.shouldReschedule(DocumentStatus.CHUNKING))
     }
     @Test
     fun `copying and parsing documents are rescheduled after app restart`() {

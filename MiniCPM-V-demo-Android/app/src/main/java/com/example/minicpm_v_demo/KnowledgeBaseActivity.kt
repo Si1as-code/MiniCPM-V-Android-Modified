@@ -16,6 +16,7 @@ import com.example.minicpm_v_demo.rag.importer.DocumentImportQueue
 import com.example.minicpm_v_demo.rag.naming.KnowledgeBaseNamePolicy
 import com.example.minicpm_v_demo.rag.work.WorkManagerRagWorkCoordinator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.materialswitch.MaterialSwitch
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -28,8 +29,13 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
     private lateinit var emptyView: TextView
     private lateinit var adapter: KnowledgeBaseAdapter
     private lateinit var importButton: Button
+    private lateinit var createButton: Button
+    private lateinit var ragSwitch: MaterialSwitch
     private var knowledgeBases = emptyList<KnowledgeBaseEntity>()
     private var selectedKnowledgeBaseId: String? = null
+    private val selectedConversationKnowledgeBaseIds = linkedSetOf<String>()
+    private var conversationId: Long = -1L
+    private val conversationSelectionMode: Boolean get() = conversationId > 0
 
     private val openDocuments = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
@@ -60,20 +66,32 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
         listView = findViewById(R.id.list_knowledge_bases)
         emptyView = findViewById(R.id.tv_empty_knowledge_bases)
         importButton = findViewById(R.id.btn_import_documents)
+        createButton = findViewById(R.id.btn_create_knowledge_base)
+        ragSwitch = findViewById(R.id.switch_conversation_rag)
+        conversationId = intent.getLongExtra(EXTRA_CONVERSATION_ID, -1L)
         findViewById<android.view.View>(R.id.btn_back).setOnClickListener { finish() }
         adapter = KnowledgeBaseAdapter(this, onSelect = { knowledgeBase ->
-            selectedKnowledgeBaseId = knowledgeBase.id
+            if (conversationSelectionMode) {
+                if (!selectedConversationKnowledgeBaseIds.add(knowledgeBase.id)) {
+                    selectedConversationKnowledgeBaseIds.remove(knowledgeBase.id)
+                }
+            } else {
+                selectedKnowledgeBaseId = knowledgeBase.id
+            }
             requestRefresh()
-        }, onDelete = ::showDeleteConfirmation)
+        }, onDelete = ::showDeleteConfirmation, showDelete = !conversationSelectionMode)
         listView.adapter = adapter
-        findViewById<Button>(R.id.btn_create_knowledge_base).setOnClickListener { showCreateDialog() }
+        createButton.setOnClickListener { showCreateDialog() }
         importButton.setOnClickListener {
-            if (selectedKnowledgeBaseId == null) {
+            if (conversationSelectionMode) {
+                saveConversationSelection()
+            } else if (selectedKnowledgeBaseId == null) {
                 Toast.makeText(this, R.string.rag_select_knowledge_base_first, Toast.LENGTH_SHORT).show()
             } else {
                 openDocuments.launch(SUPPORTED_MIME_TYPES)
             }
         }
+        configureMode()
         loadKnowledgeBases()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -87,10 +105,22 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
 
     private fun loadKnowledgeBases() {
         lifecycleScope.launch {
-            knowledgeBases = withContext(Dispatchers.IO) {
-                (application as MiniCPMApplication).ragDatabase.knowledgeBaseDao().findAll()
+            val loaded = withContext(Dispatchers.IO) {
+                val database = (application as MiniCPMApplication).ragDatabase
+                Triple(
+                    database.knowledgeBaseDao().findAll(),
+                    if (conversationSelectionMode) database.conversationRagDao()
+                        .findBoundKnowledgeBaseIds(conversationId) else emptyList(),
+                    if (conversationSelectionMode) database.conversationRagDao()
+                        .findState(conversationId)?.ragEnabled == true else false,
+                )
             }
-            if (selectedKnowledgeBaseId !in knowledgeBases.map { it.id }) {
+            knowledgeBases = loaded.first
+            if (conversationSelectionMode) {
+                selectedConversationKnowledgeBaseIds.clear()
+                selectedConversationKnowledgeBaseIds.addAll(loaded.second)
+                ragSwitch.isChecked = loaded.third
+            } else if (selectedKnowledgeBaseId !in knowledgeBases.map { it.id }) {
                 selectedKnowledgeBaseId = knowledgeBases.firstOrNull()?.id
             }
             refreshList()
@@ -108,14 +138,54 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
         val items = withContext(Dispatchers.IO) {
             knowledgeBases.map { kb ->
                 val documents = app.ragDatabase.documentDao().findByKnowledgeBase(kb.id)
-                KnowledgeBaseListItem(kb, documents, kb.id == selectedKnowledgeBaseId)
+                KnowledgeBaseListItem(
+                    kb,
+                    documents,
+                    if (conversationSelectionMode) kb.id in selectedConversationKnowledgeBaseIds
+                    else kb.id == selectedKnowledgeBaseId,
+                )
             }
         }
         adapter.submitItems(items)
         val empty = items.isEmpty()
         emptyView.visibility = if (empty) android.view.View.VISIBLE else android.view.View.GONE
         listView.visibility = if (empty) android.view.View.GONE else android.view.View.VISIBLE
-        importButton.isEnabled = selectedKnowledgeBaseId != null
+        importButton.isEnabled = if (conversationSelectionMode) {
+            !ragSwitch.isChecked || selectedConversationKnowledgeBaseIds.isNotEmpty()
+        } else selectedKnowledgeBaseId != null
+    }
+
+    private fun configureMode() {
+        if (!conversationSelectionMode) return
+        findViewById<TextView>(R.id.tv_knowledge_base_title).setText(R.string.rag_conversation_title)
+        findViewById<TextView>(R.id.tv_knowledge_base_summary).setText(R.string.rag_conversation_summary)
+        ragSwitch.visibility = android.view.View.VISIBLE
+        ragSwitch.setOnCheckedChangeListener { _, _ -> requestRefresh() }
+        createButton.visibility = android.view.View.GONE
+        importButton.setText(R.string.rag_save_conversation_selection)
+    }
+
+    private fun saveConversationSelection() {
+        if (ragSwitch.isChecked && selectedConversationKnowledgeBaseIds.isEmpty()) {
+            Toast.makeText(this, R.string.rag_select_knowledge_base_first, Toast.LENGTH_SHORT).show()
+            return
+        }
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                (application as MiniCPMApplication).ragDatabase.conversationRagDao().replaceSelection(
+                    conversationId = conversationId,
+                    knowledgeBaseIds = selectedConversationKnowledgeBaseIds.toList(),
+                    enabled = ragSwitch.isChecked,
+                    updatedAt = System.currentTimeMillis(),
+                )
+            }
+            Toast.makeText(
+                this@KnowledgeBaseActivity,
+                if (ragSwitch.isChecked) R.string.rag_conversation_enabled else R.string.rag_conversation_disabled,
+                Toast.LENGTH_SHORT,
+            ).show()
+            finish()
+        }
     }
 
     private fun showDeleteConfirmation(knowledgeBase: KnowledgeBaseEntity) {
@@ -193,6 +263,7 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
     }
 
     companion object {
+        const val EXTRA_CONVERSATION_ID = "conversationId"
         private const val PROGRESS_REFRESH_MS = 1_000L
         private val SUPPORTED_MIME_TYPES = arrayOf(
             "text/*", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

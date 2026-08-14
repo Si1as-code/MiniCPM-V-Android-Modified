@@ -6,6 +6,22 @@ import com.example.minicpm_v_demo.rag.naming.KnowledgeBaseNamePolicy
 import com.example.minicpm_v_demo.rag.naming.KnowledgeBaseNameValidationException
 
 object RagMigrations {
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS chunk_embeddings (
+                    chunkId INTEGER NOT NULL, modelSha256 TEXT NOT NULL,
+                    dimension INTEGER NOT NULL, vector BLOB NOT NULL, updatedAt INTEGER NOT NULL,
+                    PRIMARY KEY(chunkId),
+                    FOREIGN KEY(chunkId) REFERENCES chunks(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_chunk_embeddings_modelSha256 ON chunk_embeddings(modelSha256)")
+        }
+    }
+
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             // Some Android SQLite builds retain legacy ALTER TABLE behavior unless

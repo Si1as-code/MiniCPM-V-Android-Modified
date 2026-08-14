@@ -31,6 +31,14 @@ class RagDatabaseMigrationTest {
 
     @Test
     @Throws(IOException::class)
+    fun migrateEmptyDatabaseFrom2To3AddsEmbeddingStorage() {
+        helper.createDatabase(databaseName, 2).close()
+
+        helper.runMigrationsAndValidate(databaseName, 3, true, RagMigrations.MIGRATION_2_3).close()
+    }
+
+    @Test
+    @Throws(IOException::class)
     fun migrate1To2PreservesContentResolvesNamesAndConvertsConversationId() {
         helper.createDatabase(databaseName, 1).apply {
             insertKnowledgeBase("kb-1", "Office", 1L)

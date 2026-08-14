@@ -174,6 +174,9 @@ room {
 }
 
 dependencies {
+    // Room 2.8.4's migration schema serializers are generated against 1.8.1.
+    // Align transitive SavedState serialization to avoid a test/runtime ABI split.
+    implementation(platform("org.jetbrains.kotlinx:kotlinx-serialization-bom:1.8.1"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

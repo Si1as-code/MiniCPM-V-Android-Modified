@@ -23,11 +23,17 @@ interface KnowledgeBaseDao {
     @Query("SELECT * FROM knowledge_bases WHERE normalizedName = :normalizedName LIMIT 1")
     suspend fun findByNormalizedName(normalizedName: String): KnowledgeBaseEntity?
 
+    @Query("SELECT * FROM knowledge_bases WHERE id = :id LIMIT 1")
+    suspend fun findById(id: String): KnowledgeBaseEntity?
+
     @Query("DELETE FROM knowledge_bases WHERE id = :id")
     suspend fun deleteById(id: String): Int
 
     @Query("SELECT * FROM knowledge_bases ORDER BY updatedAt DESC")
     suspend fun findAll(): List<KnowledgeBaseEntity>
+
+    @Query("UPDATE knowledge_bases SET embeddingModelSha256 = :sha256, updatedAt = :updatedAt WHERE embeddingModelId = :modelId AND embeddingModelSha256 != :sha256")
+    suspend fun updateInstalledModelHash(modelId: String, sha256: String, updatedAt: Long): Int
 }
 
 @Dao
@@ -57,11 +63,44 @@ interface ConversationRagDao {
     )
     suspend fun findSelectedEnabledKnowledgeBaseIds(conversationId: Long): List<String>
 
+    @Query(
+        """
+        SELECT knowledgeBaseId FROM conversation_knowledge_bases
+        WHERE conversationId = :conversationId
+        ORDER BY knowledgeBaseId
+        """,
+    )
+    suspend fun findBoundKnowledgeBaseIds(conversationId: Long): List<String>
+
     @Query("DELETE FROM conversation_knowledge_bases WHERE conversationId = :conversationId")
     suspend fun deleteBindings(conversationId: Long): Int
 
     @Query("DELETE FROM conversation_rag_state WHERE conversationId = :conversationId")
     suspend fun deleteState(conversationId: Long): Int
+
+    @Transaction
+    suspend fun replaceSelection(
+        conversationId: Long,
+        knowledgeBaseIds: List<String>,
+        enabled: Boolean,
+        updatedAt: Long,
+    ) {
+        require(conversationId > 0 && updatedAt >= 0)
+        val uniqueIds = knowledgeBaseIds.distinct()
+        require(uniqueIds.size == knowledgeBaseIds.size && uniqueIds.all { it.isNotBlank() })
+        deleteBindings(conversationId)
+        if (uniqueIds.isNotEmpty()) {
+            insertBindings(uniqueIds.map { ConversationKnowledgeBaseCrossRef(conversationId, it) })
+        }
+        upsertState(ConversationRagStateEntity(conversationId, enabled && uniqueIds.isNotEmpty(), updatedAt))
+    }
+
+    @Transaction
+    suspend fun setEnabled(conversationId: Long, enabled: Boolean, updatedAt: Long) {
+        require(conversationId > 0 && updatedAt >= 0)
+        val hasSelection = findBoundKnowledgeBaseIds(conversationId).isNotEmpty()
+        upsertState(ConversationRagStateEntity(conversationId, enabled && hasSelection, updatedAt))
+    }
 
     @Transaction
     suspend fun deleteConversation(conversationId: Long) {
@@ -81,7 +120,7 @@ interface DocumentDao {
     @Query("SELECT * FROM documents WHERE knowledgeBaseId = :knowledgeBaseId ORDER BY createdAt")
     suspend fun findByKnowledgeBase(knowledgeBaseId: String): List<DocumentEntity>
 
-    @Query("SELECT * FROM documents WHERE status IN ('QUEUED', 'COPYING', 'PARSING', 'OCR') ORDER BY createdAt")
+    @Query("SELECT * FROM documents WHERE status IN ('QUEUED', 'COPYING', 'PARSING', 'OCR', 'CHUNKING', 'EMBEDDING', 'INDEXING') ORDER BY createdAt")
     suspend fun findRecoverableImports(): List<DocumentEntity>
 
     @Query(
@@ -178,8 +217,107 @@ interface ChunkDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertAll(chunks: List<ChunkEntity>)
 
+    @Query("DELETE FROM chunks WHERE documentId = :documentId")
+    suspend fun deleteByDocument(documentId: String): Int
+
+    @Transaction
+    suspend fun replaceForDocument(documentId: String, chunks: List<ChunkEntity>) {
+        require(chunks.all { it.documentId == documentId }) { "Chunk document mismatch" }
+        require(chunks.map { it.ordinal }.distinct().size == chunks.size) { "Duplicate chunk ordinal" }
+        deleteByDocument(documentId)
+        insertAll(chunks)
+    }
+
+    @Transaction
+    suspend fun replaceForDocumentBatched(
+        documentId: String,
+        chunks: Sequence<ChunkEntity>,
+        batchSize: Int = 64,
+    ): Int {
+        require(batchSize in 1..256) { "Invalid chunk batch size" }
+        deleteByDocument(documentId)
+        val iterator = chunks.iterator()
+        var count = 0
+        var expectedOrdinal = 0
+        while (iterator.hasNext()) {
+            val batch = ArrayList<ChunkEntity>(batchSize)
+            while (iterator.hasNext() && batch.size < batchSize) {
+                val chunk = iterator.next()
+                require(chunk.documentId == documentId) { "Chunk document mismatch" }
+                require(chunk.ordinal == expectedOrdinal++) { "Chunk ordinals must be contiguous" }
+                batch += chunk
+            }
+            insertAll(batch)
+            count += batch.size
+        }
+        return count
+    }
+
     @Query("SELECT * FROM chunks WHERE documentId = :documentId ORDER BY ordinal")
     suspend fun findByDocument(documentId: String): List<ChunkEntity>
+
+    @Query("UPDATE chunks SET embeddingState = :state WHERE id IN (:chunkIds)")
+    suspend fun updateEmbeddingState(chunkIds: List<Long>, state: Int): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertEmbeddings(embeddings: List<ChunkEmbeddingEntity>)
+
+    @Query("SELECT * FROM chunk_embeddings WHERE chunkId IN (:chunkIds)")
+    suspend fun findEmbeddings(chunkIds: List<Long>): List<ChunkEmbeddingEntity>
+
+    @Query(
+        """
+        SELECT chunk_embeddings.* FROM chunk_embeddings
+        JOIN chunks ON chunks.id = chunk_embeddings.chunkId
+        WHERE chunks.documentId = :documentId
+        ORDER BY chunks.ordinal
+        """,
+    )
+    suspend fun findEmbeddingsByDocument(documentId: String): List<ChunkEmbeddingEntity>
+
+    @Query(
+        """
+        SELECT chunks.* FROM chunks
+        LEFT JOIN chunk_embeddings ON chunk_embeddings.chunkId = chunks.id
+        WHERE chunks.documentId = :documentId
+          AND (chunks.embeddingState != :readyState OR chunk_embeddings.chunkId IS NULL
+               OR chunk_embeddings.modelSha256 != :modelSha256)
+        ORDER BY chunks.ordinal
+        """,
+    )
+    suspend fun findChunksNeedingEmbedding(
+        documentId: String,
+        modelSha256: String,
+        readyState: Int = ChunkEntity.EMBEDDING_READY,
+    ): List<ChunkEntity>
+
+    @Query(
+        """
+        SELECT chunk_embeddings.* FROM chunk_embeddings
+        JOIN chunks ON chunks.id = chunk_embeddings.chunkId
+        JOIN documents ON documents.id = chunks.documentId
+        JOIN knowledge_bases ON knowledge_bases.id = chunks.knowledgeBaseId
+        WHERE chunks.knowledgeBaseId IN (:knowledgeBaseIds)
+          AND documents.status = 'READY' AND knowledge_bases.enabled = 1
+          AND chunk_embeddings.modelSha256 = :modelSha256
+        """,
+    )
+    suspend fun findReadyEmbeddings(
+        knowledgeBaseIds: List<String>,
+        modelSha256: String,
+    ): List<ChunkEmbeddingEntity>
+
+    @Query("SELECT * FROM chunks WHERE id IN (:chunkIds)")
+    suspend fun findByIds(chunkIds: List<Long>): List<ChunkEntity>
+
+    @Transaction
+    suspend fun storeEmbeddingBatch(embeddings: List<ChunkEmbeddingEntity>) {
+        require(embeddings.isNotEmpty())
+        require(embeddings.map { it.chunkId }.distinct().size == embeddings.size)
+        require(embeddings.all { it.dimension > 0 && it.vector.size == it.dimension * Float.SIZE_BYTES })
+        upsertEmbeddings(embeddings)
+        check(updateEmbeddingState(embeddings.map { it.chunkId }, ChunkEntity.EMBEDDING_READY) == embeddings.size)
+    }
 
     @Query(
         """

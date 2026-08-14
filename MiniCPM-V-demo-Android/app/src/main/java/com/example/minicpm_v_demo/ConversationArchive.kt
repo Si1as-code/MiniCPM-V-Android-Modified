@@ -24,7 +24,8 @@ data class ConversationArchive(
  */
 object ConversationArchiveCodec {
     private const val MAGIC = 0x4D435043 // MCPC
-    private const val VERSION = 1
+    private const val VERSION = 2
+    private const val LEGACY_VERSION = 1
     private const val USER_MESSAGE = 1
     private const val AI_MESSAGE = 2
     private const val WELCOME_CARD = 3
@@ -35,6 +36,13 @@ object ConversationArchiveCodec {
     private const val MAX_MESSAGE_BYTES = 1024 * 1024
     private const val MAX_INFO_BYTES = 16 * 1024
     private const val MAX_TOKEN_BYTES = 512
+    private const val MAX_CITATIONS_PER_MESSAGE = 32
+    private const val MAX_SOURCE_ID_BYTES = 64
+    private const val MAX_DOCUMENT_ID_BYTES = 512
+    private const val MAX_DOCUMENT_NAME_BYTES = 4 * 1024
+    private const val MAX_LOCATOR_BYTES = 4 * 1024
+    private const val MAX_QUOTED_TEXT_BYTES = 64 * 1024
+    private const val MAX_RAG_RUN_ID_BYTES = 512
 
     @Throws(IOException::class)
     fun write(output: OutputStream, archive: ConversationArchive) {
@@ -69,6 +77,26 @@ object ConversationArchiveCodec {
                             data.writeBoundedString(message.text, MAX_MESSAGE_BYTES)
                             data.writeBoolean(message.isGenerating)
                             data.writeBoolean(message.includeInModelContext)
+                            data.writeNullableString(message.ragRunId, MAX_RAG_RUN_ID_BYTES)
+                            data.writeBoolean(message.answerEdited)
+                            if (message.citations.size > MAX_CITATIONS_PER_MESSAGE) {
+                                throw IOException("Too many archived citations")
+                            }
+                            data.writeInt(message.citations.size)
+                            message.citations.forEach { citation ->
+                                if (citation.messageId != message.id) {
+                                    throw IOException("Citation belongs to a different message")
+                                }
+                                data.writeLong(citation.messageId)
+                                data.writeBoundedString(citation.sourceId, MAX_SOURCE_ID_BYTES)
+                                data.writeLong(citation.chunkId)
+                                data.writeBoundedString(citation.documentId, MAX_DOCUMENT_ID_BYTES)
+                                data.writeBoundedString(citation.documentNameSnapshot, MAX_DOCUMENT_NAME_BYTES)
+                                data.writeBoundedString(citation.locator, MAX_LOCATOR_BYTES)
+                                data.writeBoundedString(citation.quotedText, MAX_QUOTED_TEXT_BYTES)
+                                data.writeDouble(citation.retrievalScore)
+                                data.writeInt(citation.retrievalVersion)
+                            }
                         }
                         is ChatMessage.WelcomeCard -> {
                             data.writeByte(WELCOME_CARD)
@@ -89,7 +117,10 @@ object ConversationArchiveCodec {
             val data = DataInputStream(BufferedInputStream(input))
             run {
                 if (data.readInt() != MAGIC) throw IOException("Invalid conversation archive")
-                if (data.readInt() != VERSION) throw IOException("Unsupported conversation archive version")
+                val version = data.readInt()
+                if (version !in LEGACY_VERSION..VERSION) {
+                    throw IOException("Unsupported conversation archive version")
+                }
                 val activeId = data.readLong()
                 val conversationCount = data.readBoundedCount(MAX_CONVERSATIONS)
                 if (conversationCount == 0) throw IOException("Empty conversation archive")
@@ -121,12 +152,44 @@ object ConversationArchiveCodec {
                                 includeInModelContext = data.readBoolean(),
                                 isVideo = data.readBoolean()
                             )
-                            AI_MESSAGE -> ChatMessage.AiMessage(
-                                id = messageId,
-                                text = data.readBoundedString(MAX_MESSAGE_BYTES),
-                                isGenerating = data.readBoolean(),
-                                includeInModelContext = data.readBoolean()
-                            )
+                            AI_MESSAGE -> {
+                                val text = data.readBoundedString(MAX_MESSAGE_BYTES)
+                                val generating = data.readBoolean()
+                                val includeInContext = data.readBoolean()
+                                if (version == LEGACY_VERSION) {
+                                    ChatMessage.AiMessage(messageId, text, generating, includeInContext)
+                                } else {
+                                    val ragRunId = data.readNullableString(MAX_RAG_RUN_ID_BYTES)
+                                    val answerEdited = data.readBoolean()
+                                    val citationCount = data.readBoundedCount(MAX_CITATIONS_PER_MESSAGE)
+                                    val citations = List(citationCount) {
+                                        CitationRef(
+                                            messageId = data.readLong(),
+                                            sourceId = data.readBoundedString(MAX_SOURCE_ID_BYTES),
+                                            chunkId = data.readLong(),
+                                            documentId = data.readBoundedString(MAX_DOCUMENT_ID_BYTES),
+                                            documentNameSnapshot = data.readBoundedString(MAX_DOCUMENT_NAME_BYTES),
+                                            locator = data.readBoundedString(MAX_LOCATOR_BYTES),
+                                            quotedText = data.readBoundedString(MAX_QUOTED_TEXT_BYTES),
+                                            retrievalScore = data.readDouble(),
+                                            retrievalVersion = data.readInt(),
+                                        ).also { citation ->
+                                            if (citation.messageId != messageId) {
+                                                throw IOException("Citation belongs to a different message")
+                                            }
+                                        }
+                                    }
+                                    ChatMessage.AiMessage(
+                                        messageId,
+                                        text,
+                                        generating,
+                                        includeInContext,
+                                        citations.toList(),
+                                        ragRunId,
+                                        answerEdited,
+                                    )
+                                }
+                            }
                             WELCOME_CARD -> ChatMessage.WelcomeCard(
                                 id = messageId,
                                 isTextOnly = data.readBoolean(),

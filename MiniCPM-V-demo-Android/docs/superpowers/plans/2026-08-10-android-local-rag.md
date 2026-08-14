@@ -1126,11 +1126,11 @@ data class ParsedBlock(
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/chunk/DocumentChunkerTest.kt`
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/chunk/CjkBigramEncoderTest.kt`
 
-- [ ] **Step 1：写切块红灯测试。** 覆盖中英混合、emoji、超长段落、表头重复、页边界、重叠、稳定顺序和版本变化触发重切。
-- [ ] **Step 2：实现 tokenizer 和 bigram。** token 数只来自与 ONNX 包同版本 tokenizer；`CjkBigramEncoder` 保留原词并追加连续汉字 bigram，不修改存档原文。
-- [ ] **Step 3：实现确定性切块。** 使用第 6 节固定预算和重叠；`DocumentChunker.chunk(blocks, config)` 返回有序 `Sequence<ChunkDraft>`，相同输入/版本产生相同 ordinal、内容哈希和 locator。
-- [ ] **Step 4：接入 `ChunkWorker`。** 每批在单事务写 chunk 与 FTS 行，失败不留半批；扩展链到 `ChunkWorker`，重复运行通过内容哈希跳过一致块。
-- [ ] **Step 5：运行两组单测和数据库一致性测试。** 预期 chunk/FTS 数量相同、顺序稳定、超长输入保持内存有界。
+- [x] **Step 1：写切块红灯测试。** 覆盖中英混合、emoji、超长段落、表头重复、页边界、重叠、稳定顺序和版本变化触发重切。
+- [x] **Step 2：实现 tokenizer 和 bigram。** 已固定精确 tokenizer 的边界、模型/词表哈希校验与注册契约，未安装 Task 8 的签名 ONNX 模型包时明确停在 `MODEL_REQUIRED`，不以近似计数冒充生产 token；`CjkBigramEncoder` 只生成检索文本，不修改存档原文。
+- [x] **Step 3：实现确定性切块。** 使用第 6 节固定预算和重叠；`DocumentChunker.chunk(blocks, config)` 返回有序 `Sequence<ChunkDraft>`，相同输入/版本产生相同 ordinal、内容哈希和 locator；普通段落与超大表格均保持流式、有界内存。
+- [x] **Step 4：接入 `ChunkWorker`。** chunk 与外部内容 FTS 在单事务内按批替换，失败整体回滚；Worker 链已扩展到 `ChunkWorker`，状态/内容哈希保证幂等并支持 `CHUNKING` 重启恢复。
+- [x] **Step 5：运行两组单测和数据库一致性测试。** 136 项 JVM 测试与手机端 6 项 Room/FTS/事务回滚/恢复测试通过，chunk/FTS 一致、顺序稳定且超长输入保持内存有界。
 - [ ] Commit：`feat(rag): add structure-aware multilingual chunking`
 
 ### Task 8：嵌入模型管理和 ONNX 推理
@@ -1433,3 +1433,60 @@ data class ParsedBlock(
 ---
 
 **研究与版本核对日期：** 2026-08-10。依赖进入实施前应再次核对官方安全公告，但升级必须经过回归评测，不能仅因为存在新版本就自动替换。
+
+## 19. 2026-08-13 暂停检查点
+
+### 本轮已经完成
+
+- Task 7 的精确分词、中文安全边界、结构化分块、稳定 chunk ID、FTS 检索文本和 `ChunkWorker` 已实现。
+- 已核对 multilingual-e5-small 的官方 SentencePiece、桌面 ONNX 与 Android ONNX 输出；手机端分词结果一致。中文 token offset 已从 UTF-8 字节位置安全换算为 Kotlin UTF-16 边界。
+- 固定模型版本为 ModelScope 镜像提交 `132949c958b5e9a03bbf6cfb3f5f71430c2a3cf6`，模型文件使用清单中的 SHA-256 逐文件校验；当前开发机缓存不提交 Git。
+- 已实现 int8 E5 ONNX 推理、masked mean pooling、L2 归一化、query/passage 前缀以及模型安装管理器。
+- 数据库升级至 schema v3，新增 `chunk_embeddings`。384 维向量以 little-endian `Float32` BLOB 保存在 SQLCipher 数据库中；每批向量和 chunk 状态在同一事务提交，可跳过已经完成且模型哈希一致的 chunk。
+- Worker 链目前为 `ImportCopyWorker -> ParseWorker -> OcrWorker -> ChunkWorker -> EmbedWorker -> FinalizeIndexWorker`。精确向量基线完整时，Finalize 才把文档从 `INDEXING` 迁移到 `READY`。
+- 已实现会话绑定过滤下的本地精确余弦检索 `LocalRagRetriever`、Top-K 稳定排序和防提示注入的 `RagPromptAssembler`。这是先跑通正确性的基线，HNSW 和混合检索仍未接入。
+- 全量 JVM 单元测试通过；`assembleDebug`、`assembleDebugAndroidTest`、`verifyInstallationSigning` 全部通过。
+
+### 尚未完成，明天从此处继续
+
+1. 手机拒绝了本轮两次覆盖安装确认，因此 schema v2 -> v3、E5 真机推理、向量落库及导入到 `READY` 的仪器测试尚未执行；先覆盖安装，不卸载、不清数据，再运行指定 Android 测试。
+2. 给当前会话增加独立 RAG 开关和多知识库选择 UI，并持久化到现有 `conversation_rag_state` / `conversation_knowledge_bases` 表。
+3. 在发送链安全分类之后、调用 `LlamaEngine.sendUserPrompt` 之前调用 retriever；只有会话明确开启且已选择知识库时才检索。展示文本保持用户原文，模型输入使用带来源编号的增强 prompt。
+4. 接入严格无证据降级、引用持久化和可点击来源；本地固定提示不得进入模型上下文。
+5. 在正确性闭环通过后实现 Task 9 HNSW 持久化索引和 Task 10 FTS4/BM25、RRF、MMR 混合检索，并以精确检索作为回归基准。
+6. 最后执行两知识库隔离、开关关闭零调用、重启恢复、编辑/回滚引用清理和完整手机端 E2E。
+
+### 当前验证命令
+
+```powershell
+.\gradlew.bat --no-daemon --max-workers=1 :app:testDebugUnitTest -x buildGgmlCpu_v86
+.\gradlew.bat --no-daemon --max-workers=1 :app:assembleDebug :app:assembleDebugAndroidTest :app:verifyInstallationSigning -x buildGgmlCpu_v86
+```
+
+暂停时没有执行 Git 提交或推送；所有改动保留在当前工作树中。
+
+## 20. 2026-08-14 真机闭环检查点
+
+> 低延迟重构的具体实施顺序、JNI checkpoint 设计、性能门禁和回滚规则以 [2026-08-14-android-rag-low-latency-refactor.md](2026-08-14-android-rag-low-latency-refactor.md) 为准；其中明确废弃每轮 `fullReset()` 与全历史重放。
+
+### 本轮已经完成
+
+- 修复 Room 2.8.4 迁移测试与 kotlinx-serialization 运行时 ABI 不一致，统一到 serialization BOM 1.8.1；schema v1/v2/v3 迁移真机测试 4/4 通过。
+- multilingual-e5-small int8 模型、真实 tokenizer 和向量推理已在真机通过；模型文件仍保留在应用私有目录，未清除应用数据。
+- 当前会话的 RAG 开关与多知识库选择已接入：选中卡片使用淡蓝色背景，管理页和会话选择页职责分离，绑定和开关永久保存到 Room。
+- 发送链已接入 `LocalRagRetriever`：关闭 RAG 时保持普通聊天；空选择、模型缺失、无证据和检索异常均使用不进入模型上下文的本地固定流式提示。
+- 真机端到端测试已证明 READY 文档片段可以经过真实 E5 query embedding、会话知识库过滤和精确向量排序，最终生成包含来源编号的增强 prompt，测试 1/1 通过。
+- RAG 轮次发送前会清理 native KV 上下文并只重放有效历史，再注入本轮证据；本轮图片会在清理后重新预填，避免上一轮证据残留或视觉输入丢失。
+- 新增引用白名单验证：仅保留本轮候选中且答案实际使用的 `[S1]` 等来源，伪造、越界和格式错误的来源编号不会持久化。
+- 会话归档升级为 v2，并继续读取现有 v1 文件；`AiMessage` 可永久保存不可变引用快照、`ragRunId` 和 `answerEdited`。编辑 AI 文字只改变文本与上下文，同时保留原引用并标记已编辑。
+- Debug APK、AndroidTest APK、安装签名校验、相关 JVM 回归和真机覆盖安装均通过。安装始终使用 `adb install -r`，未卸载或清空应用数据；启动后主进程正常且无崩溃日志。
+
+### 下一步按此顺序继续
+
+1. 完成 Task 10：加入 FTS4/BM25 与 dense 的 RRF 融合、MMR 去重、相邻块扩展、严格相关性阈值及 dense/FTS 单路降级；在此之前当前精确向量基线可能返回弱相关片段，不能视为最终检索质量。
+2. 完成 Task 11 的统一 `RagCoordinator` 与上下文预算，补齐 Indexing/NoEvidence/RetrievalFailed 的可测试状态区分，并限制证据 token 占比。
+3. 完成 Task 13 来源 UI：在 AI 气泡下展示来源 chip，点击打开原文定位；原文删除后仍显示归档快照并明确标记“来源已删除”。
+4. 补齐会话删除时 RAG state/cross-ref 清理、用户问题编辑重答后的旧引用截断、进程重启后的引用展示与两知识库隔离 E2E。
+5. 在正确性与弱相关阈值稳定后再实现 Task 9 HNSW；继续保留精确余弦检索作为小规模和回归基准。
+
+本检查点没有执行 Git 提交或推送；所有改动仍保留在当前工作树中。

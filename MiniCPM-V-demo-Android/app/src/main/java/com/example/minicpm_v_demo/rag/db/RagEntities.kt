@@ -100,6 +100,26 @@ data class ChunkEntity(
     }
 }
 
+@Entity(
+    tableName = "chunk_embeddings",
+    foreignKeys = [
+        ForeignKey(
+            entity = ChunkEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["chunkId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("modelSha256")],
+)
+data class ChunkEmbeddingEntity(
+    @PrimaryKey val chunkId: Long,
+    val modelSha256: String,
+    val dimension: Int,
+    val vector: ByteArray,
+    val updatedAt: Long,
+)
+
 @Fts4(contentEntity = ChunkEntity::class)
 @Entity(tableName = "chunk_fts")
 data class ChunkFtsEntity(

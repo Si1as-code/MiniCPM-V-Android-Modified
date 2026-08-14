@@ -130,7 +130,7 @@ class ConversationStore(
         val index = active.messages.indexOfFirst { it.id == messageId }
         if (index < 0) return null
         val current = active.messages[index] as? ChatMessage.AiMessage ?: return null
-        active.messages[index] = current.copy(text = newText, isGenerating = false)
+        active.messages[index] = current.copy(text = newText, isGenerating = false, answerEdited = true)
         return TimelineMutation(active.messages.toList(), emptyList())
     }
 

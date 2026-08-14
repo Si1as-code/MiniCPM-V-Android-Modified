@@ -9,9 +9,11 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
 
 @RunWith(AndroidJUnit4::class)
 class RagDatabaseDaoTest {
@@ -78,6 +80,116 @@ class RagDatabaseDaoTest {
         assertTrue(database.chunkDao().findByDocument("doc-delete").isEmpty())
         assertTrue(database.chunkDao().searchReadyChunks("payroll", "kb-delete", 10).isEmpty())
     }
+
+    @Test
+    fun replacingDocumentChunksUpdatesFtsInTheSameTransaction() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        database.documentDao().upsert(document("doc", DocumentStatus.CHUNKING, now))
+        database.chunkDao().replaceForDocument("doc", listOf(chunk(10, "doc", "旧合同内容")))
+
+        database.chunkDao().replaceForDocument("doc", listOf(
+            chunk(11, "doc", "项目验收编号"),
+            chunk(12, "doc", "付款条件"),
+        ))
+
+        assertEquals(listOf(11L, 12L), database.chunkDao().findByDocument("doc").map { it.id })
+        assertEquals(2L, ftsRowCount())
+    }
+
+    @Test
+    fun failedChunkReplacementRollsBackDeletedRowsAndFts() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        database.documentDao().upsert(document("doc", DocumentStatus.CHUNKING, now))
+        database.chunkDao().replaceForDocument("doc", listOf(chunk(20, "doc", "原始内容")))
+
+        assertThrows(Exception::class.java) {
+            runBlocking {
+                database.chunkDao().replaceForDocument(
+                    "doc",
+                    listOf(chunk(21, "doc", "新内容一"), chunk(21, "doc", "重复主键")),
+                )
+            }
+        }
+
+        assertEquals(listOf(20L), database.chunkDao().findByDocument("doc").map { it.id })
+        assertEquals(1L, ftsRowCount())
+    }
+
+    @Test
+    fun batchedReplacementConsumesIncrementallyInsideOneTransaction() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        database.documentDao().upsert(document("doc", DocumentStatus.CHUNKING, now))
+        var consumed = 0
+        val chunks = sequence {
+            repeat(130) { ordinal ->
+                consumed++
+                yield(chunk(1_000L + ordinal, "doc", "内容$ordinal").copy(ordinal = ordinal))
+            }
+        }
+
+        val count = database.chunkDao().replaceForDocumentBatched("doc", chunks, batchSize = 16)
+
+        assertEquals(130, count)
+        assertEquals(130, consumed)
+        assertEquals(130, database.chunkDao().findByDocument("doc").size)
+        assertEquals(130L, ftsRowCount())
+    }
+
+    @Test
+    fun embeddingBatchPersistsVectorsAndReadyStateAtomically() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        database.documentDao().upsert(document("doc", DocumentStatus.EMBEDDING, now))
+        database.chunkDao().insertAll(listOf(chunk(31, "doc", "first"), chunk(32, "doc", "second")))
+
+        database.chunkDao().storeEmbeddingBatch(listOf(
+            ChunkEmbeddingEntity(31, "a".repeat(64), 2, FloatVectorCodec.encode(floatArrayOf(1f, 0f)), now),
+            ChunkEmbeddingEntity(32, "a".repeat(64), 2, FloatVectorCodec.encode(floatArrayOf(0f, 1f)), now),
+        ))
+
+        assertEquals(2, database.chunkDao().findEmbeddingsByDocument("doc").size)
+        assertTrue(database.chunkDao().findByDocument("doc").all { it.embeddingState == ChunkEntity.EMBEDDING_READY })
+        assertTrue(database.chunkDao().findChunksNeedingEmbedding("doc", "a".repeat(64)).isEmpty())
+    }
+
+    @Test
+    fun conversationRagSelectionsAreIsolatedAndEmptySelectionDisablesRetrieval() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-2", "Legal", "legal", now, now))
+
+        database.conversationRagDao().replaceSelection(11, listOf("kb-1"), enabled = true, updatedAt = now)
+        database.conversationRagDao().replaceSelection(22, listOf("kb-2"), enabled = true, updatedAt = now)
+
+        assertEquals(listOf("kb-1"), database.conversationRagDao().findSelectedEnabledKnowledgeBaseIds(11))
+        assertEquals(listOf("kb-2"), database.conversationRagDao().findSelectedEnabledKnowledgeBaseIds(22))
+
+        database.conversationRagDao().replaceSelection(11, emptyList(), enabled = true, updatedAt = now + 1)
+
+        assertTrue(database.conversationRagDao().findSelectedEnabledKnowledgeBaseIds(11).isEmpty())
+        assertEquals(false, database.conversationRagDao().findState(11)?.ragEnabled)
+        assertEquals(listOf("kb-2"), database.conversationRagDao().findSelectedEnabledKnowledgeBaseIds(22))
+    }
+
+    @Test
+    fun disablingConversationRagKeepsSelectionButReturnsNoKnowledgeBases() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        val dao = database.conversationRagDao()
+        dao.replaceSelection(33, listOf("kb-1"), enabled = true, updatedAt = now)
+
+        dao.setEnabled(33, enabled = false, updatedAt = now + 1)
+
+        assertTrue(dao.findSelectedEnabledKnowledgeBaseIds(33).isEmpty())
+        assertEquals(listOf("kb-1"), dao.findBoundKnowledgeBaseIds(33))
+    }
+
+    private fun ftsRowCount(): Long = database.openHelper.readableDatabase
+        .query("SELECT COUNT(*) FROM chunk_fts")
+        .use { cursor -> cursor.moveToFirst(); cursor.getLong(0) }
 
     private fun document(
         id: String,

@@ -38,11 +38,23 @@ class WorkManagerRagWorkCoordinator(
             .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
             .addTag(RagWorkContract.uniqueWorkName(documentId))
             .build()
+        val chunkRequest = OneTimeWorkRequestBuilder<ChunkWorker>()
+            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+            .addTag(RagWorkContract.uniqueWorkName(documentId))
+            .build()
+        val embedRequest = OneTimeWorkRequestBuilder<EmbedWorker>()
+            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+            .addTag(RagWorkContract.uniqueWorkName(documentId))
+            .build()
+        val finalizeRequest = OneTimeWorkRequestBuilder<FinalizeIndexWorker>()
+            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+            .addTag(RagWorkContract.uniqueWorkName(documentId))
+            .build()
         return workManager.beginUniqueWork(
             RagWorkContract.uniqueWorkName(documentId),
             ExistingWorkPolicy.KEEP,
             copyRequest,
-        ).then(parseRequest).then(ocrRequest).enqueue()
+        ).then(parseRequest).then(ocrRequest).then(chunkRequest).then(embedRequest).then(finalizeRequest).enqueue()
     }
 
     override fun cancel(documentId: String): Operation {

@@ -29,6 +29,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
+import com.example.minicpm_v_demo.rag.retrieval.RagLocalReplyKind
+import com.example.minicpm_v_demo.rag.retrieval.RagPromptPreparation
+import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
+import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -440,6 +444,7 @@ class MainActivity : StatusBarVisibleActivity() {
         val view = layoutInflater.inflate(R.layout.dialog_chat_settings, null, false)
         val rowModelManagement = view.findViewById<View>(R.id.row_model_management)
         val rowKnowledgeBases = view.findViewById<View>(R.id.row_knowledge_bases)
+        val rowConversationRag = view.findViewById<View>(R.id.row_conversation_rag)
         val rowImageSlice = view.findViewById<View>(R.id.row_image_slice)
         val rowConversationManagement = view.findViewById<View>(R.id.row_conversation_management)
         val rowClearChat = view.findViewById<View>(R.id.row_clear_chat)
@@ -476,6 +481,12 @@ class MainActivity : StatusBarVisibleActivity() {
         rowKnowledgeBases.setOnClickListener {
             dialog.dismiss()
             startActivity(Intent(this, KnowledgeBaseActivity::class.java))
+        }
+        rowConversationRag.setOnClickListener {
+            dialog.dismiss()
+            startActivity(Intent(this, KnowledgeBaseActivity::class.java).apply {
+                putExtra(KnowledgeBaseActivity.EXTRA_CONVERSATION_ID, conversationStore.activeConversationId)
+            })
         }
         rowImageSlice.setOnClickListener {
             dialog.dismiss()
@@ -1661,6 +1672,7 @@ class MainActivity : StatusBarVisibleActivity() {
 
         renderPendingImage(pendingImageViewModel.uiState.value)
         val previewToken = attachment?.thumbnail?.let(::cachePreview)
+        var submittedUserMessageId = existingUserMessageId
         if (displayUserMessage) {
             val userMessage = ChatMessage.UserMessage(
                 id = conversationStore.nextMessageId(),
@@ -1670,6 +1682,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 originalImageToken = attachment?.originalImageToken,
                 previewImageToken = previewToken
             )
+            submittedUserMessageId = userMessage.id
             messages.add(userMessage)
             conversationStore.updateTitleFromFirstUserMessage()
             submitMessages {
@@ -1697,13 +1710,38 @@ class MainActivity : StatusBarVisibleActivity() {
         }
 
         val generationHadVisualContext = engine.hasVisualContext.value
+        val conversationIdAtSubmission = conversationStore.activeConversationId
         generationJob = lifecycleScope.launch(Dispatchers.Default) {
             val fullResponse = StringBuilder()
+            var localRagReply = false
+            var ragRunId: String? = null
+            var ragSources: List<RetrievedChunk> = emptyList()
             try {
-                engine.sendUserPrompt(userMsg)
-                    .collect { token ->
-                        fullResponse.append(token)
+                val preparation = (application as MiniCPMApplication).localRagRetriever
+                    .preparePrompt(conversationIdAtSubmission, userMsg)
+                val modelPrompt = when (preparation) {
+                    RagPromptPreparation.PassThrough -> userMsg
+                    is RagPromptPreparation.Augmented -> {
+                        ragRunId = preparation.ragRunId
+                        ragSources = preparation.sources.toList()
+                        replayActiveConversationContext(skipMessageId = submittedUserMessageId)
+                        attachment?.originalImageToken?.let { pendingImageViewModel.replayCachedImage(it) }
+                        preparation.prompt
                     }
+                    is RagPromptPreparation.LocalReply -> {
+                        localRagReply = true
+                        fullResponse.append(getString(when (preparation.kind) {
+                            RagLocalReplyKind.SELECTION_REQUIRED -> R.string.rag_reply_selection_required
+                            RagLocalReplyKind.MODEL_REQUIRED -> R.string.rag_reply_model_required
+                            RagLocalReplyKind.NO_EVIDENCE -> R.string.rag_reply_no_evidence
+                            RagLocalReplyKind.RETRIEVAL_UNAVAILABLE -> R.string.rag_reply_unavailable
+                        }))
+                        null
+                    }
+                }
+                modelPrompt?.let { prompt ->
+                    engine.sendUserPrompt(prompt).collect { token -> fullResponse.append(token) }
+                }
             } catch (e: CancellationException) {
                 Log.i(TAG, "Text generation was cancelled")
                 throw e
@@ -1713,6 +1751,32 @@ class MainActivity : StatusBarVisibleActivity() {
                 withContext(NonCancellable + Dispatchers.Main) {
                     val index = messages.indexOfFirst { it.id == aiMsgId }
                     val candidateResponse = fullResponse.toString()
+                    if (localRagReply) {
+                        if (index >= 0) {
+                            val current = messages[index] as? ChatMessage.AiMessage
+                            messages[index] = (current ?: aiMessage).copy(
+                                text = "",
+                                isGenerating = true,
+                                includeInModelContext = false,
+                            )
+                        }
+                        streamIntoAiMessage(aiMsgId, candidateResponse, aiMessage.copy(includeInModelContext = false))
+                        if (index >= 0) {
+                            messages[index] = aiMessage.copy(
+                                text = candidateResponse,
+                                isGenerating = false,
+                                includeInModelContext = false,
+                            )
+                        }
+                        chatAdapter.setGeneratingDone(aiMsgId)
+                        chatAdapter.clearActiveAiMessage()
+                        submitMessages()
+                        isSubmitting = false
+                        generationJob = null
+                        refreshInputControls()
+                        if (index >= 0) scrollToBottom()
+                        return@withContext
+                    }
                     val responseDecision = engine.evaluateVisualResponse(
                         response = candidateResponse,
                         hadVisualContext = generationHadVisualContext
@@ -1749,6 +1813,25 @@ class MainActivity : StatusBarVisibleActivity() {
                             getString(R.string.response_safety_review)
                         }
                     }
+                    val citationSnapshots = if (
+                        displayAction == ContentDisplayAction.SHOW_CANDIDATE && ragRunId != null
+                    ) {
+                        CitationValidator.validate(candidateResponse, ragSources).map { citation ->
+                            CitationRef(
+                                messageId = aiMsgId,
+                                sourceId = citation.sourceId,
+                                chunkId = citation.source.chunkId,
+                                documentId = citation.source.documentId,
+                                documentNameSnapshot = citation.source.displayName,
+                                locator = citation.source.locator,
+                                quotedText = citation.source.text.take(MAX_CITATION_QUOTE_CHARS),
+                                retrievalScore = citation.source.score.toDouble(),
+                                retrievalVersion = RAG_RETRIEVAL_VERSION,
+                            )
+                        }.toList()
+                    } else {
+                        emptyList()
+                    }
                     if (index >= 0) {
                         val current = messages[index] as? ChatMessage.AiMessage
                         messages[index] = (current ?: aiMessage).copy(
@@ -1760,7 +1843,9 @@ class MainActivity : StatusBarVisibleActivity() {
                             isGenerating = false,
                             includeInModelContext =
                                 displayAction == ContentDisplayAction.SHOW_CANDIDATE &&
-                                    candidateResponse.isNotBlank()
+                                    candidateResponse.isNotBlank(),
+                            citations = citationSnapshots,
+                            ragRunId = ragRunId,
                         )
                     }
                     if (displayAction != ContentDisplayAction.SHOW_CANDIDATE) {
@@ -1970,5 +2055,7 @@ class MainActivity : StatusBarVisibleActivity() {
         private const val PREVIEW_JPEG_QUALITY = 88
         private const val CONVERSATION_FLUSH_TIMEOUT_SECONDS = 3L
         private const val MAX_EDIT_MESSAGE_CHARACTERS = 250_000
+        private const val MAX_CITATION_QUOTE_CHARS = 600
+        private const val RAG_RETRIEVAL_VERSION = 1
     }
 }

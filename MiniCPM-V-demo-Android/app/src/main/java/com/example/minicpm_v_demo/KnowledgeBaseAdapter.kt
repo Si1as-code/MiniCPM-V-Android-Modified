@@ -25,6 +25,7 @@ class KnowledgeBaseAdapter(
     context: Context,
     private val onSelect: (KnowledgeBaseEntity) -> Unit,
     private val onDelete: (KnowledgeBaseEntity) -> Unit,
+    private val showDelete: Boolean = true,
 ) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
     private var items = emptyList<KnowledgeBaseListItem>()
@@ -56,7 +57,9 @@ class KnowledgeBaseAdapter(
             if (item.selected) R.dimen.rag_selected_stroke else R.dimen.rag_card_stroke,
         )
         card.setOnClickListener { onSelect(item.knowledgeBase) }
-        view.findViewById<ImageButton>(R.id.btn_delete_knowledge_base).setOnClickListener {
+        val deleteButton = view.findViewById<ImageButton>(R.id.btn_delete_knowledge_base)
+        deleteButton.visibility = if (showDelete) View.VISIBLE else View.GONE
+        deleteButton.setOnClickListener {
             onDelete(item.knowledgeBase)
         }
 

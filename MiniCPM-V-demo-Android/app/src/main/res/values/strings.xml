@@ -32,6 +32,17 @@
     <string name="rag_delete_knowledge_base">删除知识库</string>
     <string name="rag_delete_knowledge_base_confirm">确定删除“%1$s”吗？其中的文档和索引也会一并删除，此操作无法撤销。</string>
     <string name="rag_knowledge_base_deleted">知识库已删除</string>
+    <string name="rag_conversation_title">当前对话 RAG</string>
+    <string name="rag_conversation_settings_summary">选择本对话可以检索的知识库</string>
+    <string name="rag_conversation_summary">每个对话单独保存设置。开启后，仅检索下方淡蓝色选中的知识库。</string>
+    <string name="rag_enable_for_conversation">在当前对话中启用知识库</string>
+    <string name="rag_save_conversation_selection">保存当前对话设置</string>
+    <string name="rag_conversation_enabled">当前对话已启用知识库</string>
+    <string name="rag_conversation_disabled">当前对话已关闭知识库</string>
+    <string name="rag_reply_selection_required">当前对话尚未选择知识库。请在设置中的“当前对话 RAG”里选择知识库。</string>
+    <string name="rag_reply_model_required">本地检索模型尚未就绪，请先完成知识库模型安装后再试。</string>
+    <string name="rag_reply_no_evidence">在当前对话选择的知识库中没有找到足够依据。你可以换一种问法，或检查文档是否已处理完成。</string>
+    <string name="rag_reply_unavailable">本地知识库暂时无法检索。请稍后重试，或在“当前对话 RAG”中关闭知识库后继续普通聊天。</string>
     <string name="rag_document_processing">%1$s\n正在安全导入…</string>
     <string name="rag_document_uploaded">%1$s\n上传成功</string>
     <string name="rag_document_failed">%1$s\n失败：%2$s</string>

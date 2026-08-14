@@ -8,6 +8,26 @@ import org.junit.Test
 
 class ConversationStoreTest {
     @Test
+    fun editingAssistantPreservesCitationsAndMarksAnswerEdited() {
+        val store = ConversationStore()
+        val citation = CitationRef(7, "S1", 3, "doc", "policy.txt", "line 2", "evidence", 0.8, 1)
+        store.active.messages += ChatMessage.AiMessage(
+            id = 7,
+            text = "original",
+            citations = listOf(citation),
+            ragRunId = "run-7",
+        )
+
+        store.editAssistantText(7, "corrected")
+
+        val edited = store.active.messages.single() as ChatMessage.AiMessage
+        assertEquals("corrected", edited.text)
+        assertEquals(listOf(citation), edited.citations)
+        assertEquals("run-7", edited.ragRunId)
+        assertTrue(edited.answerEdited)
+    }
+
+    @Test
     fun createsSwitchesAndDeletesIndependentConversations() {
         val store = ConversationStore { "新对话" }
         val first = store.activeConversationId

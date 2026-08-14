@@ -10,12 +10,13 @@ import androidx.room.TypeConverters
         KnowledgeBaseEntity::class,
         DocumentEntity::class,
         ChunkEntity::class,
+        ChunkEmbeddingEntity::class,
         ChunkFtsEntity::class,
         ConversationKnowledgeBaseCrossRef::class,
         ConversationRagStateEntity::class,
         CitationEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(RagDatabaseConverters::class)
