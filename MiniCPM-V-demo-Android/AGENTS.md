@@ -7,6 +7,8 @@
 - Use the canonical certificate pinned in `app/build.gradle.kts`; keep the keystore and credentials outside Git via `signing.local.properties` or Gradle properties.
 - Before changing the pinned certificate, compare it with the installed package certificate and obtain explicit approval for any uninstall that could erase application data.
 - On `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, stop. Do not uninstall automatically and do not generate another key.
+- Do not run Gradle `connected*AndroidTest` tasks: AGP cleanup can uninstall the target package and erase app-private models, conversations, and knowledge bases even when tests pass.
+- For device tests, build and verify signing first, install both APKs with `adb install -r`, then invoke the selected test with `adb shell am instrument`; never uninstall the target package as test cleanup.
 
 ## Canonical Windows Android environment
 

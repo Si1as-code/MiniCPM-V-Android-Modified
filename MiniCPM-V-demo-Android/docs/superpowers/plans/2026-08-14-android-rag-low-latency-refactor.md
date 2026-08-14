@@ -153,7 +153,7 @@ sealed interface RagTurnState {
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt`
 - Test: `app/src/test/java/com/example/minicpm_v_demo/rag/telemetry/RagLatencyTraceTest.kt`
 
-- [ ] **Step 1：写计时器红灯测试。** 固定单调时钟，断言阶段顺序、非负耗时、重复结束阶段被拒绝，并证明 trace 不包含 query 或正文。
+- [x] **Step 1：写计时器红灯测试。** 固定单调时钟，断言阶段顺序、非负耗时、重复结束阶段被拒绝，并证明 trace 不包含 query 或正文。
 
 ```kotlin
 val trace = RagLatencyTrace.start("run-1", clock)
@@ -164,7 +164,7 @@ assertEquals(4L, trace.snapshot().durationsMs.getValue(RagPhase.ROUTE))
 assertFailsWith<IllegalStateException> { trace.end(RagPhase.ROUTE) }
 ```
 
-- [ ] **Step 2：运行红灯测试。**
+- [x] **Step 2：运行红灯测试。**
 
 ```powershell
 .\gradlew.bat --no-daemon --max-workers=1 :app:testDebugUnitTest --tests "com.example.minicpm_v_demo.rag.telemetry.RagLatencyTraceTest" -x buildGgmlCpu_v86
@@ -172,7 +172,7 @@ assertFailsWith<IllegalStateException> { trace.end(RagPhase.ROUTE) }
 
 预期：因 `RagLatencyTrace` 未定义而失败。
 
-- [ ] **Step 3：实现最小计时类型。**
+- [x] **Step 3：实现最小计时类型。**
 
 ```kotlin
 enum class RagPhase { ROUTE, EMBED, LEXICAL, DENSE, FUSION, REDUCE, CHECKPOINT_SAVE, PREFILL, TTFT, CHECKPOINT_RESTORE }
@@ -187,7 +187,7 @@ data class RagLatencySnapshot(
 
 生产日志只输出 `runId` 的截断哈希、阶段耗时、候选数、token 数、结果枚举；禁止输出问题、chunk 文本、文件名和引用摘录。
 
-- [ ] **Step 4：在现有链路记录基线。** 在 `preparePrompt()`、`replayActiveConversationContext()` 和首次 flow token 处打点；只用于证明旧链路耗时，后续 Task 3 删除 RAG replay 调用。
+- [x] **Step 4：在现有链路记录基线。** 在 `preparePrompt()`、`replayActiveConversationContext()` 和首次 flow token 处打点；只用于证明旧链路耗时，后续 Task 3 删除 RAG replay 调用。
 - [ ] **Step 5：运行单元测试和真机问候/RAG 各 20 次基线。** 结果保存到 `docs/execution/evidence/rag-latency-baseline-20260814.md`，只记录聚合统计。
 - [ ] **Step 6：提交。**
 
@@ -204,9 +204,9 @@ git commit -m "android: instrument local RAG latency phases"
 - Create: `app/src/test/resources/rag/route_cases.tsv`
 - Test: `app/src/test/java/com/example/minicpm_v_demo/rag/route/RagQueryRouterTest.kt`
 
-- [ ] **Step 1：建立至少 120 条路由回归集。** 标签固定为 `NO_RETRIEVAL`、`SINGLE_RETRIEVAL`、`COMPLEX_RETRIEVAL`；包含中英文问候、感谢、翻译、改写、文档名、条款号、日期、合同金额、跨文档比较和历史绕过句式。语料必须是合成数据。
-- [ ] **Step 2：写参数化红灯测试。** 读取 TSV，断言所有标签；额外断言 `ragEnabled=false` 时路由不提取特征之外的组件。
-- [ ] **Step 3：实现确定性路由接口。**
+- [x] **Step 1：建立至少 120 条路由回归集。** 标签固定为 `NO_RETRIEVAL`、`SINGLE_RETRIEVAL`、`COMPLEX_RETRIEVAL`；包含中英文问候、感谢、翻译、改写、文档名、条款号、日期、合同金额、跨文档比较和历史绕过句式。语料必须是合成数据。
+- [x] **Step 2：写参数化红灯测试。** 读取 TSV，断言所有标签；额外断言 `ragEnabled=false` 时路由不提取特征之外的组件。
+- [x] **Step 3：实现确定性路由接口。**
 
 ```kotlin
 enum class RagQueryRoute { NO_RETRIEVAL, SINGLE_RETRIEVAL, COMPLEX_RETRIEVAL }
@@ -224,8 +224,8 @@ interface RagQueryRouter {
 
 `DefaultRagQueryRouter` 先做 Unicode NFKC、空白折叠和长度上限，再按优先级判断：关闭 RAG；明确文件名/“根据文档”“知识库”“第 N 条”；跨文档/比较/汇总；纯问候感谢；其他输入进入 `SINGLE_RETRIEVAL`，由证据阈值决定是否增强。
 
-- [ ] **Step 4：加入绕过防护。** 只有整句符合社交模式且不存在文件名、编号、金额、日期或知识库锚点时才能 `NO_RETRIEVAL`；“你好，请根据合同回答”必须检索。
-- [ ] **Step 5：运行测试并检查误触发率。** 120 条基础集要求 100% 通过；独立 100 条扰动集误触发率不高于 (1\%)。
+- [x] **Step 4：加入绕过防护。** 只有整句符合社交模式且不存在文件名、编号、金额、日期或知识库锚点时才能 `NO_RETRIEVAL`；“你好，请根据合同回答”必须检索。
+- [x] **Step 5：运行测试并检查误触发率。** 120 条基础集要求 100% 通过；独立 100 条扰动集误触发率不高于 $1\%$。
 - [ ] **Step 6：提交。**
 
 ```powershell
@@ -240,8 +240,8 @@ git commit -m "android: route ordinary chat around local RAG"
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/LlamaEngine.kt`
 - Test: `app/src/androidTest/java/com/example/minicpm_v_demo/LlamaCheckpointInstrumentedTest.kt`
 
-- [ ] **Step 1：写真机红灯测试。** 加载生产 MiniCPM 模型，预填固定历史，保存 checkpoint，追加临时 RAG 文本并生成固定数量 token，恢复 checkpoint，再次追加同一普通问题。断言恢复后 `currentPosition`、chat message count 和固定 seed 下首 token 与对照路径一致。
-- [ ] **Step 2：定义 native checkpoint 容器。**
+- [x] **Step 1：写真机红灯测试。** 加载生产 MiniCPM 模型，预填固定历史，保存 checkpoint，追加临时 RAG 文本并生成固定数量 token，恢复 checkpoint，再次追加同一普通问题。断言恢复后 `currentPosition`、chat message count 和固定 seed 下首 token 与对照路径一致。
+- [x] **Step 2：定义 native checkpoint 容器。**
 
 ```cpp
 struct native_checkpoint {
@@ -258,7 +258,7 @@ struct native_checkpoint {
 
 容器驻留 native heap，不经 JNI 复制正文；最多存在一个 checkpoint。释放时先 `common_sampler_free()`，再用 `std::fill` 覆盖 `context_state`。
 
-- [ ] **Step 3：实现 JNI 接口。**
+- [x] **Step 3：实现 JNI 接口。**
 
 ```kotlin
 private external fun beginEphemeralTurnNative(): Long
@@ -270,10 +270,17 @@ private external fun currentContextPositionNative(): Int
 
 保存使用 `llama_state_seq_get_size_ext(..., LLAMA_STATE_SEQ_FLAGS_NONE)` 与 `llama_state_seq_get_data_ext()`；sampler 使用 `common_sampler_clone(g_sampler)`。恢复成功后替换 `g_sampler`、恢复所有 bookkeeping 字段并清空短期 UTF-8/token buffer。
 
-- [ ] **Step 4：增加 256 MiB 硬上限。** `size == 0`、写入长度不一致、超过上限、已有活动 checkpoint 或空 context 均返回 0；不得调用 `fullReset()` 兜底。
-- [ ] **Step 5：验证 recurrent/hybrid state。** 分别运行纯文本和已有图片上下文用例；恢复前后 position、下一 token 和引用图片追问能力一致。若 sequence state 不一致，只将实现切换到 `llama_state_get_data()` / `llama_state_set_data()`，保持 JNI 接口不变。
-- [ ] **Step 6：记录真机 state 大小、保存和恢复 P50/P95。** 达不到第 3 节门槛时停止接入，保留普通聊天，RAG 返回固定“当前设备暂不支持低延迟知识库推理”。
-- [ ] **Step 7：运行签名构建与真机测试。**
+- [x] **Step 4：增加 256 MiB 硬上限。** `size == 0`、写入长度不一致、超过上限、已有活动 checkpoint 或空 context 均返回 0；不得调用 `fullReset()` 兜底。
+- [x] **Step 5：验证 recurrent/hybrid state。** 分别运行纯文本和已有图片上下文用例；恢复前后 position、下一 token 和引用图片追问能力一致。若 sequence state 不一致，只将实现切换到 `llama_state_get_data()` / `llama_state_set_data()`，保持 JNI 接口不变。
+
+  2026-08-14：纯文本 recurrent/hybrid 用例已通过。视觉超时根因确认为 vivo V2359A 在无前台 Activity 时将 instrumentation 目标进程写入 vendor freezer（`cgroup.freeze=1`、`do_freezer_trap`），并非图片预填持续计算；使用受 `android.permission.DUMP` 保护且仅存在于 debug 构建的前台测试宿主，以及检测冻结后自动恢复宿主的真机脚本后，视觉用例连续两次分别以 10.728 秒和 10.337 秒通过。阶段日志显示模型与 mmproj 加载约 2.9 秒、96×96 图像预填约 5.15 秒，checkpoint 恢复后 position、图片状态和固定 seed 首 token 均一致。图像切割偏好在测试后同步恢复为 9。
+
+- [x] **Step 6：记录真机 state 大小、保存和恢复 P50/P95。** 达不到第 3 节门槛时停止接入，保留普通聊天，RAG 返回固定“当前设备暂不支持低延迟知识库推理”。
+
+  vivo V2359A、20 次热态纯文本 checkpoint：state 21,112,884 bytes（约 20.13 MiB），保存 P50/P95 为 9.86/18.14 ms，恢复 P50/P95 为 7.46/9.84 ms，满足 500 ms P95 闸门。
+- [x] **Step 7：运行签名构建与真机测试。**
+
+  2026-08-14：主 APK、测试 APK 和稳定签名校验通过；纯文本 checkpoint 真机用例稳定通过，视觉用例连续两次通过。真机执行统一使用 `scripts/run-device-instrumentation.ps1` 包装手动 `am instrument`，禁止调用 Gradle `connected*AndroidTest`；脚本只在检测到 vivo freezer 时恢复 debug 测试宿主，不启动聊天主界面，也不触发第二路模型加载。
 
 ```powershell
 .\gradlew.bat --no-daemon --max-workers=1 :app:assembleDebug :app:assembleDebugAndroidTest :app:verifyInstallationSigning -x buildGgmlCpu_v86

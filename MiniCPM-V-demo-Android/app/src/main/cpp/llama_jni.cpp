@@ -1,7 +1,10 @@
 #include <android/log.h>
+#include <algorithm>
+#include <cstdint>
 #include <jni.h>
 #include <iomanip>
 #include <cmath>
+#include <new>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -351,7 +354,7 @@ static std::string chat_add_and_format(
             g_chat_templates.get(), chat_msgs, new_msg,
             add_assistant && role == ROLE_USER, true);
     chat_msgs.push_back(new_msg);
-    LOGi("%s: Formatted and added %s message: \n%s\n", __func__, role.c_str(), formatted.c_str());
+    LOGd("%s: Added %s history message", __func__, role.c_str());
     return formatted;
 }
 
@@ -398,6 +401,34 @@ static int decode_history_text(const std::string &formatted) {
 static llama_pos stop_generation_position;
 static std::string cached_token_chars;
 static std::ostringstream assistant_ss;
+
+constexpr size_t MAX_CHECKPOINT_SIZE_BYTES = 256ULL * 1024ULL * 1024ULL;
+
+struct native_checkpoint {
+    uint64_t handle = 0;
+    std::vector<uint8_t> context_state;
+    common_sampler *sampler = nullptr;
+    std::vector<common_chat_msg> chat_messages;
+    llama_pos system_prompt_position = 0;
+    llama_pos current_position = 0;
+    llama_pos generation_start_position = 0;
+    llama_pos stop_generation_position = 0;
+    bool image_prefilled = false;
+    bool vision_mode = false;
+};
+
+static native_checkpoint *g_active_checkpoint = nullptr;
+static uint64_t g_next_checkpoint_handle = 1;
+
+static void destroy_active_checkpoint() {
+    if (!g_active_checkpoint) return;
+    common_sampler_free(g_active_checkpoint->sampler);
+    g_active_checkpoint->sampler = nullptr;
+    std::fill(g_active_checkpoint->context_state.begin(),
+              g_active_checkpoint->context_state.end(), 0);
+    delete g_active_checkpoint;
+    g_active_checkpoint = nullptr;
+}
 
 static void reset_short_term_states() {
     stop_generation_position = 0;
@@ -448,7 +479,7 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processSystemPrompt(
     reset_short_term_states();
 
     const auto *system_prompt = env->GetStringUTFChars(jsystem_prompt, nullptr);
-    LOGd("%s: System prompt received: \n%s", __func__, system_prompt);
+    LOGd("%s: Processing system prompt", __func__);
     const std::string system_content(system_prompt);
     std::string formatted_system_prompt(system_content);
 
@@ -498,10 +529,6 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processSystemPrompt(
     } else {
         const auto system_tokens = common_tokenize(g_context, formatted_system_prompt,
                                                    current_position == 0, true);
-        for (auto id: system_tokens) {
-            LOGv("token: `%s`\t -> `%d`", common_token_to_piece(g_context, id).c_str(), id);
-        }
-
         const int max_batch_size = g_n_ctx - OVERFLOW_HEADROOM;
         if ((int) system_tokens.size() > max_batch_size) {
             LOGe("%s: System prompt too long for context! %d tokens, max: %d",
@@ -592,6 +619,7 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_prefillImage(
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_minicpm_1v_1demo_LlamaEngine_fullReset(JNIEnv *, jobject) {
+    destroy_active_checkpoint();
     reset_long_term_states();
     reset_short_term_states();
 
@@ -602,7 +630,7 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_fullReset(JNIEnv *, jobject) {
     llama_free(g_context);
     g_context = nullptr;
 
-    auto *context = init_context(g_model);
+    auto *context = init_context(g_model, g_n_ctx);
     if (!context) {
         LOGe("%s: Failed to reinitialize context!", __func__);
         return;
@@ -627,6 +655,135 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_nativeCancelGeneration(JNIEnv *, j
 }
 
 extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_beginEphemeralTurnNative(JNIEnv *, jobject) {
+    if (!g_context || !g_sampler || g_active_checkpoint) return 0;
+
+    const size_t state_size = llama_state_seq_get_size_ext(
+            g_context, 0, LLAMA_STATE_SEQ_FLAGS_NONE);
+    if (state_size == 0 || state_size > MAX_CHECKPOINT_SIZE_BYTES) return 0;
+
+    auto *checkpoint = new (std::nothrow) native_checkpoint();
+    if (!checkpoint) return 0;
+    try {
+        checkpoint->context_state.resize(state_size);
+        const size_t written = llama_state_seq_get_data_ext(
+                g_context, checkpoint->context_state.data(), state_size, 0,
+                LLAMA_STATE_SEQ_FLAGS_NONE);
+        if (written != state_size) {
+            std::fill(checkpoint->context_state.begin(), checkpoint->context_state.end(), 0);
+            delete checkpoint;
+            return 0;
+        }
+        checkpoint->sampler = common_sampler_clone(g_sampler);
+        checkpoint->chat_messages = chat_msgs;
+    } catch (...) {
+        common_sampler_free(checkpoint->sampler);
+        std::fill(checkpoint->context_state.begin(), checkpoint->context_state.end(), 0);
+        delete checkpoint;
+        return 0;
+    }
+    if (!checkpoint->sampler) {
+        std::fill(checkpoint->context_state.begin(), checkpoint->context_state.end(), 0);
+        delete checkpoint;
+        return 0;
+    }
+
+    checkpoint->handle = g_next_checkpoint_handle++;
+    if (checkpoint->handle == 0) checkpoint->handle = g_next_checkpoint_handle++;
+    checkpoint->system_prompt_position = system_prompt_position;
+    checkpoint->current_position = current_position;
+    checkpoint->generation_start_position = generation_start_position;
+    checkpoint->stop_generation_position = stop_generation_position;
+    checkpoint->image_prefilled = g_image_prefilled;
+    checkpoint->vision_mode = g_vision_mode;
+    g_active_checkpoint = checkpoint;
+    return static_cast<jlong>(checkpoint->handle);
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_restoreEphemeralTurnNative(
+        JNIEnv *, jobject, jlong handle) {
+    if (!g_context || !g_active_checkpoint || handle <= 0 ||
+        static_cast<uint64_t>(handle) != g_active_checkpoint->handle) {
+        return JNI_FALSE;
+    }
+
+    llama_memory_clear(llama_get_memory(g_context), true);
+    const size_t restored = llama_state_seq_set_data_ext(
+            g_context, g_active_checkpoint->context_state.data(),
+            g_active_checkpoint->context_state.size(), 0,
+            LLAMA_STATE_SEQ_FLAGS_NONE);
+    if (restored != g_active_checkpoint->context_state.size()) return JNI_FALSE;
+
+    common_sampler_free(g_sampler);
+    g_sampler = g_active_checkpoint->sampler;
+    g_active_checkpoint->sampler = nullptr;
+    chat_msgs = std::move(g_active_checkpoint->chat_messages);
+    system_prompt_position = g_active_checkpoint->system_prompt_position;
+    current_position = g_active_checkpoint->current_position;
+    generation_start_position = g_active_checkpoint->generation_start_position;
+    stop_generation_position = g_active_checkpoint->stop_generation_position;
+    g_image_prefilled = g_active_checkpoint->image_prefilled;
+    g_vision_mode = g_active_checkpoint->vision_mode;
+    cached_token_chars.clear();
+    assistant_ss.str("");
+    assistant_ss.clear();
+    destroy_active_checkpoint();
+    return JNI_TRUE;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_releaseEphemeralTurnNative(
+        JNIEnv *, jobject, jlong handle) {
+    if (g_active_checkpoint && handle > 0 &&
+        static_cast<uint64_t>(handle) == g_active_checkpoint->handle) {
+        destroy_active_checkpoint();
+    }
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_checkpointSizeBytesNative(
+        JNIEnv *, jobject, jlong handle) {
+    if (!g_active_checkpoint || handle <= 0 ||
+        static_cast<uint64_t>(handle) != g_active_checkpoint->handle) return 0;
+    return static_cast<jlong>(g_active_checkpoint->context_state.size());
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentContextPositionNative(JNIEnv *, jobject) {
+    return static_cast<jint>(current_position);
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentContextCapacityNative(JNIEnv *, jobject) {
+    return static_cast<jint>(g_n_ctx);
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentChatMessageCountNative(JNIEnv *, jobject) {
+    return static_cast<jint>(chat_msgs.size());
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentImagePrefilledNative(JNIEnv *, jobject) {
+    return g_image_prefilled ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentVisionModeNative(JNIEnv *, jobject) {
+    return g_vision_mode ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C"
 JNIEXPORT jint JNICALL
 Java_com_example_minicpm_1v_1demo_LlamaEngine_processUserPrompt(
         JNIEnv *env,
@@ -637,7 +794,7 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processUserPrompt(
     reset_short_term_states();
 
     const auto *const user_prompt = env->GetStringUTFChars(juser_prompt, nullptr);
-    LOGd("%s: User prompt received: \n%s", __func__, user_prompt);
+    LOGd("%s: Processing user prompt", __func__);
 
     std::string content_for_format(user_prompt);
     if (content_for_format.empty()) {
@@ -662,11 +819,8 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processUserPrompt(
         new_msg.content = content_for_format;
         chat_msgs.push_back(new_msg);
 
-        LOGi("%s: Formatted user prompt (mtmd, image=%s, minicpmv=%d): \n%s\n",
-             __func__,
-             g_image_prefilled ? "yes" : "no",
-             g_minicpmv_version,
-             formatted_user_prompt.c_str());
+        LOGi("%s: Formatted user prompt (mtmd, image=%s, minicpmv=%d)",
+             __func__, g_image_prefilled ? "yes" : "no", g_minicpmv_version);
 
         g_image_prefilled = false;
     } else {
@@ -712,10 +866,6 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_processUserPrompt(
         mtmd_input_chunks_free(chunks);
     } else {
         auto user_tokens = common_tokenize(g_context, formatted_user_prompt, current_position == 0, true);
-        for (auto id: user_tokens) {
-            LOGv("token: `%s`\t -> `%d`", common_token_to_piece(g_context, id).c_str(), id);
-        }
-
         const int user_prompt_size = (int) user_tokens.size();
         const int max_batch_size = g_n_ctx - OVERFLOW_HEADROOM;
         if (user_prompt_size > max_batch_size) {
@@ -857,8 +1007,6 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_generateNextToken(
     jstring result = nullptr;
     if (is_valid_utf8(cached_token_chars.c_str())) {
         result = env->NewStringUTF(cached_token_chars.c_str());
-        LOGv("id: %d,\tcached: `%s`,\tnew: `%s`", new_token_id, cached_token_chars.c_str(), new_token_chars.c_str());
-
         assistant_ss << cached_token_chars;
         cached_token_chars.clear();
     } else {
@@ -871,6 +1019,7 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_generateNextToken(
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_minicpm_1v_1demo_LlamaEngine_unload(JNIEnv * /*env*/, jobject /*unused*/) {
+    destroy_active_checkpoint();
     reset_long_term_states();
     reset_short_term_states();
 

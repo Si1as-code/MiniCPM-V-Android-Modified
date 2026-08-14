@@ -48,6 +48,21 @@ enum class ModelHistoryRole(val nativeValue: Int) {
     ASSISTANT(1)
 }
 
+data class NativeContextDebugSnapshot(
+    val currentPosition: Int,
+    val contextCapacity: Int,
+    val chatMessageCount: Int,
+    val imagePrefilled: Boolean,
+    val visionMode: Boolean,
+)
+
+class NativeCheckpoint internal constructor(
+    internal val handle: Long,
+    val sizeBytes: Long,
+) {
+    internal var active: Boolean = true
+}
+
 class LlamaEngine private constructor(
     private val context: Context,
     private val nativeLibDir: String
@@ -914,6 +929,15 @@ class LlamaEngine private constructor(
     private external fun prefillImage(imageData: ByteArray, imageSize: Int): Int
     private external fun fullReset()
     private external fun nativeCancelGeneration()
+    private external fun beginEphemeralTurnNative(): Long
+    private external fun restoreEphemeralTurnNative(handle: Long): Boolean
+    private external fun releaseEphemeralTurnNative(handle: Long)
+    private external fun checkpointSizeBytesNative(handle: Long): Long
+    private external fun currentContextPositionNative(): Int
+    private external fun currentContextCapacityNative(): Int
+    private external fun currentChatMessageCountNative(): Int
+    private external fun currentImagePrefilledNative(): Boolean
+    private external fun currentVisionModeNative(): Boolean
     private external fun unload()
     private external fun shutdown()
 
@@ -1251,6 +1275,46 @@ class LlamaEngine private constructor(
             nativeCancelGeneration()
         }
     }
+
+    suspend fun beginEphemeralTurn(): NativeCheckpoint = withContext(llamaDispatcher) {
+        check(_state.value is LlamaState.ModelReady) {
+            "Cannot checkpoint context in ${_state.value.javaClass.simpleName}"
+        }
+        val handle = beginEphemeralTurnNative()
+        check(handle != 0L) { "Native context checkpoint could not be created" }
+        val sizeBytes = checkpointSizeBytesNative(handle)
+        check(sizeBytes in 1..(256L * 1024L * 1024L)) {
+            releaseEphemeralTurnNative(handle)
+            "Invalid native checkpoint size: $sizeBytes"
+        }
+        NativeCheckpoint(handle, sizeBytes)
+    }
+
+    suspend fun restoreEphemeralTurn(checkpoint: NativeCheckpoint) = withContext(llamaDispatcher) {
+        check(checkpoint.active) { "Native checkpoint has already been consumed" }
+        check(restoreEphemeralTurnNative(checkpoint.handle)) {
+            "Native context checkpoint could not be restored"
+        }
+        checkpoint.active = false
+    }
+
+    suspend fun releaseEphemeralTurn(checkpoint: NativeCheckpoint) = withContext(llamaDispatcher) {
+        if (checkpoint.active) {
+            releaseEphemeralTurnNative(checkpoint.handle)
+            checkpoint.active = false
+        }
+    }
+
+    suspend fun nativeContextDebugSnapshot(): NativeContextDebugSnapshot =
+        withContext(llamaDispatcher) {
+            NativeContextDebugSnapshot(
+                currentPosition = currentContextPositionNative(),
+                contextCapacity = currentContextCapacityNative(),
+                chatMessageCount = currentChatMessageCountNative(),
+                imagePrefilled = currentImagePrefilledNative(),
+                visionMode = currentVisionModeNative(),
+            )
+        }
 
     suspend fun unloadModel() = withContext(llamaDispatcher) {
         if (_state.value is LlamaState.ModelReady) {
