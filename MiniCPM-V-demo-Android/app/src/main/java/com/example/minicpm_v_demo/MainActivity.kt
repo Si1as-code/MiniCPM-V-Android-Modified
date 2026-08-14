@@ -33,6 +33,10 @@ import com.example.minicpm_v_demo.rag.retrieval.RagLocalReplyKind
 import com.example.minicpm_v_demo.rag.retrieval.RagPromptPreparation
 import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
+import com.example.minicpm_v_demo.rag.telemetry.RagLatencyLogFormatter
+import com.example.minicpm_v_demo.rag.telemetry.RagLatencyTrace
+import com.example.minicpm_v_demo.rag.telemetry.RagPhase
+import com.example.minicpm_v_demo.rag.telemetry.RagTraceResult
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +52,7 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 
 private sealed interface PendingPrivacyAction {
     data class SubmitPrompt(val prompt: String, val messageId: Long) : PendingPrivacyAction
@@ -1716,19 +1721,39 @@ class MainActivity : StatusBarVisibleActivity() {
             var localRagReply = false
             var ragRunId: String? = null
             var ragSources: List<RetrievedChunk> = emptyList()
+            val latencyTrace = RagLatencyTrace.start(UUID.randomUUID().toString())
+            var traceResult = RagTraceResult.FAILED
             try {
-                val preparation = (application as MiniCPMApplication).localRagRetriever
-                    .preparePrompt(conversationIdAtSubmission, userMsg)
+                latencyTrace.begin(RagPhase.ROUTE)
+                val preparation = try {
+                    (application as MiniCPMApplication).localRagRetriever
+                        .preparePrompt(conversationIdAtSubmission, userMsg)
+                } finally {
+                    latencyTrace.end(RagPhase.ROUTE)
+                }
                 val modelPrompt = when (preparation) {
-                    RagPromptPreparation.PassThrough -> userMsg
+                    RagPromptPreparation.PassThrough -> {
+                        traceResult = RagTraceResult.PASS_THROUGH
+                        userMsg
+                    }
                     is RagPromptPreparation.Augmented -> {
+                        traceResult = RagTraceResult.AUGMENTED
                         ragRunId = preparation.ragRunId
                         ragSources = preparation.sources.toList()
-                        replayActiveConversationContext(skipMessageId = submittedUserMessageId)
-                        attachment?.originalImageToken?.let { pendingImageViewModel.replayCachedImage(it) }
+                        latencyTrace.recordCandidateCount(ragSources.size)
+                        latencyTrace.begin(RagPhase.PREFILL)
+                        try {
+                            replayActiveConversationContext(skipMessageId = submittedUserMessageId)
+                            attachment?.originalImageToken?.let {
+                                pendingImageViewModel.replayCachedImage(it)
+                            }
+                        } finally {
+                            latencyTrace.end(RagPhase.PREFILL)
+                        }
                         preparation.prompt
                     }
                     is RagPromptPreparation.LocalReply -> {
+                        traceResult = RagTraceResult.LOCAL_REPLY
                         localRagReply = true
                         fullResponse.append(getString(when (preparation.kind) {
                             RagLocalReplyKind.SELECTION_REQUIRED -> R.string.rag_reply_selection_required
@@ -1740,14 +1765,28 @@ class MainActivity : StatusBarVisibleActivity() {
                     }
                 }
                 modelPrompt?.let { prompt ->
-                    engine.sendUserPrompt(prompt).collect { token -> fullResponse.append(token) }
+                    var waitingForFirstToken = true
+                    latencyTrace.begin(RagPhase.TTFT)
+                    engine.sendUserPrompt(prompt).collect { token ->
+                        if (waitingForFirstToken) {
+                            latencyTrace.end(RagPhase.TTFT)
+                            waitingForFirstToken = false
+                        }
+                        fullResponse.append(token)
+                    }
                 }
             } catch (e: CancellationException) {
+                traceResult = RagTraceResult.CANCELLED
                 Log.i(TAG, "Text generation was cancelled")
                 throw e
             } catch (e: Exception) {
+                traceResult = RagTraceResult.FAILED
                 Log.e(TAG, "Text generation failed", e)
             } finally {
+                Log.i(
+                    TAG,
+                    RagLatencyLogFormatter.format(latencyTrace.snapshot(), traceResult),
+                )
                 withContext(NonCancellable + Dispatchers.Main) {
                     val index = messages.indexOfFirst { it.id == aiMsgId }
                     val candidateResponse = fullResponse.toString()

@@ -5,11 +5,16 @@ import com.example.minicpm_v_demo.rag.embed.E5InputKind
 import com.example.minicpm_v_demo.rag.embed.E5ModelSpec
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
 import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
+import com.example.minicpm_v_demo.rag.route.DefaultRagQueryRouter
+import com.example.minicpm_v_demo.rag.route.RagQueryRoute
+import com.example.minicpm_v_demo.rag.route.RagQueryRouter
+import com.example.minicpm_v_demo.rag.route.RagRouteInput
 import java.util.UUID
 
 class LocalRagRetriever(
     private val database: RagDatabase,
     private val modelManager: EmbeddingModelManager,
+    private val queryRouter: RagQueryRouter = DefaultRagQueryRouter(),
 ) {
     suspend fun preparePrompt(
         conversationId: Long,
@@ -20,6 +25,16 @@ class LocalRagRetriever(
         return runCatching {
             val dao = database.conversationRagDao()
             val enabled = dao.findState(conversationId)?.ragEnabled == true
+            val route = queryRouter.route(
+                RagRouteInput(
+                    ragEnabled = enabled,
+                    query = question,
+                    knownDocumentNames = emptyList(),
+                )
+            )
+            if (route == RagQueryRoute.NO_RETRIEVAL) {
+                return@runCatching RagPromptPreparation.PassThrough
+            }
             val knowledgeBaseIds = dao.findBoundKnowledgeBaseIds(conversationId)
             val model = if (enabled && knowledgeBaseIds.isNotEmpty()) modelManager.openInstalled() else null
             val preliminary = RagDispatchPolicy.decide(enabled, knowledgeBaseIds.size, model != null, 0)

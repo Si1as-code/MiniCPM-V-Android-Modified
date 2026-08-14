@@ -71,4 +71,23 @@ class LocalRagRetrieverInstrumentedTest {
         assertTrue(result.prompt.contains("200 yuan"))
         assertTrue(result.prompt.contains("[S1]"))
     }
+
+    @Test
+    fun greetingPassesThroughBeforeOpeningTheEmbeddingModelOrLoadingChunks() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(
+            KnowledgeBaseEntity("kb-greeting", "Greeting Test", "greeting test", now, now)
+        )
+        database.conversationRagDao().replaceSelection(
+            conversationId = 78,
+            knowledgeBaseIds = listOf("kb-greeting"),
+            enabled = true,
+            updatedAt = now,
+        )
+
+        val result = LocalRagRetriever(database, app.embeddingModelManager)
+            .preparePrompt(78, "你好")
+
+        assertEquals(RagPromptPreparation.PassThrough, result)
+    }
 }
