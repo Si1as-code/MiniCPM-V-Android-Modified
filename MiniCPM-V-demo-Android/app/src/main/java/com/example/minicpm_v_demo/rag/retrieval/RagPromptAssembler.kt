@@ -8,6 +8,10 @@ data class RetrievedChunk(
     val score: Float,
     val documentId: String = "",
     val tokenCount: Int = 0,
+    val denseScore: Float? = null,
+    val lexicalScore: Double? = null,
+    val exactAnchor: Boolean = false,
+    val calibrationKey: RetrievalCalibrationKey? = null,
 )
 
 object RagPromptAssembler {

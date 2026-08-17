@@ -3,7 +3,8 @@ package com.example.minicpm_v_demo
 import android.app.Application
 import com.example.minicpm_v_demo.rag.crypto.RagKeyManager
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
-import com.example.minicpm_v_demo.rag.BasicRagEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.retrieval.CalibratedEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
 import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
 import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
 import com.example.minicpm_v_demo.rag.RagCoordinator
@@ -13,8 +14,10 @@ import com.example.minicpm_v_demo.rag.RoomRagStateQueries
 import com.example.minicpm_v_demo.rag.SourceCountRagEvidenceBudgeter
 import com.example.minicpm_v_demo.rag.db.RagDatabaseFactory
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
-import com.example.minicpm_v_demo.rag.retrieval.LocalRagRetriever
+import com.example.minicpm_v_demo.rag.retrieval.RoomDenseEvidenceRetriever
+import com.example.minicpm_v_demo.rag.retrieval.HybridRetriever
 import com.example.minicpm_v_demo.rag.retrieval.RagPromptAssembler
+import com.example.minicpm_v_demo.rag.retrieval.RoomLexicalEvidenceRetriever
 import com.example.minicpm_v_demo.rag.route.DefaultRagQueryRouter
 import com.example.minicpm_v_demo.rag.work.RagWorkRecovery
 import com.example.minicpm_v_demo.rag.work.WorkManagerRagWorkCoordinator
@@ -33,8 +36,18 @@ class MiniCPMApplication : Application() {
     val ragDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagDatabaseFactory(this, ragKeyManager).open()
     }
-    private val localRagRetriever by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        LocalRagRetriever(ragDatabase, embeddingModelManager)
+    private val denseRagRetriever by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        RoomDenseEvidenceRetriever(ragDatabase, embeddingModelManager)
+    }
+    private val hybridRagRetriever by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        HybridRetriever(
+            denseRetriever = denseRagRetriever,
+            lexicalRetriever = RoomLexicalEvidenceRetriever(
+                ragDatabase,
+                CurrentRetrievalCalibration.key,
+            ),
+            calibrationKey = CurrentRetrievalCalibration.key,
+        )
     }
     val ragCoordinator by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagCoordinator(
@@ -42,8 +55,8 @@ class MiniCPMApplication : Application() {
                 RoomRagStateQueries(ragDatabase.conversationRagDao()),
             ),
             router = DefaultRagQueryRouter(),
-            retriever = localRagRetriever,
-            acceptancePolicy = BasicRagEvidenceAcceptancePolicy,
+            retriever = hybridRagRetriever,
+            acceptancePolicy = CalibratedEvidenceAcceptancePolicy(CurrentRetrievalCalibration.profile),
             reducer = IdentityRagEvidenceReducer,
             budgeter = SourceCountRagEvidenceBudgeter(),
             promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),

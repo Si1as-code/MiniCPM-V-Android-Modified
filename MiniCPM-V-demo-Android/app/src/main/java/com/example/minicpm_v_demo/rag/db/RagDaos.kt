@@ -1,10 +1,17 @@
 package com.example.minicpm_v_demo.rag.db
 
 import androidx.room.Dao
+import androidx.room.ColumnInfo
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+
+data class ChunkFtsMatchInfoRow(
+    val chunkId: Long,
+    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
+    val matchInfo: ByteArray,
+)
 
 @Dao
 interface KnowledgeBaseDao {
@@ -350,12 +357,14 @@ interface ChunkDao {
         JOIN knowledge_bases ON knowledge_bases.id = chunks.knowledgeBaseId
         WHERE chunks.knowledgeBaseId IN (:knowledgeBaseIds)
           AND documents.status = 'READY' AND knowledge_bases.enabled = 1
+          AND documents.chunkerVersion = :corpusVersion
           AND chunk_embeddings.modelSha256 = :modelSha256
         """,
     )
     suspend fun findReadyEmbeddings(
         knowledgeBaseIds: List<String>,
         modelSha256: String,
+        corpusVersion: Int,
     ): List<ChunkEmbeddingEntity>
 
     @Query("SELECT * FROM chunks WHERE id IN (:chunkIds)")
@@ -390,4 +399,28 @@ interface ChunkDao {
         knowledgeBaseId: String,
         limit: Int,
     ): List<ChunkEntity>
+
+    @Query(
+        """
+        SELECT chunks.id AS chunkId,
+               matchinfo(chunk_fts, 'pcnalx') AS matchInfo
+        FROM chunks
+        JOIN chunk_fts ON chunk_fts.rowid = chunks.id
+        JOIN documents ON documents.id = chunks.documentId
+        JOIN knowledge_bases ON knowledge_bases.id = chunks.knowledgeBaseId
+        WHERE chunk_fts MATCH :matchQuery
+          AND chunks.knowledgeBaseId IN (:knowledgeBaseIds)
+          AND documents.status = 'READY'
+          AND knowledge_bases.enabled = 1
+          AND documents.chunkerVersion = :corpusVersion
+        ORDER BY chunks.id
+        LIMIT :scanLimit
+        """,
+    )
+    suspend fun searchReadyChunkMatchInfo(
+        matchQuery: String,
+        knowledgeBaseIds: List<String>,
+        corpusVersion: Int,
+        scanLimit: Int,
+    ): List<ChunkFtsMatchInfoRow>
 }

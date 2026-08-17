@@ -14,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
+import com.example.minicpm_v_demo.rag.retrieval.FtsMatchInfo
 
 @RunWith(AndroidJUnit4::class)
 class RagDatabaseDaoTest {
@@ -57,6 +58,36 @@ class RagDatabaseDaoTest {
         val results = database.chunkDao().searchReadyChunks("contract", "kb-1", 10)
 
         assertEquals(listOf(1L), results.map { it.id })
+    }
+
+    @Test
+    fun ftsMatchInfoProjectionReturnsOnlyReadyEnabledSelectedChunks() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(
+            KnowledgeBaseEntity("kb-1", "Office", "office", now, now),
+        )
+        database.documentDao().upsert(document("ready", DocumentStatus.READY, now))
+        database.documentDao().upsert(document("parsing", DocumentStatus.PARSING, now))
+        database.documentDao().upsert(
+            document("old-version", DocumentStatus.READY, now).copy(chunkerVersion = 2),
+        )
+        database.chunkDao().insertAll(
+            listOf(
+                chunk(41, "ready", "travel reimbursement policy"),
+                chunk(42, "parsing", "travel reimbursement draft"),
+                chunk(43, "old-version", "travel reimbursement legacy"),
+            ),
+        )
+
+        val rows = database.chunkDao().searchReadyChunkMatchInfo(
+            matchQuery = "\"travel\" OR \"reimbursement\"",
+            knowledgeBaseIds = listOf("kb-1"),
+            corpusVersion = 1,
+            scanLimit = 100,
+        )
+
+        assertEquals(listOf(41L), rows.map { it.chunkId })
+        assertTrue(FtsMatchInfo.parse(rows.single().matchInfo).bm25() > 0.0)
     }
 
     @Test

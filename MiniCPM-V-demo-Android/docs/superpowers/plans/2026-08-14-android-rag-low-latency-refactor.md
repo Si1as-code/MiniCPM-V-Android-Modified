@@ -367,10 +367,10 @@ sealed interface RagTurnPlan {
 
 - [x] **Step 3：实现依赖注入。** coordinator 只依赖 state DAO、router、retriever、reducer、budgeter、prompt builder、clock；不持有 Activity、View 或 LlamaEngine。
 - [x] **Step 4：实现严格状态顺序。** Disabled -> route -> selection/index readiness -> retrieve -> accept -> reduce -> budget -> Ready；任何异常映射为匿名错误类型，禁止 catch 后返回普通 prompt。
-- [ ] **Step 5：删除 `LocalRagRetriever.preparePrompt()` 的策略职责。** 数据检索迁入 `HybridRetriever`，旧类在所有调用迁移后删除。
+- [x] **Step 5：删除 `LocalRagRetriever.preparePrompt()` 的策略职责。** 数据检索迁入 `HybridRetriever`，旧类在所有调用迁移后删除。
 
-  2026-08-17：`preparePrompt()` 和所有分散的调度决策已删除；dense-only 检索器暂时保留，待 Task 5 用 `HybridRetriever` 替换后删除旧类。协调器单元测试以及两项真实 E5 真机路由/检索测试均已通过。
-- [ ] **Step 6：提交。** `git commit -m "android: centralize adaptive RAG turn planning"`
+  2026-08-17：`preparePrompt()` 和所有分散的调度决策已删除；后续已由 `HybridRetriever`、`RoomDenseEvidenceRetriever` 和 `RoomLexicalEvidenceRetriever` 替换旧类。协调器单元测试以及两项真实 E5 真机路由/检索测试均已通过。
+- [x] **Step 6：提交。** `feat(rag): centralize adaptive turn planning`（`ebab5c2`）
 
 ### Task 5：FTS4 + dense 混合检索和证据阈值
 
@@ -383,9 +383,9 @@ sealed interface RagTurnPlan {
 - Test: `app/src/test/java/com/example/minicpm_v_demo/rag/retrieval/FtsMatchInfoTest.kt`
 - Test: `app/src/test/java/com/example/minicpm_v_demo/rag/retrieval/HybridRetrieverTest.kt`
 
-- [ ] **Step 1：写手算 BM25、RRF 和降级红灯测试。** 覆盖中文 bigram、英文词、短语、编号、空查询、FTS 运算符注入、tie-break、dense 失败、FTS 失败和双路失败。
-- [ ] **Step 2：增加安全 FTS 投影。** DAO 返回 `chunkId` 与 `matchinfo(chunk_fts, 'pcnalx')` BLOB；query token 只允许经过转义器生成，SQL 继续使用绑定参数。
-- [ ] **Step 3：在 Kotlin 解析 matchinfo 并计算 BM25。**
+- [x] **Step 1：写手算 BM25、RRF 和降级红灯测试。** 覆盖中文 bigram、英文词、短语、编号、空查询、FTS 运算符注入、tie-break、dense 失败、FTS 失败和双路失败。
+- [x] **Step 2：增加安全 FTS 投影。** DAO 返回 `chunkId` 与 `matchinfo(chunk_fts, 'pcnalx')` BLOB；query token 只允许经过转义器生成，SQL 继续使用绑定参数。
+- [x] **Step 3：在 Kotlin 解析 matchinfo 并计算 BM25。**
 
 $$
 \operatorname{IDF}(t)=\ln\left(1+\frac{N-df_t+0.5}{df_t+0.5}\right)
@@ -398,7 +398,7 @@ $$
 
 固定 $k_1=1.2$、$b=0.75$，所有整数读取使用 little-endian 且验证 BLOB 长度，损坏数据返回显式失败。
 
-- [ ] **Step 4：实现稳定 RRF。**
+- [x] **Step 4：实现稳定 RRF。**
 
 $$
 \operatorname{RRF}(d)=\sum_{r\in\{dense,lexical\}}\frac{1}{60+\operatorname{rank}_r(d)}
@@ -406,9 +406,11 @@ $$
 
 最终 tie-break 固定为 RRF 降序、dense 降序、BM25 降序、chunkId 升序。
 
-- [ ] **Step 5：实现透明证据门控。** 只有以下任一条件成立才接受：文件名/条款精确锚点；dense 达高阈值；dense 达普通阈值且 lexical 同时命中。阈值键由 embedding model SHA 和语料版本组成，不使用未校准的统一常数。
+- [x] **Step 5：实现透明证据门控。** 只有以下任一条件成立才接受：文件名/条款精确锚点；dense 达高阈值；dense 达普通阈值且 lexical 同时命中。阈值键由 embedding model SHA 和语料版本组成，不使用未校准的统一常数。
 - [ ] **Step 6：建立至少 300 条检索校准集。** 分为相关、相似但错误、完全无关、问候、编号、日期、金额、跨文档；选择满足 NoEvidence 精确率和 Recall@4 门槛的阈值并写入版本化配置。
-- [ ] **Step 7：限制候选。** lexical top-40、dense top-40、RRF top-12、每文档最多 3 个候选；未 READY、全局停用和未选知识库必须在 SQL 层排除。
+- [x] **Step 7：限制候选。** lexical top-40、dense top-40、RRF top-12、每文档最多 3 个候选；未 READY、全局停用和未选知识库必须在 SQL 层排除。
+
+  2026-08-17：本地单元测试、主 APK 和测试 APK 已构建通过。签名校验通过后使用 `adb install -r` 覆盖安装主 APK 与测试 APK，未卸载、未清除应用数据。vivo `V2359A` 真机上 Room FTS `matchinfo`、READY/启用/所选知识库及语料版本过滤测试 1/1 通过；生产 `HybridRetriever` 的真实 E5 向量增强与普通问候零检索测试 2/2 通过。未校准时策略只放行精确文件名、强编号和条款锚点，dense 组合阈值保持关闭；Step 6 仍是启用普通 dense 证据的硬闸门。
 - [ ] **Step 8：提交。** `git commit -m "android: add gated hybrid retrieval for local RAG"`
 
 ### Task 6：句子级 Selective Content Reduction 和 token 预算

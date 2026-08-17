@@ -5,7 +5,8 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.minicpm_v_demo.MiniCPMApplication
-import com.example.minicpm_v_demo.rag.BasicRagEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.retrieval.CalibratedEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
 import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
 import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
 import com.example.minicpm_v_demo.rag.RagCoordinator
@@ -32,7 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class LocalRagRetrieverInstrumentedTest {
+class HybridRetrieverInstrumentedTest {
     private lateinit var database: RagDatabase
     private lateinit var app: MiniCPMApplication
 
@@ -72,7 +73,7 @@ class LocalRagRetrieverInstrumentedTest {
         )))
         database.conversationRagDao().replaceSelection(77, listOf("kb-office"), true, now)
 
-        val result = coordinator().plan(77, "What is the travel reimbursement limit?")
+        val result = coordinator().plan(77, "What is the travel reimbursement limit in policy.txt?")
 
         assertTrue(result is RagTurnPlan.Ready)
         result as RagTurnPlan.Ready
@@ -104,8 +105,15 @@ class LocalRagRetrieverInstrumentedTest {
             RoomRagStateQueries(database.conversationRagDao()),
         ),
         router = DefaultRagQueryRouter(),
-        retriever = LocalRagRetriever(database, app.embeddingModelManager),
-        acceptancePolicy = BasicRagEvidenceAcceptancePolicy,
+        retriever = HybridRetriever(
+            denseRetriever = RoomDenseEvidenceRetriever(database, app.embeddingModelManager),
+            lexicalRetriever = RoomLexicalEvidenceRetriever(
+                database,
+                CurrentRetrievalCalibration.key,
+            ),
+            calibrationKey = CurrentRetrievalCalibration.key,
+        ),
+        acceptancePolicy = CalibratedEvidenceAcceptancePolicy(CurrentRetrievalCalibration.profile),
         reducer = IdentityRagEvidenceReducer,
         budgeter = SourceCountRagEvidenceBudgeter(),
         promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
