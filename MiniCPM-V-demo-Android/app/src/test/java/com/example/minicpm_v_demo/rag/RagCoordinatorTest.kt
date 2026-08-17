@@ -78,6 +78,33 @@ class RagCoordinatorTest {
     }
 
     @Test
+    fun allQueriesModeBypassesRouterAndRetrievesEvenForOrdinaryChat() = runBlocking {
+        val fixture = Fixture(
+            enabled = true,
+            route = RagQueryRoute.NO_RETRIEVAL,
+            retrievalMode = RagRetrievalMode.ALL_QUERIES,
+        )
+
+        val result = fixture.coordinator.plan(CONVERSATION_ID, "你好")
+
+        assertTrue(result is RagTurnPlan.Ready)
+        assertEquals(
+            listOf(
+                "route-state",
+                "selection-state",
+                "retrieve",
+                "accept",
+                "reduce",
+                "budget",
+                "prompt",
+                "run-id",
+            ),
+            fixture.calls,
+        )
+        assertEquals("你好", fixture.retrievalRequest?.question)
+    }
+
+    @Test
     fun missingSelectionAndIndexingStopBeforeRetrieval() = runBlocking {
         val missing = Fixture(selection = RagSelectionState.NoSelection)
         val indexing = Fixture(selection = RagSelectionState.Indexing)
@@ -215,6 +242,7 @@ class RagCoordinatorTest {
         private val budget: RagEvidenceBudget? = null,
         private val throwAt: String? = null,
         private val cancellationAt: String? = null,
+        private val retrievalMode: RagRetrievalMode = RagRetrievalMode.ADAPTIVE,
     ) {
         val calls = mutableListOf<String>()
         var retrievalRequest: RagRetrievalRequest? = null
@@ -279,6 +307,7 @@ class RagCoordinatorTest {
                 calls += "run-id"
                 "run-1"
             },
+            retrievalMode = retrievalMode,
         )
 
         private fun failIfRequested(stage: String) {

@@ -188,6 +188,11 @@ sealed interface RagTurnPlan {
 val RagTurnPlan.requiresCheckpoint: Boolean
     get() = this is RagTurnPlan.Ready
 
+enum class RagRetrievalMode {
+    ADAPTIVE,
+    ALL_QUERIES,
+}
+
 class RagCoordinator(
     private val stateSource: RagTurnStateSource,
     private val router: RagQueryRouter,
@@ -197,6 +202,7 @@ class RagCoordinator(
     private val budgeter: RagEvidenceBudgeter,
     private val promptBuilder: RagPromptBuilder,
     private val runIdFactory: RagRunIdFactory,
+    private val retrievalMode: RagRetrievalMode = RagRetrievalMode.ADAPTIVE,
 ) {
     suspend fun plan(
         conversationId: Long,
@@ -213,20 +219,22 @@ class RagCoordinator(
             return RagTurnPlan.Failed(RagTurnFailure.STATE_UNAVAILABLE)
         }
         if (!routeState.enabled) return RagTurnPlan.Disabled
-        val route = try {
-            router.route(
-                RagRouteInput(
-                    ragEnabled = true,
-                    query = boundedQuestion,
-                    knownDocumentNames = routeState.knownDocumentNames,
-                ),
-            )
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            return RagTurnPlan.Failed(RagTurnFailure.ROUTING_UNAVAILABLE)
+        if (retrievalMode == RagRetrievalMode.ADAPTIVE) {
+            val route = try {
+                router.route(
+                    RagRouteInput(
+                        ragEnabled = true,
+                        query = boundedQuestion,
+                        knownDocumentNames = routeState.knownDocumentNames,
+                    ),
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                return RagTurnPlan.Failed(RagTurnFailure.ROUTING_UNAVAILABLE)
+            }
+            if (route == RagQueryRoute.NO_RETRIEVAL) return RagTurnPlan.NoRetrieval
         }
-        if (route == RagQueryRoute.NO_RETRIEVAL) return RagTurnPlan.NoRetrieval
         val selection = try {
             stateSource.selectionState(conversationId)
         } catch (error: CancellationException) {

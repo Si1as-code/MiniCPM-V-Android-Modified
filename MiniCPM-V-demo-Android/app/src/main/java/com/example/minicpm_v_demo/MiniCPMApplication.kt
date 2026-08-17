@@ -10,6 +10,7 @@ import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
 import com.example.minicpm_v_demo.rag.RagCoordinator
 import com.example.minicpm_v_demo.rag.RagPromptBuilder
 import com.example.minicpm_v_demo.rag.RagRunIdFactory
+import com.example.minicpm_v_demo.rag.RagRetrievalMode
 import com.example.minicpm_v_demo.rag.RoomRagStateQueries
 import com.example.minicpm_v_demo.rag.SourceCountRagEvidenceBudgeter
 import com.example.minicpm_v_demo.rag.db.RagDatabaseFactory
@@ -65,6 +66,7 @@ class MiniCPMApplication : Application() {
             budgeter = SourceCountRagEvidenceBudgeter(),
             promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
             runIdFactory = RagRunIdFactory { UUID.randomUUID().toString() },
+            retrievalMode = RagRetrievalMode.ALL_QUERIES,
         )
     }
 
