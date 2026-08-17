@@ -33,6 +33,7 @@ import com.example.minicpm_v_demo.rag.retrieval.RagLocalReplyKind
 import com.example.minicpm_v_demo.rag.retrieval.RagPromptPreparation
 import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
+import com.example.minicpm_v_demo.rag.RagTurnTransaction
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyLogFormatter
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyTrace
 import com.example.minicpm_v_demo.rag.telemetry.RagPhase
@@ -1721,6 +1722,8 @@ class MainActivity : StatusBarVisibleActivity() {
             var localRagReply = false
             var ragRunId: String? = null
             var ragSources: List<RetrievedChunk> = emptyList()
+            var ragTransaction: RagTurnTransaction? = null
+            var usesPreparedPrompt = false
             val latencyTrace = RagLatencyTrace.start(UUID.randomUUID().toString())
             var traceResult = RagTraceResult.FAILED
             try {
@@ -1743,10 +1746,9 @@ class MainActivity : StatusBarVisibleActivity() {
                         latencyTrace.recordCandidateCount(ragSources.size)
                         latencyTrace.begin(RagPhase.PREFILL)
                         try {
-                            replayActiveConversationContext(skipMessageId = submittedUserMessageId)
-                            attachment?.originalImageToken?.let {
-                                pendingImageViewModel.replayCachedImage(it)
-                            }
+                            val checkpoint = engine.beginEphemeralTurn()
+                            ragTransaction = RagTurnTransaction(engine, checkpoint)
+                            usesPreparedPrompt = true
                         } finally {
                             latencyTrace.end(RagPhase.PREFILL)
                         }
@@ -1767,7 +1769,15 @@ class MainActivity : StatusBarVisibleActivity() {
                 modelPrompt?.let { prompt ->
                     var waitingForFirstToken = true
                     latencyTrace.begin(RagPhase.TTFT)
-                    engine.sendUserPrompt(prompt).collect { token ->
+                    val tokens = if (usesPreparedPrompt) {
+                        engine.sendPreparedPrompt(
+                            modelPrompt = prompt,
+                            originalUserTextForSafety = userMsg,
+                        )
+                    } else {
+                        engine.sendUserPrompt(prompt)
+                    }
+                    tokens.collect { token ->
                         if (waitingForFirstToken) {
                             latencyTrace.end(RagPhase.TTFT)
                             waitingForFirstToken = false
@@ -1778,10 +1788,18 @@ class MainActivity : StatusBarVisibleActivity() {
             } catch (e: CancellationException) {
                 traceResult = RagTraceResult.CANCELLED
                 Log.i(TAG, "Text generation was cancelled")
+                ragTransaction?.rollback(
+                    keepUserInHistory = true,
+                    originalUserText = userMsg,
+                )
                 throw e
             } catch (e: Exception) {
                 traceResult = RagTraceResult.FAILED
                 Log.e(TAG, "Text generation failed", e)
+                ragTransaction?.rollback(
+                    keepUserInHistory = true,
+                    originalUserText = userMsg,
+                )
             } finally {
                 Log.i(
                     TAG,
@@ -1814,6 +1832,16 @@ class MainActivity : StatusBarVisibleActivity() {
                         generationJob = null
                         refreshInputControls()
                         if (index >= 0) scrollToBottom()
+                        return@withContext
+                    }
+                    if (traceResult == RagTraceResult.CANCELLED) {
+                        if (index >= 0) messages.removeAt(index)
+                        chatAdapter.setGeneratingDone(aiMsgId)
+                        chatAdapter.clearActiveAiMessage()
+                        submitMessages()
+                        isSubmitting = false
+                        generationJob = null
+                        refreshInputControls()
                         return@withContext
                     }
                     val responseDecision = engine.evaluateVisualResponse(
@@ -1852,9 +1880,19 @@ class MainActivity : StatusBarVisibleActivity() {
                             getString(R.string.response_safety_review)
                         }
                     }
-                    val citationSnapshots = if (
-                        displayAction == ContentDisplayAction.SHOW_CANDIDATE && ragRunId != null
-                    ) {
+                    val responseAccepted =
+                        displayAction == ContentDisplayAction.SHOW_CANDIDATE &&
+                            candidateResponse.isNotBlank() &&
+                            traceResult != RagTraceResult.FAILED
+                    if (responseAccepted) {
+                        ragTransaction?.commit(userMsg, candidateResponse)
+                    } else {
+                        ragTransaction?.rollback(
+                            keepUserInHistory = true,
+                            originalUserText = userMsg,
+                        )
+                    }
+                    val citationSnapshots = if (responseAccepted && ragRunId != null) {
                         CitationValidator.validate(candidateResponse, ragSources).map { citation ->
                             CitationRef(
                                 messageId = aiMsgId,
@@ -1880,9 +1918,7 @@ class MainActivity : StatusBarVisibleActivity() {
                                 ""
                             },
                             isGenerating = false,
-                            includeInModelContext =
-                                displayAction == ContentDisplayAction.SHOW_CANDIDATE &&
-                                    candidateResponse.isNotBlank(),
+                            includeInModelContext = responseAccepted,
                             citations = citationSnapshots,
                             ragRunId = ragRunId,
                         )

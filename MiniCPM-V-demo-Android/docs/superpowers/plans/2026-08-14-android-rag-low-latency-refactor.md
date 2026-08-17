@@ -297,8 +297,8 @@ private external fun currentContextPositionNative(): Int
 - Test: `app/src/test/java/com/example/minicpm_v_demo/rag/RagTurnTransactionTest.kt`
 - Test: `app/src/androidTest/java/com/example/minicpm_v_demo/RagConversationContextInstrumentedTest.kt`
 
-- [ ] **Step 1：写 fake engine 红灯测试。** 覆盖成功、生成异常、取消、输出安全拦截、restore 失败和重复 close；断言每条路径恰好恢复一次。
-- [ ] **Step 2：定义事务接口。**
+- [x] **Step 1：写 fake engine 红灯测试。** 覆盖成功、生成异常、取消、输出安全拦截、restore 失败和重复 close；断言每条路径恰好恢复一次。
+- [x] **Step 2：定义事务接口。**
 
 ```kotlin
 interface EphemeralContextEngine {
@@ -317,7 +317,7 @@ class RagTurnTransaction(
 }
 ```
 
-- [ ] **Step 3：修改发送接口的安全边界。**
+- [x] **Step 3：修改发送接口的安全边界。**
 
 ```kotlin
 fun sendPreparedPrompt(
@@ -329,9 +329,11 @@ fun sendPreparedPrompt(
 
 视觉输入分类只检查 `originalUserTextForSafety`；`modelPrompt` 仍经过长度、UTF-8 和 context capacity 校验，但不作为视觉意图输入。输入内容安全与隐私确认继续发生在 `MainActivity` 调用 coordinator 之前。
 
-- [ ] **Step 4：替换 MainActivity 的 Augmented 分支。** 删除该分支中的 `replayActiveConversationContext(skipMessageId)` 和图片重复预填；改为 checkpoint、临时 prompt、生成、恢复、稳定历史追加。普通 `PassThrough` 完全不创建 checkpoint。
-- [ ] **Step 5：定义取消语义。** 用户消息已显示后取消生成：恢复 checkpoint，再把用户原文追加到稳定上下文，移除空 AI 占位；退出后台的取消路径执行同样操作。恢复操作运行于 `NonCancellable + llamaDispatcher`，完成后才能清除 `isSubmitting`。
-- [ ] **Step 6：真机断言证据不残留。** 第一轮用知识库秘密词回答，第二轮关闭 RAG 后询问秘密词；模型上下文 dump 的 token hash 不含第一轮 evidence，历史仅包含用户原文和答案。
+- [x] **Step 4：替换 MainActivity 的 Augmented 分支。** 删除该分支中的 `replayActiveConversationContext(skipMessageId)` 和图片重复预填；改为 checkpoint、临时 prompt、生成、恢复、稳定历史追加。普通 `PassThrough` 完全不创建 checkpoint。
+- [x] **Step 5：定义取消语义。** 用户消息已显示后取消生成：恢复 checkpoint，再把用户原文追加到稳定上下文，移除空 AI 占位；退出后台的取消路径执行同样操作。恢复操作运行于 `NonCancellable + llamaDispatcher`，完成后才能清除 `isSubmitting`。
+- [x] **Step 6：真机断言证据不残留。** 第一轮用知识库秘密词回答，第二轮关闭 RAG 后询问秘密词；模型上下文 dump 的 token hash 不含第一轮 evidence，历史仅包含用户原文和答案。
+
+  2026-08-17：vivo V2359A 上运行 `RagConversationContextInstrumentedTest`，10.044 秒通过。测试先写入合成秘密证据，再提交稳定的用户原文与已接受答案；恢复后的 position、chat message count、视觉状态和原生历史指纹与“无证据直接重建”路径完全一致，后续普通提示的固定 seed 首 token 也一致。主 APK 与测试 APK 均使用 `adb install -r` 覆盖安装，未卸载、未清数据，`verifyInstallationSigning` 通过。
 - [ ] **Step 7：提交。** `git commit -m "android: isolate RAG evidence with context transactions"`
 
 ### Task 4：统一 RagCoordinator 状态决策

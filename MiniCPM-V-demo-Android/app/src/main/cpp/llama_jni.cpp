@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <cmath>
 #include <new>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -769,6 +770,33 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_example_minicpm_1v_1demo_LlamaEngine_currentChatMessageCountNative(JNIEnv *, jobject) {
     return static_cast<jint>(chat_msgs.size());
+}
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentChatHistoryDigestNative(
+        JNIEnv *env, jobject) {
+    // Privacy-preserving deterministic fingerprint for device regression tests.
+    // Length prefixes keep adjacent role/content values unambiguous.
+    uint64_t digest = 14695981039346656037ULL;
+    const auto update = [&digest](const std::string &value) {
+        const uint64_t size = static_cast<uint64_t>(value.size());
+        for (int shift = 0; shift < 64; shift += 8) {
+            digest ^= static_cast<uint8_t>((size >> shift) & 0xffU);
+            digest *= 1099511628211ULL;
+        }
+        for (const unsigned char byte : value) {
+            digest ^= byte;
+            digest *= 1099511628211ULL;
+        }
+    };
+    for (const auto &message : chat_msgs) {
+        update(message.role);
+        update(message.content);
+    }
+    std::ostringstream output;
+    output << std::hex << std::setfill('0') << std::setw(16) << digest;
+    return env->NewStringUTF(output.str().c_str());
 }
 
 extern "C"

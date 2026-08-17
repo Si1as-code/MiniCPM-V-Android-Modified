@@ -3,6 +3,7 @@ package com.example.minicpm_v_demo
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.minicpm_v_demo.rag.EphemeralContextEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +53,7 @@ data class NativeContextDebugSnapshot(
     val currentPosition: Int,
     val contextCapacity: Int,
     val chatMessageCount: Int,
+    val chatHistoryDigest: String,
     val imagePrefilled: Boolean,
     val visionMode: Boolean,
 )
@@ -66,7 +68,7 @@ class NativeCheckpoint internal constructor(
 class LlamaEngine private constructor(
     private val context: Context,
     private val nativeLibDir: String
-) {
+) : EphemeralContextEngine {
 
     companion object {
         private val TAG = LlamaEngine::class.java.simpleName
@@ -936,6 +938,7 @@ class LlamaEngine private constructor(
     private external fun currentContextPositionNative(): Int
     private external fun currentContextCapacityNative(): Int
     private external fun currentChatMessageCountNative(): Int
+    private external fun currentChatHistoryDigestNative(): String
     private external fun currentImagePrefilledNative(): Boolean
     private external fun currentVisionModeNative(): Boolean
     private external fun unload()
@@ -1218,12 +1221,39 @@ class LlamaEngine private constructor(
             }
         }
 
+    override suspend fun appendStableHistory(role: ModelHistoryRole, text: String) {
+        replayHistoryMessage(role, text)
+    }
+
     fun sendUserPrompt(
         message: String,
         predictLength: Int = DEFAULT_PREDICT_LENGTH
+    ): Flow<String> = sendPrompt(
+        modelPrompt = message,
+        originalUserTextForSafety = message,
+        predictLength = predictLength,
+    )
+
+    fun sendPreparedPrompt(
+        modelPrompt: String,
+        originalUserTextForSafety: String,
+        predictLength: Int = DEFAULT_PREDICT_LENGTH,
+    ): Flow<String> = sendPrompt(
+        modelPrompt = modelPrompt,
+        originalUserTextForSafety = originalUserTextForSafety,
+        predictLength = predictLength,
+    )
+
+    private fun sendPrompt(
+        modelPrompt: String,
+        originalUserTextForSafety: String,
+        predictLength: Int,
     ): Flow<String> = flow {
-        require(message.isNotEmpty()) { "User prompt must not be empty!" }
-        val promptDecision = visualContextPolicy.evaluatePrompt(message)
+        require(modelPrompt.isNotEmpty()) { "User prompt must not be empty!" }
+        require(originalUserTextForSafety.isNotEmpty()) {
+            "Original user text for safety must not be empty!"
+        }
+        val promptDecision = visualContextPolicy.evaluatePrompt(originalUserTextForSafety)
         check(promptDecision == VisualPromptDecision.ALLOW) {
             "Visual request rejected because this conversation has no visual context: " +
                 promptDecision.name
@@ -1238,7 +1268,7 @@ class LlamaEngine private constructor(
             _readyForSystemPrompt = false
             _state.value = LlamaState.ProcessingUserPrompt
 
-            processUserPrompt(message, predictLength).let { result ->
+            processUserPrompt(modelPrompt, predictLength).let { result ->
                 if (result != 0) {
                     Log.e(TAG, "Failed to process user prompt: $result")
                     return@flow
@@ -1276,7 +1306,7 @@ class LlamaEngine private constructor(
         }
     }
 
-    suspend fun beginEphemeralTurn(): NativeCheckpoint = withContext(llamaDispatcher) {
+    override suspend fun beginEphemeralTurn(): NativeCheckpoint = withContext(llamaDispatcher) {
         check(_state.value is LlamaState.ModelReady) {
             "Cannot checkpoint context in ${_state.value.javaClass.simpleName}"
         }
@@ -1290,15 +1320,18 @@ class LlamaEngine private constructor(
         NativeCheckpoint(handle, sizeBytes)
     }
 
-    suspend fun restoreEphemeralTurn(checkpoint: NativeCheckpoint) = withContext(llamaDispatcher) {
+    override suspend fun restoreEphemeralTurn(checkpoint: NativeCheckpoint) = withContext(llamaDispatcher) {
         check(checkpoint.active) { "Native checkpoint has already been consumed" }
         check(restoreEphemeralTurnNative(checkpoint.handle)) {
             "Native context checkpoint could not be restored"
         }
         checkpoint.active = false
+        _state.value = LlamaState.ModelReady
+        _state.value = LlamaState.ModelReady
+        _state.value = LlamaState.ModelReady
     }
 
-    suspend fun releaseEphemeralTurn(checkpoint: NativeCheckpoint) = withContext(llamaDispatcher) {
+    override suspend fun releaseEphemeralTurn(checkpoint: NativeCheckpoint) = withContext(llamaDispatcher) {
         if (checkpoint.active) {
             releaseEphemeralTurnNative(checkpoint.handle)
             checkpoint.active = false
@@ -1311,6 +1344,7 @@ class LlamaEngine private constructor(
                 currentPosition = currentContextPositionNative(),
                 contextCapacity = currentContextCapacityNative(),
                 chatMessageCount = currentChatMessageCountNative(),
+                chatHistoryDigest = currentChatHistoryDigestNative(),
                 imagePrefilled = currentImagePrefilledNative(),
                 visionMode = currentVisionModeNative(),
             )
