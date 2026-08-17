@@ -40,6 +40,7 @@
     <string name="rag_conversation_enabled">当前对话已启用知识库</string>
     <string name="rag_conversation_disabled">当前对话已关闭知识库</string>
     <string name="rag_reply_selection_required">当前对话尚未选择知识库。请在设置中的“当前对话 RAG”里选择知识库。</string>
+    <string name="rag_reply_indexing">当前知识库仍在处理文档，请等待处理完成后再试。</string>
     <string name="rag_reply_model_required">本地检索模型尚未就绪，请先完成知识库模型安装后再试。</string>
     <string name="rag_reply_no_evidence">在当前对话选择的知识库中没有找到足够依据。你可以换一种问法，或检查文档是否已处理完成。</string>
     <string name="rag_reply_unavailable">本地知识库暂时无法检索。请稍后重试，或在“当前对话 RAG”中关闭知识库后继续普通聊天。</string>

@@ -29,8 +29,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
-import com.example.minicpm_v_demo.rag.retrieval.RagLocalReplyKind
-import com.example.minicpm_v_demo.rag.retrieval.RagPromptPreparation
+import com.example.minicpm_v_demo.rag.RagTurnPlan
 import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import com.example.minicpm_v_demo.rag.RagTurnTransaction
@@ -1728,22 +1727,24 @@ class MainActivity : StatusBarVisibleActivity() {
             var traceResult = RagTraceResult.FAILED
             try {
                 latencyTrace.begin(RagPhase.ROUTE)
-                val preparation = try {
-                    (application as MiniCPMApplication).localRagRetriever
-                        .preparePrompt(conversationIdAtSubmission, userMsg)
+                val turnPlan = try {
+                    (application as MiniCPMApplication).ragCoordinator
+                        .plan(conversationIdAtSubmission, userMsg)
                 } finally {
                     latencyTrace.end(RagPhase.ROUTE)
                 }
-                val modelPrompt = when (preparation) {
-                    RagPromptPreparation.PassThrough -> {
+                val modelPrompt = when (turnPlan) {
+                    RagTurnPlan.Disabled,
+                    RagTurnPlan.NoRetrieval -> {
                         traceResult = RagTraceResult.PASS_THROUGH
                         userMsg
                     }
-                    is RagPromptPreparation.Augmented -> {
+                    is RagTurnPlan.Ready -> {
                         traceResult = RagTraceResult.AUGMENTED
-                        ragRunId = preparation.ragRunId
-                        ragSources = preparation.sources.toList()
+                        ragRunId = turnPlan.runId
+                        ragSources = turnPlan.citations.toList()
                         latencyTrace.recordCandidateCount(ragSources.size)
+                        latencyTrace.recordEvidenceTokenCount(turnPlan.evidenceTokenCount)
                         latencyTrace.begin(RagPhase.PREFILL)
                         try {
                             val checkpoint = engine.beginEphemeralTurn()
@@ -1752,17 +1753,31 @@ class MainActivity : StatusBarVisibleActivity() {
                         } finally {
                             latencyTrace.end(RagPhase.PREFILL)
                         }
-                        preparation.prompt
+                        turnPlan.prompt
                     }
-                    is RagPromptPreparation.LocalReply -> {
-                        traceResult = RagTraceResult.LOCAL_REPLY
+                    RagTurnPlan.NoSelection,
+                    RagTurnPlan.Indexing,
+                    RagTurnPlan.ModelRequired,
+                    RagTurnPlan.NoEvidence,
+                    is RagTurnPlan.Failed -> {
+                        traceResult = if (turnPlan is RagTurnPlan.Failed) {
+                            RagTraceResult.FAILED
+                        } else {
+                            RagTraceResult.LOCAL_REPLY
+                        }
                         localRagReply = true
-                        fullResponse.append(getString(when (preparation.kind) {
-                            RagLocalReplyKind.SELECTION_REQUIRED -> R.string.rag_reply_selection_required
-                            RagLocalReplyKind.MODEL_REQUIRED -> R.string.rag_reply_model_required
-                            RagLocalReplyKind.NO_EVIDENCE -> R.string.rag_reply_no_evidence
-                            RagLocalReplyKind.RETRIEVAL_UNAVAILABLE -> R.string.rag_reply_unavailable
-                        }))
+                        fullResponse.append(
+                            getString(
+                                when (turnPlan) {
+                                    RagTurnPlan.NoSelection -> R.string.rag_reply_selection_required
+                                    RagTurnPlan.Indexing -> R.string.rag_reply_indexing
+                                    RagTurnPlan.ModelRequired -> R.string.rag_reply_model_required
+                                    RagTurnPlan.NoEvidence -> R.string.rag_reply_no_evidence
+                                    is RagTurnPlan.Failed -> R.string.rag_reply_unavailable
+                                    else -> error("Unexpected local RAG plan")
+                                },
+                            ),
+                        )
                         null
                     }
                 }

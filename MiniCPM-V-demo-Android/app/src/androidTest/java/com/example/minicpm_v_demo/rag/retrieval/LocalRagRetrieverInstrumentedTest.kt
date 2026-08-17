@@ -5,6 +5,15 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.minicpm_v_demo.MiniCPMApplication
+import com.example.minicpm_v_demo.rag.BasicRagEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
+import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
+import com.example.minicpm_v_demo.rag.RagCoordinator
+import com.example.minicpm_v_demo.rag.RagPromptBuilder
+import com.example.minicpm_v_demo.rag.RagRunIdFactory
+import com.example.minicpm_v_demo.rag.RagTurnPlan
+import com.example.minicpm_v_demo.rag.RoomRagStateQueries
+import com.example.minicpm_v_demo.rag.SourceCountRagEvidenceBudgeter
 import com.example.minicpm_v_demo.rag.db.ChunkEmbeddingEntity
 import com.example.minicpm_v_demo.rag.db.ChunkEntity
 import com.example.minicpm_v_demo.rag.db.DocumentEntity
@@ -13,6 +22,7 @@ import com.example.minicpm_v_demo.rag.db.KnowledgeBaseEntity
 import com.example.minicpm_v_demo.rag.db.RagDatabase
 import com.example.minicpm_v_demo.rag.embed.E5InputKind
 import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
+import com.example.minicpm_v_demo.rag.route.DefaultRagQueryRouter
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -62,12 +72,11 @@ class LocalRagRetrieverInstrumentedTest {
         )))
         database.conversationRagDao().replaceSelection(77, listOf("kb-office"), true, now)
 
-        val result = LocalRagRetriever(database, app.embeddingModelManager)
-            .preparePrompt(77, "What is the travel reimbursement limit?")
+        val result = coordinator().plan(77, "What is the travel reimbursement limit?")
 
-        assertTrue(result is RagPromptPreparation.Augmented)
-        result as RagPromptPreparation.Augmented
-        assertEquals(listOf(901L), result.sources.map { it.chunkId })
+        assertTrue(result is RagTurnPlan.Ready)
+        result as RagTurnPlan.Ready
+        assertEquals(listOf(901L), result.citations.map { it.chunkId })
         assertTrue(result.prompt.contains("200 yuan"))
         assertTrue(result.prompt.contains("[S1]"))
     }
@@ -85,9 +94,21 @@ class LocalRagRetrieverInstrumentedTest {
             updatedAt = now,
         )
 
-        val result = LocalRagRetriever(database, app.embeddingModelManager)
-            .preparePrompt(78, "你好")
+        val result = coordinator().plan(78, "你好")
 
-        assertEquals(RagPromptPreparation.PassThrough, result)
+        assertEquals(RagTurnPlan.NoRetrieval, result)
     }
+
+    private fun coordinator() = RagCoordinator(
+        stateSource = DatabaseRagTurnStateSource(
+            RoomRagStateQueries(database.conversationRagDao()),
+        ),
+        router = DefaultRagQueryRouter(),
+        retriever = LocalRagRetriever(database, app.embeddingModelManager),
+        acceptancePolicy = BasicRagEvidenceAcceptancePolicy,
+        reducer = IdentityRagEvidenceReducer,
+        budgeter = SourceCountRagEvidenceBudgeter(),
+        promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
+        runIdFactory = RagRunIdFactory { "instrumented-run" },
+    )
 }

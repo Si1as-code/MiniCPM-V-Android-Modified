@@ -334,7 +334,7 @@ fun sendPreparedPrompt(
 - [x] **Step 6：真机断言证据不残留。** 第一轮用知识库秘密词回答，第二轮关闭 RAG 后询问秘密词；模型上下文 dump 的 token hash 不含第一轮 evidence，历史仅包含用户原文和答案。
 
   2026-08-17：vivo V2359A 上运行 `RagConversationContextInstrumentedTest`，10.044 秒通过。测试先写入合成秘密证据，再提交稳定的用户原文与已接受答案；恢复后的 position、chat message count、视觉状态和原生历史指纹与“无证据直接重建”路径完全一致，后续普通提示的固定 seed 首 token 也一致。主 APK 与测试 APK 均使用 `adb install -r` 覆盖安装，未卸载、未清数据，`verifyInstallationSigning` 通过。
-- [ ] **Step 7：提交。** `git commit -m "android: isolate RAG evidence with context transactions"`
+- [x] **Step 7：提交。** `git commit -m "android: isolate RAG evidence with context transactions"`（`91362c0`，2026-08-17 已推送）
 
 ### Task 4：统一 RagCoordinator 状态决策
 
@@ -344,8 +344,8 @@ fun sendPreparedPrompt(
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/RagDispatchPolicy.kt`
 - Test: `app/src/test/java/com/example/minicpm_v_demo/rag/RagCoordinatorTest.kt`
 
-- [ ] **Step 1：写零调用红灯测试。** `Disabled` 和 `NoRetrieval` 路径断言 embedding、Room chunk DAO、checkpoint 和 prompt builder 调用次数均为 0。
-- [ ] **Step 2：定义完整 plan。**
+- [x] **Step 1：写零调用红灯测试。** `Disabled` 和 `NoRetrieval` 路径断言 embedding、Room chunk DAO、checkpoint 和 prompt builder 调用次数均为 0。
+- [x] **Step 2：定义完整 plan。**
 
 ```kotlin
 sealed interface RagTurnPlan {
@@ -365,9 +365,11 @@ sealed interface RagTurnPlan {
 }
 ```
 
-- [ ] **Step 3：实现依赖注入。** coordinator 只依赖 state DAO、router、retriever、reducer、budgeter、prompt builder、clock；不持有 Activity、View 或 LlamaEngine。
-- [ ] **Step 4：实现严格状态顺序。** Disabled -> route -> selection/index readiness -> retrieve -> accept -> reduce -> budget -> Ready；任何异常映射为匿名错误类型，禁止 catch 后返回普通 prompt。
+- [x] **Step 3：实现依赖注入。** coordinator 只依赖 state DAO、router、retriever、reducer、budgeter、prompt builder、clock；不持有 Activity、View 或 LlamaEngine。
+- [x] **Step 4：实现严格状态顺序。** Disabled -> route -> selection/index readiness -> retrieve -> accept -> reduce -> budget -> Ready；任何异常映射为匿名错误类型，禁止 catch 后返回普通 prompt。
 - [ ] **Step 5：删除 `LocalRagRetriever.preparePrompt()` 的策略职责。** 数据检索迁入 `HybridRetriever`，旧类在所有调用迁移后删除。
+
+  2026-08-17：`preparePrompt()` 和所有分散的调度决策已删除；dense-only 检索器暂时保留，待 Task 5 用 `HybridRetriever` 替换后删除旧类。协调器单元测试以及两项真实 E5 真机路由/检索测试均已通过。
 - [ ] **Step 6：提交。** `git commit -m "android: centralize adaptive RAG turn planning"`
 
 ### Task 5：FTS4 + dense 混合检索和证据阈值

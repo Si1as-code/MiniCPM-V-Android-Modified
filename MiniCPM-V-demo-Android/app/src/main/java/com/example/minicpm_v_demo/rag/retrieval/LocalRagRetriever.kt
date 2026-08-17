@@ -5,68 +5,26 @@ import com.example.minicpm_v_demo.rag.embed.E5InputKind
 import com.example.minicpm_v_demo.rag.embed.E5ModelSpec
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
 import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
-import com.example.minicpm_v_demo.rag.route.DefaultRagQueryRouter
-import com.example.minicpm_v_demo.rag.route.RagQueryRoute
-import com.example.minicpm_v_demo.rag.route.RagQueryRouter
-import com.example.minicpm_v_demo.rag.route.RagRouteInput
-import java.util.UUID
+import com.example.minicpm_v_demo.rag.RagEvidenceRetriever
+import com.example.minicpm_v_demo.rag.RagRetrievalOutcome
+import com.example.minicpm_v_demo.rag.RagRetrievalRequest
 
 class LocalRagRetriever(
     private val database: RagDatabase,
     private val modelManager: EmbeddingModelManager,
-    private val queryRouter: RagQueryRouter = DefaultRagQueryRouter(),
-) {
-    suspend fun preparePrompt(
-        conversationId: Long,
-        question: String,
-        limit: Int = 6,
-    ): RagPromptPreparation {
-        require(conversationId > 0 && question.isNotBlank() && limit in 1..20)
-        return runCatching {
-            val dao = database.conversationRagDao()
-            val enabled = dao.findState(conversationId)?.ragEnabled == true
-            val route = queryRouter.route(
-                RagRouteInput(
-                    ragEnabled = enabled,
-                    query = question,
-                    knownDocumentNames = emptyList(),
-                )
-            )
-            if (route == RagQueryRoute.NO_RETRIEVAL) {
-                return@runCatching RagPromptPreparation.PassThrough
-            }
-            val knowledgeBaseIds = dao.findBoundKnowledgeBaseIds(conversationId)
-            val model = if (enabled && knowledgeBaseIds.isNotEmpty()) modelManager.openInstalled() else null
-            val preliminary = RagDispatchPolicy.decide(enabled, knowledgeBaseIds.size, model != null, 0)
-            when (preliminary) {
-                RagDispatchAction.PASS_THROUGH -> RagPromptPreparation.PassThrough
-                RagDispatchAction.REQUEST_SELECTION ->
-                    RagPromptPreparation.LocalReply(RagLocalReplyKind.SELECTION_REQUIRED)
-                RagDispatchAction.MODEL_REQUIRED ->
-                    RagPromptPreparation.LocalReply(RagLocalReplyKind.MODEL_REQUIRED)
-                RagDispatchAction.NO_EVIDENCE -> {
-                    val sources = retrieveWithModel(knowledgeBaseIds, question, limit, requireNotNull(model))
-                    if (sources.isEmpty()) RagPromptPreparation.LocalReply(RagLocalReplyKind.NO_EVIDENCE)
-                    else RagPromptPreparation.Augmented(
-                        ragRunId = UUID.randomUUID().toString(),
-                        prompt = RagPromptAssembler.assemble(question, sources),
-                        sources = sources.toList(),
-                    )
-                }
-                RagDispatchAction.AUGMENT -> error("Evidence is loaded after preflight")
-            }
-        }.getOrElse {
-            RagPromptPreparation.LocalReply(RagLocalReplyKind.RETRIEVAL_UNAVAILABLE)
-        }
-    }
-
-    suspend fun retrieve(conversationId: Long, question: String, limit: Int = 6): List<RetrievedChunk> {
-        require(conversationId > 0 && question.isNotBlank() && limit in 1..20)
-        val knowledgeBaseIds = database.conversationRagDao()
-            .findSelectedEnabledKnowledgeBaseIds(conversationId)
-        if (knowledgeBaseIds.isEmpty()) return emptyList()
-        val embedder = modelManager.openInstalled() ?: return emptyList()
-        return retrieveWithModel(knowledgeBaseIds, question, limit, embedder)
+) : RagEvidenceRetriever {
+    override suspend fun retrieve(request: RagRetrievalRequest): RagRetrievalOutcome {
+        require(request.knowledgeBaseIds.isNotEmpty())
+        require(request.question.isNotBlank() && request.limit in 1..20)
+        val embedder = modelManager.openInstalled() ?: return RagRetrievalOutcome.ModelRequired
+        return RagRetrievalOutcome.Evidence(
+            retrieveWithModel(
+                request.knowledgeBaseIds,
+                request.question,
+                request.limit,
+                embedder,
+            ),
+        )
     }
 
     private suspend fun retrieveWithModel(
@@ -92,6 +50,7 @@ class LocalRagRetriever(
                 text = chunk.text,
                 score = result.score,
                 documentId = chunk.documentId,
+                tokenCount = chunk.tokenCount,
             )
         } }
     }

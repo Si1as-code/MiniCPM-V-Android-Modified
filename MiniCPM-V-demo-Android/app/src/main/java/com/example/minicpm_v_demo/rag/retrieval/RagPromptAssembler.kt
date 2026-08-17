@@ -7,6 +7,7 @@ data class RetrievedChunk(
     val text: String,
     val score: Float,
     val documentId: String = "",
+    val tokenCount: Int = 0,
 )
 
 object RagPromptAssembler {

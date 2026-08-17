@@ -72,6 +72,57 @@ interface ConversationRagDao {
     )
     suspend fun findBoundKnowledgeBaseIds(conversationId: Long): List<String>
 
+    @Query(
+        """
+        SELECT DISTINCT documents.displayName
+        FROM conversation_knowledge_bases
+        JOIN documents
+          ON documents.knowledgeBaseId = conversation_knowledge_bases.knowledgeBaseId
+        WHERE conversation_knowledge_bases.conversationId = :conversationId
+        ORDER BY documents.displayName
+        """,
+    )
+    suspend fun findBoundDocumentNames(conversationId: Long): List<String>
+
+    @Query(
+        """
+        SELECT COUNT(*)
+        FROM conversation_knowledge_bases
+        JOIN conversation_rag_state
+          ON conversation_rag_state.conversationId = conversation_knowledge_bases.conversationId
+        JOIN knowledge_bases
+          ON knowledge_bases.id = conversation_knowledge_bases.knowledgeBaseId
+        JOIN documents
+          ON documents.knowledgeBaseId = conversation_knowledge_bases.knowledgeBaseId
+        WHERE conversation_knowledge_bases.conversationId = :conversationId
+          AND conversation_rag_state.ragEnabled = 1
+          AND knowledge_bases.enabled = 1
+          AND documents.status = 'READY'
+        """,
+    )
+    suspend fun countReadyDocuments(conversationId: Long): Int
+
+    @Query(
+        """
+        SELECT COUNT(*)
+        FROM conversation_knowledge_bases
+        JOIN conversation_rag_state
+          ON conversation_rag_state.conversationId = conversation_knowledge_bases.conversationId
+        JOIN knowledge_bases
+          ON knowledge_bases.id = conversation_knowledge_bases.knowledgeBaseId
+        JOIN documents
+          ON documents.knowledgeBaseId = conversation_knowledge_bases.knowledgeBaseId
+        WHERE conversation_knowledge_bases.conversationId = :conversationId
+          AND conversation_rag_state.ragEnabled = 1
+          AND knowledge_bases.enabled = 1
+          AND documents.status IN (
+              'QUEUED', 'COPYING', 'PARSING', 'OCR', 'CHUNKING',
+              'EMBEDDING', 'INDEXING', 'STALE'
+          )
+        """,
+    )
+    suspend fun countIndexingDocuments(conversationId: Long): Int
+
     @Query("DELETE FROM conversation_knowledge_bases WHERE conversationId = :conversationId")
     suspend fun deleteBindings(conversationId: Long): Int
 
