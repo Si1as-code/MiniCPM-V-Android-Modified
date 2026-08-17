@@ -411,7 +411,7 @@ $$
 - [x] **Step 7：限制候选。** lexical top-40、dense top-40、RRF top-12、每文档最多 3 个候选；未 READY、全局停用和未选知识库必须在 SQL 层排除。
 
   2026-08-17：本地单元测试、主 APK 和测试 APK 已构建通过。签名校验通过后使用 `adb install -r` 覆盖安装主 APK 与测试 APK，未卸载、未清除应用数据。vivo `V2359A` 真机上 Room FTS `matchinfo`、READY/启用/所选知识库及语料版本过滤测试 1/1 通过；生产 `HybridRetriever` 的真实 E5 向量增强与普通问候零检索测试 2/2 通过。未校准时策略只放行精确文件名、强编号和条款锚点，dense 组合阈值保持关闭；Step 6 仍是启用普通 dense 证据的硬闸门。
-- [ ] **Step 8：提交。** `git commit -m "android: add gated hybrid retrieval for local RAG"`
+- [x] **Step 8：提交。** `feat(rag): add gated hybrid retrieval`（`e7ce7a8`）
 
 ### Task 6：句子级 Selective Content Reduction 和 token 预算
 
