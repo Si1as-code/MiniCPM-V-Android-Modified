@@ -99,11 +99,14 @@ fun interface RagEvidenceRetriever {
 }
 
 fun interface RagEvidenceAcceptancePolicy {
-    fun accept(sources: List<RetrievedChunk>): List<RetrievedChunk>
+    suspend fun accept(question: String, sources: List<RetrievedChunk>): List<RetrievedChunk>
 }
 
 object BasicRagEvidenceAcceptancePolicy : RagEvidenceAcceptancePolicy {
-    override fun accept(sources: List<RetrievedChunk>): List<RetrievedChunk> = sources.filter { source ->
+    override suspend fun accept(
+        question: String,
+        sources: List<RetrievedChunk>,
+    ): List<RetrievedChunk> = sources.filter { source ->
         source.chunkId > 0 &&
             source.documentId.isNotBlank() &&
             source.text.isNotBlank() &&
@@ -248,7 +251,7 @@ class RagCoordinator(
             is RagRetrievalOutcome.Evidence -> retrieval.sources
         }
         val accepted = try {
-            acceptancePolicy.accept(retrieved).toList()
+            acceptancePolicy.accept(boundedQuestion, retrieved).toList()
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {

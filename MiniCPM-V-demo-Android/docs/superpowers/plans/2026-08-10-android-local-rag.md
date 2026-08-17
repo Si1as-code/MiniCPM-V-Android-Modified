@@ -605,7 +605,7 @@ $$
 - 同时考虑 BM25 是否命中关键实体；
 - top-1 与 top-5 的相对间隔；
 - 是否存在用户指定文档过滤后的候选；
-- 严格模式下若证据不足，固定回答“在已选择的知识库中没有找到足够依据”。
+- 若证据不足，不注入任何候选或引用、不显示额外提示，直接使用用户原文正常回答。
 
 阈值必须写入版本化 `RetrievalCalibration.json`，不能散落为硬编码魔数。
 
@@ -1216,7 +1216,7 @@ data class ParsedBlock(
 - [ ] **Step 1：写状态决策红灯测试。** 固定 `RagCoordinator.prepareTurn(conversationId: Long, question: String): RagTurnPlan`，覆盖 `Disabled`、`NoSelection`、`Indexing`、`NoEvidence`、`Ready` 和 `RetrievalFailed`；断言 Disabled/NoSelection 不调用 embedder/retriever。
 - [ ] **Step 2：实现单一状态决策接口。** `RagTurnPlan.Ready` 只携带本轮 `ragRunId`、转义后的 prompt 和合法 `CitationRef` 候选；不得直接操作聊天列表或 LlamaEngine。`RagComponent` 通过构造参数提供 state DAO、embedder、retriever、prompt builder 和 clock，生产环境由 `MiniCPMApplication` 创建，测试环境替换为可计数 fake，以便证明关闭 RAG 时没有检索调用。
 - [ ] **Step 3：写 prompt 安全红灯测试。** 覆盖文档闭合标签、伪造 `[S99]`、无来源、超预算、历史本地安全提示排除，以及文档内违法/提示注入文字不能改变系统策略。
-- [ ] **Step 4：接入现有输入链。** 保持顺序：`ContentSafetyPolicyEngine` 和隐私确认先执行；只有用户输入确定可以送模后才调用 `prepareTurn`。Disabled 直接进入原普通聊天；NoSelection/Indexing 提供明确本地选择；严格 NoEvidence 使用本地固定流式提示且 `includeInModelContext=false`。
+- [ ] **Step 4：接入现有输入链。** 保持顺序：`ContentSafetyPolicyEngine` 和隐私确认先执行；只有用户输入确定可以送模后才调用 `prepareTurn`。Disabled 直接进入原普通聊天；NoSelection/Indexing 提供明确本地选择；NoEvidence 不显示额外提示，使用未经修改的用户原文正常生成，且不携带候选证据或引用。
 - [ ] **Step 5：重建本轮上下文。** 调用 `engine.clearContext()`，按原顺序重放 `includeInModelContext=true` 的历史消息，随后只发送本轮 prompt。RAG 证据不得写入 `ChatMessage`，不得残留到下一轮 KV 上下文。
 - [ ] **Step 6：校验输出。** 先执行现有输出视觉断言和内容安全策略，再使用 `CitationValidator` 过滤本轮不存在的 source ID；保存的引用只能来自同一 `ragRunId`。
 - [ ] **Step 7：运行目标测试。**
@@ -1357,7 +1357,7 @@ data class ParsedBlock(
 - [ ] 同一会话可选择多个知识库，检索结果不得包含未选择、全局停用或未 READY 文档。
 - [ ] 每个知识库事实回答都有可点击的真实来源。
 - [ ] 删除原文后历史回答和引用快照仍保留，点击显示“来源已删除”；编辑用户问题重新回答时旧引用随截断删除，编辑 AI 文本不重新检索。
-- [ ] 无足够证据时严格模式不调用模型编造答案。
+- [ ] 无足够证据时不注入候选、不生成引用、不显示额外知识库提示，使用用户原文进入普通回答。
 - [ ] 会话编辑、删除、回滚、永久保存与当前版本行为兼容。
 
 ### 安全
@@ -1392,7 +1392,7 @@ data class ParsedBlock(
 | RAG 已开启但未选库 | “当前会话尚未选择知识库” | 不检索；提供选择知识库或关闭 RAG |
 | 所选知识库仍在索引 | “知识库正在建立索引，可等待完成或继续普通聊天” | 不无限转圈，不重复 enqueue |
 | 检索组件失败 | “本地知识库暂时无法检索，请重试或关闭 RAG” | 不把空结果伪装成有依据回答 |
-| 检索无依据 | “在已选择的知识库中没有找到足够依据” | 严格模式不调用模型 |
+| 检索无依据 | 不显示额外提示 | 不注入候选和引用，使用用户原文正常回答 |
 | 来源已删除 | “该回答引用的来源已删除” | 保留历史答案，禁用打开 |
 
 ## 17. 预计资源与实施顺序
@@ -1452,7 +1452,7 @@ data class ParsedBlock(
 1. 手机拒绝了本轮两次覆盖安装确认，因此 schema v2 -> v3、E5 真机推理、向量落库及导入到 `READY` 的仪器测试尚未执行；先覆盖安装，不卸载、不清数据，再运行指定 Android 测试。
 2. 给当前会话增加独立 RAG 开关和多知识库选择 UI，并持久化到现有 `conversation_rag_state` / `conversation_knowledge_bases` 表。
 3. 在发送链安全分类之后、调用 `LlamaEngine.sendUserPrompt` 之前调用 retriever；只有会话明确开启且已选择知识库时才检索。展示文本保持用户原文，模型输入使用带来源编号的增强 prompt。
-4. 接入严格无证据降级、引用持久化和可点击来源；本地固定提示不得进入模型上下文。
+4. 接入无证据普通回退、引用持久化和可点击来源；无证据时不得注入候选、引用或额外提示。
 5. 在正确性闭环通过后实现 Task 9 HNSW 持久化索引和 Task 10 FTS4/BM25、RRF、MMR 混合检索，并以精确检索作为回归基准。
 6. 最后执行两知识库隔离、开关关闭零调用、重启恢复、编辑/回滚引用清理和完整手机端 E2E。
 
@@ -1474,7 +1474,7 @@ data class ParsedBlock(
 - 修复 Room 2.8.4 迁移测试与 kotlinx-serialization 运行时 ABI 不一致，统一到 serialization BOM 1.8.1；schema v1/v2/v3 迁移真机测试 4/4 通过。
 - multilingual-e5-small int8 模型、真实 tokenizer 和向量推理已在真机通过；模型文件仍保留在应用私有目录，未清除应用数据。
 - 当前会话的 RAG 开关与多知识库选择已接入：选中卡片使用淡蓝色背景，管理页和会话选择页职责分离，绑定和开关永久保存到 Room。
-- 发送链已接入 `LocalRagRetriever`：关闭 RAG 时保持普通聊天；空选择、模型缺失、无证据和检索异常均使用不进入模型上下文的本地固定流式提示。
+- 发送链接入时曾将空选择、模型缺失、无证据和检索异常统一处理为本地固定流式提示；其中无证据行为已在 2026-08-17 按产品决策改为不显示额外提示、使用用户原文正常回答，其他可行动或技术状态保持本地提示。
 - 真机端到端测试已证明 READY 文档片段可以经过真实 E5 query embedding、会话知识库过滤和精确向量排序，最终生成包含来源编号的增强 prompt，测试 1/1 通过。
 - RAG 轮次发送前会清理 native KV 上下文并只重放有效历史，再注入本轮证据；本轮图片会在清理后重新预填，避免上一轮证据残留或视觉输入丢失。
 - 新增引用白名单验证：仅保留本轮候选中且答案实际使用的 `[S1]` 等来源，伪造、越界和格式错误的来源编号不会持久化。

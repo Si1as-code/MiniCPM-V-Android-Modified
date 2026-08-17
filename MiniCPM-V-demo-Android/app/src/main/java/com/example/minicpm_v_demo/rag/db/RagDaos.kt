@@ -182,6 +182,12 @@ interface DocumentDao {
     suspend fun findRecoverableImports(): List<DocumentEntity>
 
     @Query(
+        "SELECT * FROM documents " +
+            "WHERE status = 'FAILED' AND lastErrorCode = 'TOKENIZER_MISMATCH' ORDER BY createdAt",
+    )
+    suspend fun findRetryableModelBindingFailures(): List<DocumentEntity>
+
+    @Query(
         """
         SELECT EXISTS(
             SELECT 1 FROM documents

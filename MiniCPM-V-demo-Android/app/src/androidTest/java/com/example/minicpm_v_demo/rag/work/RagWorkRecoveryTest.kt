@@ -50,6 +50,23 @@ class RagWorkRecoveryTest {
         assertEquals(listOf("queued", "copying", "parsing", "ocr", "chunking"), recoverable)
     }
 
+    @Test
+    fun modelBindingRecoverySelectsOnlyTokenizerMismatchFailures() = runBlocking {
+        val now = System.currentTimeMillis()
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-recovery", "Recovery", "recovery", now, now))
+        database.documentDao().upsert(
+            document("model-mismatch", DocumentStatus.FAILED, now).copy(lastErrorCode = "TOKENIZER_MISMATCH"),
+        )
+        database.documentDao().upsert(
+            document("other-failure", DocumentStatus.FAILED, now + 1).copy(lastErrorCode = "CHUNK_FAILED"),
+        )
+
+        assertEquals(
+            listOf("model-mismatch"),
+            database.documentDao().findRetryableModelBindingFailures().map { it.id },
+        )
+    }
+
     private fun document(id: String, status: DocumentStatus, now: Long) = DocumentEntity(
         id = id,
         knowledgeBaseId = "kb-recovery",

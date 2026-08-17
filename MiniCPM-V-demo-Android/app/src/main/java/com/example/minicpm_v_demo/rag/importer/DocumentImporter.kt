@@ -75,6 +75,7 @@ class DocumentImporter(
                 copied.header,
                 request.source.declaredMimeType,
                 request.source.displayName,
+                sampleIsComplete = copied.sizeBytes == copied.header.size.toLong(),
             )
             when {
                 detection.type == DetectedFileType.EMPTY -> fail(DocumentImportError.EMPTY_SOURCE)

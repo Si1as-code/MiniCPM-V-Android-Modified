@@ -21,7 +21,8 @@ class RoomLexicalEvidenceRetriever(
             scanLimit = MAX_MATCHINFO_SCAN_RESULTS,
         )
         val ranked = rows.asSequence().map { row ->
-            LexicalScore(row.chunkId, FtsMatchInfo.parse(row.matchInfo).bm25())
+            val matchInfo = FtsMatchInfo.parse(row.matchInfo)
+            LexicalScore(row.chunkId, matchInfo.bm25(), matchInfo.matchedPhraseRatio())
         }.filter { it.score.isFinite() && it.score > 0.0 }
             .sortedWith(compareByDescending<LexicalScore>(LexicalScore::score).thenBy(LexicalScore::chunkId))
             .take(limit)
@@ -41,6 +42,7 @@ class RoomLexicalEvidenceRetriever(
                 documentId = chunk.documentId,
                 tokenCount = chunk.tokenCount,
                 lexicalScore = result.score,
+                lexicalCoverage = result.coverage,
                 calibrationKey = calibrationKey,
             )
             LexicalRetrievedChunk(
@@ -50,7 +52,11 @@ class RoomLexicalEvidenceRetriever(
         }
     }
 
-    private data class LexicalScore(val chunkId: Long, val score: Double)
+    private data class LexicalScore(
+        val chunkId: Long,
+        val score: Double,
+        val coverage: Double,
+    )
 
     private companion object {
         const val MAX_LEXICAL_RESULTS = 40

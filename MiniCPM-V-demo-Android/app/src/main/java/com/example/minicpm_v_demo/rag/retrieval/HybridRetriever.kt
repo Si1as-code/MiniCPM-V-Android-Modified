@@ -79,6 +79,7 @@ class HybridRetriever(
                         score = hit.rrfScore.toFloat(),
                         denseScore = hit.denseScore,
                         lexicalScore = hit.lexicalScore,
+                        lexicalCoverage = lexicalById[hit.chunkId]?.source?.lexicalCoverage,
                         exactAnchor = source.exactAnchor || ExactAnchorMatcher.matches(request.question, source),
                         calibrationKey = calibrationKey,
                     ),

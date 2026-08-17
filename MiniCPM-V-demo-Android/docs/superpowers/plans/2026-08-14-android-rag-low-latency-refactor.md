@@ -4,7 +4,7 @@
 
 **Goal:** 将当前“每次 RAG 提问销毁 native context 并重放全部历史”的实现替换为选择性检索、受限证据和可回滚 native 状态分支，使普通聊天零 RAG 开销，并将 RAG 相对普通生成的额外 P95 前处理时间控制在 $1.5\text{ s}$ 以内。
 
-**Architecture:** 稳定会话上下文只保存系统提示、用户原文、图片状态和最终 AI 回答；本轮检索证据通过 native checkpoint 临时追加，生成后恢复 checkpoint，再把原始用户消息和最终答案追加到稳定上下文。查询先经过无模型快速路由与严格相关性门控，检索后只保留少量句子级证据；任何 checkpoint、检索或预算错误均返回不进入模型上下文的固定提示，禁止回退到完整 context 重建或无依据生成。
+**Architecture:** 稳定会话上下文只保存系统提示、用户原文、图片状态和最终 AI 回答；本轮检索证据通过 native checkpoint 临时追加，生成后恢复 checkpoint，再把原始用户消息和最终答案追加到稳定上下文。查询先经过无模型快速路由与严格相关性门控，检索后只保留少量句子级证据；`NoEvidence` 不注入候选、不显示额外提示，直接使用用户原文正常生成，只有 checkpoint、检索或预算等技术错误才返回不进入模型上下文的固定提示。
 
 **Tech Stack:** Kotlin、Coroutines/Flow、Room/SQLCipher、FTS4 `matchinfo`、ONNX Runtime Android、multilingual-e5-small int8、C++17/JNI、llama.cpp-omni state/sequence API、Android instrumentation、JUnit 4。
 
@@ -50,7 +50,7 @@ Input safety/privacy confirmation
         -> lexical gate
         -> optional E5 dense search
         -> HybridFusion + EvidenceAcceptancePolicy
-           -> NoEvidence: local streamed reply, includeInModelContext=false
+           -> NoEvidence: original user text -> normal generation, no citations
            -> Ready: EvidenceReducer + RagContextBudgeter
               -> Native beginEphemeralTurn checkpoint
               -> sendPreparedPrompt(modelPrompt, originalUserText)
@@ -370,6 +370,8 @@ sealed interface RagTurnPlan {
 - [x] **Step 5：删除 `LocalRagRetriever.preparePrompt()` 的策略职责。** 数据检索迁入 `HybridRetriever`，旧类在所有调用迁移后删除。
 
   2026-08-17：`preparePrompt()` 和所有分散的调度决策已删除；后续已由 `HybridRetriever`、`RoomDenseEvidenceRetriever` 和 `RoomLexicalEvidenceRetriever` 替换旧类。协调器单元测试以及两项真实 E5 真机路由/检索测试均已通过。
+
+  2026-08-17 产品决策：`NoEvidence` 保留为内部诊断状态，但发送层必须原样使用用户输入走普通模型，不显示“知识库未命中”等额外回复，不携带候选证据或引用；`NoSelection`、`Indexing`、`ModelRequired` 和技术失败继续显示可行动提示。
 - [x] **Step 6：提交。** `feat(rag): centralize adaptive turn planning`（`ebab5c2`）
 
 ### Task 5：FTS4 + dense 混合检索和证据阈值
@@ -407,11 +409,95 @@ $$
 最终 tie-break 固定为 RRF 降序、dense 降序、BM25 降序、chunkId 升序。
 
 - [x] **Step 5：实现透明证据门控。** 只有以下任一条件成立才接受：文件名/条款精确锚点；dense 达高阈值；dense 达普通阈值且 lexical 同时命中。阈值键由 embedding model SHA 和语料版本组成，不使用未校准的统一常数。
-- [ ] **Step 6：建立至少 300 条检索校准集。** 分为相关、相似但错误、完全无关、问候、编号、日期、金额、跨文档；选择满足 NoEvidence 精确率和 Recall@4 门槛的阈值并写入版本化配置。
+- [ ] **Step 6：建立至少 300 条检索与可回答性校准集。** 分为相关、相似但不可回答、完全无关、问候、编号、日期、金额、跨文档；只有级联策略同时满足 NoEvidence 精确率和 Recall@4 门槛，才能写入版本化配置。
 - [x] **Step 7：限制候选。** lexical top-40、dense top-40、RRF top-12、每文档最多 3 个候选；未 READY、全局停用和未选知识库必须在 SQL 层排除。
 
   2026-08-17：本地单元测试、主 APK 和测试 APK 已构建通过。签名校验通过后使用 `adb install -r` 覆盖安装主 APK 与测试 APK，未卸载、未清除应用数据。vivo `V2359A` 真机上 Room FTS `matchinfo`、READY/启用/所选知识库及语料版本过滤测试 1/1 通过；生产 `HybridRetriever` 的真实 E5 向量增强与普通问候零检索测试 2/2 通过。未校准时策略只放行精确文件名、强编号和条款锚点，dense 组合阈值保持关闭；Step 6 仍是启用普通 dense 证据的硬闸门。
+
+  2026-08-17 复核：初次 320 条校准得到的绝对 BM25 阈值在 40 文档语料上满足指标，但单文档真机回归中，同一普通语义问题的 dense 为 `0.85583067`、BM25 仅为 `0.86304622`，低于原阈值 `4.571398`。根因是 BM25 的 IDF 随知识库规模变化，因此该生产阈值作废。改用词项覆盖率后，在 NoEvidence 精确率不低于 `0.95` 时最大 Recall@4 仅为 `0.88`，证明纯分数阈值不能可靠识别“语义相关但没有答案”。生产配置必须继续 fail-closed，直至 Task 5A 完成。
 - [x] **Step 8：提交。** `feat(rag): add gated hybrid retrieval`（`e7ce7a8`）
+
+### Task 5A：低开销级联 Answerability 门控
+
+**Files:**
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/AnswerabilityClassifier.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/CascadedEvidenceAcceptancePolicy.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/AnswerabilityModelManifest.kt`
+- Create: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/OnnxAnswerabilityClassifier.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/RagCoordinator.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/EvidenceAcceptancePolicy.kt`
+- Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/RetrievalThresholdCalibrator.kt`
+- Test: `app/src/test/java/com/example/minicpm_v_demo/rag/retrieval/CascadedEvidenceAcceptancePolicyTest.kt`
+- Test: `app/src/test/java/com/example/minicpm_v_demo/rag/RagCoordinatorTest.kt`
+- Test: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/retrieval/AnswerabilityBenchmarkInstrumentedTest.kt`
+- Test: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/retrieval/RetrievalCalibrationInstrumentedTest.kt`
+
+- [x] **Step 1：把证据裁决接口改成可暂停且显式接收问题。** 先写协调器红灯测试，证明问题原文传入门控、取消会继续抛出、分类异常映射为 `EVIDENCE_PROCESSING_FAILED`，然后实现：
+
+```kotlin
+fun interface RagEvidenceAcceptancePolicy {
+    suspend fun accept(question: String, sources: List<RetrievedChunk>): List<RetrievedChunk>
+}
+```
+
+协调器只传已经限制到 4096 code points 的 `boundedQuestion`，不得把问题或证据正文写入日志。
+
+- [x] **Step 2：定义三分类契约并严格校验输入输出。** 先写缺失模型、空候选、重复 chunk、非有限概率和取消红灯测试，再实现：
+
+```kotlin
+enum class AnswerabilityLabel { SUPPORTED, PARTIAL, UNSUPPORTED }
+
+data class AnswerabilityVerdict(
+    val label: AnswerabilityLabel,
+    val supportedProbability: Float,
+    val modelSha256: String,
+)
+
+fun interface AnswerabilityClassifier {
+    suspend fun classify(
+        question: String,
+        sources: List<RetrievedChunk>,
+    ): AnswerabilityVerdict
+}
+```
+
+概率必须有限且在 $[0,1]$，SHA-256 必须为 64 位小写十六进制；任何模型缺失、哈希不符、输出形状错误或推理异常都 fail-closed。
+
+- [x] **Step 3：实现低成本级联策略。** 先写下列决策表红灯测试，再实现唯一生产决策路径：
+
+| 条件 | 行为 |
+|---|---|
+| 结构无效、模型/语料版本不符 | 拒绝，不调用分类器 |
+| 精确文件名、强编号、条款锚点 | 接受，不调用分类器 |
+| 所有候选均低于保守 dense 下界且没有 lexical 命中 | 拒绝，不调用分类器 |
+| 其余候选 | 只取排序后的 Top 3，一次批量/证据集合分类 |
+| `SUPPORTED` 且 $p\ge\tau_{accept}$ | 接受参与分类的候选 |
+| `PARTIAL` 或 `UNSUPPORTED` | 拒绝 |
+| 分类器不可用、取消以外异常 | 拒绝；取消必须继续抛出 |
+
+第一版不允许 high-dense 单独绕过分类器，因为“主题高度相似但没有答案”正是当前误放行根因。
+
+- [ ] **Step 4：固定并验证多语言基线模型。** 先建立模型 manifest 和哈希红灯测试；候选基线为 Apache-2.0 的 `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`，但必须在独立工具链中微调为 `SUPPORTED/PARTIAL/UNSUPPORTED`，不能把通用重排分数冒充可回答性概率。导出前验证其 tokenizer 与现有 E5 tokenizer 的词表、特殊 token ID 和 normalizer 完全一致；不一致则随模型包携带独立 tokenizer。
+
+- [ ] **Step 5：建立困难负样本。** 每个正问题至少生成并人工抽检三类负样本：实体/部门相同但所问字段缺失、时间/金额/编号被替换、问题前提在文档中不存在。训练集、阈值校准集和最终测试集按文档 ID 隔离，禁止同一文档模板跨集合泄漏；保留当前 320 条匿名合成语料并增加真实分布的脱敏回归样本。
+
+- [ ] **Step 6：接入 INT8 ONNX 推理。** 输入最多 Top 3，合并后的 question + evidence 最大 256 tokens；一次 batch/session run 完成，关闭所有 `OnnxTensor` 和 result。模型文件下载到私有应用目录，使用 `.part`、长度上限、固定 SHA-256 和原子 rename；不得接受任意本地路径或未签名 manifest。
+
+- [ ] **Step 7：真机性能选型。** vivo `V2359A` 上 CPU、NNAPI、NNAPI FP16 分别预热 5 次、测量 30 次，记录匿名聚合的 P50/P95、RSS 增量、失败次数和 10 分钟温升。只有同时满足以下闸门才启用：
+
+$$
+P95_{answerability,Top3}\le 500\text{ ms}
+$$
+
+$$
+P95_{RAG\ total\ preprocessing}\le 1.5\text{ s}
+$$
+
+若 12 层多语言模型超预算，先蒸馏到 2 至 4 层双语浅模型再复测，不通过时保持 fail-closed，禁止静默退回 dense 阈值。
+
+- [ ] **Step 8：重新校准并做规模不变性回归。** 同一问题/证据分别放入 1、10、40、500 文档知识库，断言最终 Answerability 决策一致；320 条集合要求 Recall@4 不低于 `0.90`、NoEvidence 精确率不低于 `0.95`，并单列 `SIMILAR_BUT_WRONG` 的拒绝率。只有独立保留集和普通单文档语义测试全部通过，才写入绑定模型 SHA、分类器 SHA、语料版本的生产 profile。
+
+- [ ] **Step 9：提交。** `git commit -m "feat(rag): add cascaded answerability gating"`
 
 ### Task 6：句子级 Selective Content Reduction 和 token 预算
 
@@ -546,7 +632,7 @@ interface VectorSearchBackend {
 1. Task 0–1 可独立上线，立即解决问候误走 RAG，但不宣称 RAG 性能已完成。
 2. Task 2 是架构闸门；checkpoint 正确性或大小不达标时停止 Task 3，不允许以 full reset 作为替代。
 3. Task 3–4 完成后才允许重新启用 RAG 生成。
-4. Task 5–6 完成后才允许把严格 NoEvidence 与引用结果作为稳定功能。
+4. Task 5、Task 5A 与 Task 6 完成后，才允许把无证据普通回退与引用结果作为稳定功能。
 5. Task 7 按真实知识库规模启用；小于 5000 chunk 时精确缓存可先交付。
 6. Task 8 只能依据目标设备 benchmark 选择，不因“硬件加速”名称直接启用 NNAPI。
 7. Task 9–11 全部通过后，README 才可将 RAG 从“开发中”改为“测试版”。
@@ -566,7 +652,7 @@ interface VectorSearchBackend {
 - [ ] checkpoint 包含 context、recurrent/hybrid memory、sampler clone 和 JNI bookkeeping。
 - [ ] 图片预填发生在 checkpoint 前，恢复后仍能形成稳定视觉历史。
 - [ ] 增强 prompt 不作为视觉意图分类输入。
-- [ ] 无证据和失败路径不调用 MiniCPM。
+- [ ] 无证据路径使用未经修改的用户原文调用 MiniCPM，且不携带证据、引用或额外提示；技术失败路径不调用 MiniCPM。
 - [ ] 证据不超过 900 token，来源不超过 4 个。
 - [ ] 伪造来源编号不会进入 `AiMessage.citations`。
 - [ ] 日志不包含问题、文档正文、文件名、电话、地址或身份证号。

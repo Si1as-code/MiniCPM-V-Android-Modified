@@ -30,6 +30,21 @@ class FtsMatchInfoTest {
     }
 
     @Test
+    fun `computes corpus size independent matched phrase coverage`() {
+        val blob = littleEndianInts(
+            2, // phrases
+            1, // columns
+            10, // documents
+            100, // average tokens in the column
+            50, // tokens in this document
+            3, 20, 2, // first phrase is present
+            0, 0, 0, // second phrase is absent
+        )
+
+        assertEquals(0.5, FtsMatchInfo.parse(blob).matchedPhraseRatio(), 0.0)
+    }
+
+    @Test
     fun `rejects truncated negative and oversized matchinfo blobs`() {
         assertThrows(FtsMatchInfoFormatException::class.java) {
             FtsMatchInfo.parse(littleEndianInts(1, 1, 10))

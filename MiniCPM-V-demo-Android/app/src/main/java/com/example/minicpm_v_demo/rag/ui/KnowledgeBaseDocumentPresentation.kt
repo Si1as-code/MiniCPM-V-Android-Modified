@@ -34,6 +34,8 @@ sealed interface KnowledgeBaseDocumentPresentation {
             "ENCRYPTION_FAILED" to "加密失败",
             "IO_FAILED" to "文件读写失败",
             "IMPORT_COPY_FAILED" to "导入失败",
+            "TOKENIZER_MISMATCH" to "知识库模型版本未同步，请重试导入",
+            "CHUNK_FAILED" to "文档切块失败",
             "PARSE_INVALID_ENCODING" to "文本编码无效，请另存为 UTF-8",
             "PARSE_TEXT_LIMIT_EXCEEDED" to "文档文字超过处理上限",
             "PARSE_RECORD_TOO_LARGE" to "文档中存在过大的记录",

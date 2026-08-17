@@ -3,7 +3,7 @@ package com.example.minicpm_v_demo
 import android.app.Application
 import com.example.minicpm_v_demo.rag.crypto.RagKeyManager
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
-import com.example.minicpm_v_demo.rag.retrieval.CalibratedEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.retrieval.CascadedEvidenceAcceptancePolicy
 import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
 import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
 import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
@@ -56,7 +56,11 @@ class MiniCPMApplication : Application() {
             ),
             router = DefaultRagQueryRouter(),
             retriever = hybridRagRetriever,
-            acceptancePolicy = CalibratedEvidenceAcceptancePolicy(CurrentRetrievalCalibration.profile),
+            acceptancePolicy = CascadedEvidenceAcceptancePolicy(
+                retrievalKey = CurrentRetrievalCalibration.key,
+                classifier = null,
+                profile = null,
+            ),
             reducer = IdentityRagEvidenceReducer,
             budgeter = SourceCountRagEvidenceBudgeter(),
             promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
@@ -71,7 +75,8 @@ class MiniCPMApplication : Application() {
         ragMaintenanceExecutor.execute {
             RagTempFileCleaner.cleanup(RagTempFileCleaner.stagingDirectory(noBackupFilesDir))
             runBlocking {
-                embeddingModelManager.openInstalled()?.let { model ->
+                val installedModel = embeddingModelManager.openInstalled()
+                installedModel?.let { model ->
                     ragDatabase.knowledgeBaseDao().updateInstalledModelHash(
                         model.modelId, model.modelSha256, System.currentTimeMillis(),
                     )
@@ -79,7 +84,7 @@ class MiniCPMApplication : Application() {
                 RagWorkRecovery(
                     ragDatabase.documentDao(),
                     WorkManagerRagWorkCoordinator(WorkManager.getInstance(this@MiniCPMApplication)),
-                ).rescheduleInterruptedImports()
+                ).rescheduleInterruptedImports(retryModelBindingFailures = installedModel != null)
             }
         }
     }

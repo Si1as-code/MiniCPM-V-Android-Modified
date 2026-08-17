@@ -1,9 +1,11 @@
 package com.example.minicpm_v_demo.rag.retrieval
 
 import android.content.Context
+import android.os.Bundle
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.example.minicpm_v_demo.MiniCPMApplication
 import com.example.minicpm_v_demo.rag.retrieval.CalibratedEvidenceAcceptancePolicy
 import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
@@ -11,6 +13,8 @@ import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
 import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
 import com.example.minicpm_v_demo.rag.RagCoordinator
 import com.example.minicpm_v_demo.rag.RagPromptBuilder
+import com.example.minicpm_v_demo.rag.RagRetrievalOutcome
+import com.example.minicpm_v_demo.rag.RagRetrievalRequest
 import com.example.minicpm_v_demo.rag.RagRunIdFactory
 import com.example.minicpm_v_demo.rag.RagTurnPlan
 import com.example.minicpm_v_demo.rag.RoomRagStateQueries
@@ -73,7 +77,23 @@ class HybridRetrieverInstrumentedTest {
         )))
         database.conversationRagDao().replaceSelection(77, listOf("kb-office"), true, now)
 
-        val result = coordinator().plan(77, "What is the travel reimbursement limit in policy.txt?")
+        val raw = hybridRetriever().retrieve(
+            RagRetrievalRequest(listOf("kb-office"), "What is the travel reimbursement limit?", limit = 12),
+        ) as RagRetrievalOutcome.Evidence
+        val accepted = CalibratedEvidenceAcceptancePolicy(CurrentRetrievalCalibration.profile).accept(raw.sources)
+        InstrumentationRegistry.getInstrumentation().sendStatus(
+            2,
+            Bundle().apply {
+                putString(
+                    "semantic_gate_diagnostic",
+                    raw.sources.joinToString(separator = ";") { source ->
+                        "dense=${source.denseScore},lexical=${source.lexicalScore}," +
+                            "exact=${source.exactAnchor},accepted=${source in accepted}"
+                    },
+                )
+            },
+        )
+        val result = coordinator().plan(77, "What is the travel reimbursement limit?")
 
         assertTrue(result is RagTurnPlan.Ready)
         result as RagTurnPlan.Ready
@@ -105,18 +125,20 @@ class HybridRetrieverInstrumentedTest {
             RoomRagStateQueries(database.conversationRagDao()),
         ),
         router = DefaultRagQueryRouter(),
-        retriever = HybridRetriever(
-            denseRetriever = RoomDenseEvidenceRetriever(database, app.embeddingModelManager),
-            lexicalRetriever = RoomLexicalEvidenceRetriever(
-                database,
-                CurrentRetrievalCalibration.key,
-            ),
-            calibrationKey = CurrentRetrievalCalibration.key,
-        ),
+        retriever = hybridRetriever(),
         acceptancePolicy = CalibratedEvidenceAcceptancePolicy(CurrentRetrievalCalibration.profile),
         reducer = IdentityRagEvidenceReducer,
         budgeter = SourceCountRagEvidenceBudgeter(),
         promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
         runIdFactory = RagRunIdFactory { "instrumented-run" },
+    )
+
+    private fun hybridRetriever() = HybridRetriever(
+        denseRetriever = RoomDenseEvidenceRetriever(database, app.embeddingModelManager),
+        lexicalRetriever = RoomLexicalEvidenceRetriever(
+            database,
+            CurrentRetrievalCalibration.key,
+        ),
+        calibrationKey = CurrentRetrievalCalibration.key,
     )
 }

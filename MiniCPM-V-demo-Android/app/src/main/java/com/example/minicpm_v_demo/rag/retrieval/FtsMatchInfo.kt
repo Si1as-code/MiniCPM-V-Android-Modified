@@ -41,6 +41,18 @@ class FtsMatchInfo private constructor(
         return score
     }
 
+    fun matchedPhraseRatio(): Double {
+        var matchedPhrases = 0
+        for (phrase in 0 until phraseCount) {
+            val present = (0 until columnCount).any { column ->
+                val statOffset = (phrase * columnCount + column) * STATS_PER_CELL
+                phraseColumnStats[statOffset] > 0
+            }
+            if (present) matchedPhrases++
+        }
+        return matchedPhrases.toDouble() / phraseCount
+    }
+
     companion object {
         private const val STATS_PER_CELL = 3
         private const val MAX_PHRASES = 64

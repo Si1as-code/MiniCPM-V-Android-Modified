@@ -50,6 +50,32 @@ class FileTypeDetectorTest {
     }
 
     @Test
+    fun `accepts a truncated UTF8 sample ending inside a multibyte character`() {
+        val sample = ByteArray(64 * 1024) { 'a'.code.toByte() }.also {
+            it[it.lastIndex] = 0xe4.toByte()
+        }
+
+        val result = FileTypeDetector.detect(
+            sample,
+            "text/plain",
+            "notes.txt",
+            sampleIsComplete = false,
+        )
+
+        assertEquals(DetectedFileType.TEXT, result.type)
+    }
+
+    @Test
+    fun `rejects an incomplete UTF8 sequence when the complete file was sampled`() {
+        val completeFile = byteArrayOf('a'.code.toByte(), 0xe4.toByte())
+
+        assertEquals(
+            DetectedFileType.UNSUPPORTED_BINARY,
+            FileTypeDetector.detect(completeFile, "text/plain", "notes.txt").type,
+        )
+    }
+
+    @Test
     fun `empty files are rejected explicitly`() {
         assertEquals(
             DetectedFileType.EMPTY,

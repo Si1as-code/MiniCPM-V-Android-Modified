@@ -10,6 +10,7 @@ data class RetrievedChunk(
     val tokenCount: Int = 0,
     val denseScore: Float? = null,
     val lexicalScore: Double? = null,
+    val lexicalCoverage: Double? = null,
     val exactAnchor: Boolean = false,
     val calibrationKey: RetrievalCalibrationKey? = null,
 )

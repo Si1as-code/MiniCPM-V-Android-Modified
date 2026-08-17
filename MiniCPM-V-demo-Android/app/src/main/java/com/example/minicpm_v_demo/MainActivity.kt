@@ -30,6 +30,7 @@ import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.example.minicpm_v_demo.rag.RagTurnPlan
+import com.example.minicpm_v_demo.rag.plainModelPromptOrNull
 import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import com.example.minicpm_v_demo.rag.RagTurnTransaction
@@ -1733,11 +1734,15 @@ class MainActivity : StatusBarVisibleActivity() {
                 } finally {
                     latencyTrace.end(RagPhase.ROUTE)
                 }
-                val modelPrompt = when (turnPlan) {
+                val plainModelPrompt = turnPlan.plainModelPromptOrNull(userMsg)
+                val modelPrompt = if (plainModelPrompt != null) {
+                    traceResult = RagTraceResult.PASS_THROUGH
+                    plainModelPrompt
+                } else when (turnPlan) {
                     RagTurnPlan.Disabled,
-                    RagTurnPlan.NoRetrieval -> {
-                        traceResult = RagTraceResult.PASS_THROUGH
-                        userMsg
+                    RagTurnPlan.NoRetrieval,
+                    RagTurnPlan.NoEvidence -> {
+                        error("Plain-model RAG turn was not handled")
                     }
                     is RagTurnPlan.Ready -> {
                         traceResult = RagTraceResult.AUGMENTED
@@ -1758,7 +1763,6 @@ class MainActivity : StatusBarVisibleActivity() {
                     RagTurnPlan.NoSelection,
                     RagTurnPlan.Indexing,
                     RagTurnPlan.ModelRequired,
-                    RagTurnPlan.NoEvidence,
                     is RagTurnPlan.Failed -> {
                         traceResult = if (turnPlan is RagTurnPlan.Failed) {
                             RagTraceResult.FAILED
@@ -1772,7 +1776,6 @@ class MainActivity : StatusBarVisibleActivity() {
                                     RagTurnPlan.NoSelection -> R.string.rag_reply_selection_required
                                     RagTurnPlan.Indexing -> R.string.rag_reply_indexing
                                     RagTurnPlan.ModelRequired -> R.string.rag_reply_model_required
-                                    RagTurnPlan.NoEvidence -> R.string.rag_reply_no_evidence
                                     is RagTurnPlan.Failed -> R.string.rag_reply_unavailable
                                     else -> error("Unexpected local RAG plan")
                                 },

@@ -1,6 +1,7 @@
 package com.example.minicpm_v_demo.rag.importer
 
 import java.nio.ByteBuffer
+import java.nio.CharBuffer
 import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 import java.util.Locale
@@ -22,7 +23,12 @@ data class FileTypeDetection(
 )
 
 object FileTypeDetector {
-    fun detect(header: ByteArray, declaredMimeType: String?, displayName: String?): FileTypeDetection {
+    fun detect(
+        header: ByteArray,
+        declaredMimeType: String?,
+        displayName: String?,
+        sampleIsComplete: Boolean = true,
+    ): FileTypeDetection {
         val detected = when {
             header.isEmpty() -> DetectedFileType.EMPTY
             header.startsWith(PDF_MAGIC) -> DetectedFileType.PDF
@@ -30,7 +36,7 @@ object FileTypeDetector {
             header.startsWith(JPEG_MAGIC) -> DetectedFileType.JPEG
             header.isWebp() -> DetectedFileType.WEBP
             header.startsWith(ZIP_MAGIC) -> DetectedFileType.OOXML_ZIP
-            header.looksLikeUtf8Text() -> DetectedFileType.TEXT
+            header.looksLikeUtf8Text(sampleIsComplete) -> DetectedFileType.TEXT
             else -> DetectedFileType.UNSUPPORTED_BINARY
         }
         return FileTypeDetection(
@@ -77,14 +83,16 @@ object FileTypeDetector {
             copyOfRange(0, 4).contentEquals(RIFF_MAGIC) &&
             copyOfRange(8, 12).contentEquals(WEBP_MAGIC)
 
-    private fun ByteArray.looksLikeUtf8Text(): Boolean {
+    private fun ByteArray.looksLikeUtf8Text(sampleIsComplete: Boolean): Boolean {
         if (any { it == 0.toByte() }) return false
         return runCatching {
-            StandardCharsets.UTF_8.newDecoder()
+            val decoder = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT)
-                .decode(ByteBuffer.wrap(this))
-        }.isSuccess
+            val output = CharBuffer.allocate(size.coerceAtLeast(1))
+            val result = decoder.decode(ByteBuffer.wrap(this), output, sampleIsComplete)
+            !result.isError && (!sampleIsComplete || decoder.flush(output).isUnderflow)
+        }.getOrDefault(false)
     }
 
     private val PDF_MAGIC = "%PDF-".toByteArray(Charsets.US_ASCII)

@@ -13,10 +13,10 @@ import org.junit.Test
 
 class RagCoordinatorTest {
     @Test
-    fun defaultEvidenceStagesRejectMalformedSourcesAndEnforceSourceLimit() {
+    fun defaultEvidenceStagesRejectMalformedSourcesAndEnforceSourceLimit() = runBlocking {
         val valid = source()
         val invalid = source().copy(chunkId = 0L, score = Float.NaN, text = "")
-        val accepted = BasicRagEvidenceAcceptancePolicy.accept(listOf(valid, invalid))
+        val accepted = BasicRagEvidenceAcceptancePolicy.accept("question", listOf(valid, invalid))
 
         assertEquals(listOf(valid), accepted)
         assertEquals(listOf(valid), IdentityRagEvidenceReducer.reduce("question", accepted))
@@ -160,6 +160,7 @@ class RagCoordinatorTest {
     fun failuresAreAnonymousAndNeverFallBackToOrdinaryPrompt() = runBlocking {
         val stateFailure = Fixture(throwAt = "route-state")
         val retrievalFailure = Fixture(throwAt = "retrieve")
+        val acceptanceFailure = Fixture(throwAt = "accept")
         val promptFailure = Fixture(throwAt = "prompt")
 
         assertEquals(
@@ -169,6 +170,10 @@ class RagCoordinatorTest {
         assertEquals(
             RagTurnPlan.Failed(RagTurnFailure.RETRIEVAL_UNAVAILABLE),
             retrievalFailure.coordinator.plan(CONVERSATION_ID, "policy"),
+        )
+        assertEquals(
+            RagTurnPlan.Failed(RagTurnFailure.EVIDENCE_PROCESSING_FAILED),
+            acceptanceFailure.coordinator.plan(CONVERSATION_ID, "policy"),
         )
         assertEquals(
             RagTurnPlan.Failed(RagTurnFailure.PROMPT_BUILD_FAILED),
@@ -183,16 +188,19 @@ class RagCoordinatorTest {
         fixture.coordinator.plan(CONVERSATION_ID, "x".repeat(5_000))
 
         assertEquals(4_096, fixture.retrievalRequest?.question?.length)
+        assertEquals(4_096, fixture.acceptanceQuestion?.length)
         assertEquals(4_096, fixture.promptQuestion?.length)
     }
 
     @Test
     fun cancellationIsPropagatedInsteadOfConvertedToAFailurePlan() {
-        val fixture = Fixture(cancellationAt = "retrieve")
+        listOf("retrieve", "accept").forEach { stage ->
+            val fixture = Fixture(cancellationAt = stage)
 
-        assertThrows(CancellationException::class.java) {
-            runBlocking {
-                fixture.coordinator.plan(CONVERSATION_ID, "policy")
+            assertThrows(CancellationException::class.java) {
+                runBlocking {
+                    fixture.coordinator.plan(CONVERSATION_ID, "policy")
+                }
             }
         }
     }
@@ -210,6 +218,7 @@ class RagCoordinatorTest {
     ) {
         val calls = mutableListOf<String>()
         var retrievalRequest: RagRetrievalRequest? = null
+        var acceptanceQuestion: String? = null
         var promptQuestion: String? = null
 
         private val stateSource = object : RagTurnStateSource {
@@ -235,8 +244,9 @@ class RagCoordinatorTest {
             failIfRequested("retrieve")
             retrieval
         }
-        private val acceptancePolicy = RagEvidenceAcceptancePolicy { evidence ->
+        private val acceptancePolicy = RagEvidenceAcceptancePolicy { question, evidence ->
             calls += "accept"
+            acceptanceQuestion = question
             failIfRequested("accept")
             acceptedEvidence ?: evidence
         }

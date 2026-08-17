@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.WorkManager
 import com.example.minicpm_v_demo.rag.db.KnowledgeBaseEntity
+import com.example.minicpm_v_demo.rag.ui.KnowledgeBaseEntityFactory
 import com.example.minicpm_v_demo.rag.importer.DocumentImportQueue
 import com.example.minicpm_v_demo.rag.naming.KnowledgeBaseNamePolicy
 import com.example.minicpm_v_demo.rag.work.WorkManagerRagWorkCoordinator
@@ -244,8 +245,16 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
                     val timestamp = System.currentTimeMillis()
                     val inserted = runCatching {
                         withContext(Dispatchers.IO) {
-                            (application as MiniCPMApplication).ragDatabase.knowledgeBaseDao().insert(
-                                KnowledgeBaseEntity(id, validated.displayName, validated.normalizedName, timestamp, timestamp),
+                            val app = application as MiniCPMApplication
+                            val verifiedTokenizer = app.embeddingModelManager.openInstalled()
+                            app.ragDatabase.knowledgeBaseDao().insert(
+                                KnowledgeBaseEntityFactory.create(
+                                    id = id,
+                                    displayName = validated.displayName,
+                                    normalizedName = validated.normalizedName,
+                                    timestamp = timestamp,
+                                    verifiedTokenizer = verifiedTokenizer,
+                                ),
                             )
                         }
                     }.isSuccess

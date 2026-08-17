@@ -22,13 +22,13 @@ data class RetrievalCalibrationProfile(
     val key: RetrievalCalibrationKey,
     val highDenseThreshold: Float,
     val standardDenseThreshold: Float,
-    val minimumLexicalScore: Double,
+    val minimumLexicalCoverage: Double,
 ) {
     init {
         require(highDenseThreshold.isFinite() && highDenseThreshold in -1f..1f)
         require(standardDenseThreshold.isFinite() && standardDenseThreshold in -1f..1f)
         require(highDenseThreshold >= standardDenseThreshold)
-        require(minimumLexicalScore.isFinite() && minimumLexicalScore >= 0.0)
+        require(minimumLexicalCoverage.isFinite() && minimumLexicalCoverage in 0.0..1.0)
     }
 }
 
@@ -38,14 +38,20 @@ object CurrentRetrievalCalibration {
         corpusVersion = 1,
     )
 
-    // Populated only after the versioned 300-case calibration gate is completed.
+    // Fail closed until the corpus-independent lexical-coverage profile has been
+    // calibrated and verified on the real E5 + Room FTS device path.
     val profile: RetrievalCalibrationProfile? = null
 }
 
 class CalibratedEvidenceAcceptancePolicy(
     private val profile: RetrievalCalibrationProfile?,
 ) : RagEvidenceAcceptancePolicy {
-    override fun accept(sources: List<RetrievedChunk>): List<RetrievedChunk> = sources.filter { source ->
+    override suspend fun accept(
+        question: String,
+        sources: List<RetrievedChunk>,
+    ): List<RetrievedChunk> = accept(sources)
+
+    fun accept(sources: List<RetrievedChunk>): List<RetrievedChunk> = sources.filter { source ->
         if (!source.isStructurallyValid()) return@filter false
         if (source.exactAnchor) return@filter true
         val activeProfile = profile ?: return@filter false
@@ -54,7 +60,7 @@ class CalibratedEvidenceAcceptancePolicy(
         denseScore >= activeProfile.highDenseThreshold ||
             (
                 denseScore >= activeProfile.standardDenseThreshold &&
-                    source.lexicalScore?.let { it >= activeProfile.minimumLexicalScore } == true
+                    source.lexicalCoverage?.let { it >= activeProfile.minimumLexicalCoverage } == true
             )
     }
 
@@ -65,7 +71,8 @@ class CalibratedEvidenceAcceptancePolicy(
             score.isFinite() &&
             tokenCount >= 0 &&
             denseScore?.isFinite() != false &&
-            lexicalScore?.isFinite() != false
+            lexicalScore?.isFinite() != false &&
+            lexicalCoverage?.let { it.isFinite() && it in 0.0..1.0 } != false
 }
 
 object ExactAnchorMatcher {

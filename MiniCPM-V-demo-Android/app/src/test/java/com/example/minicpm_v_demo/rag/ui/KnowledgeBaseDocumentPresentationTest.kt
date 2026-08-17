@@ -16,6 +16,14 @@ class KnowledgeBaseDocumentPresentationTest {
             KnowledgeBaseDocumentPresentation.Failure("导入失败"),
             KnowledgeBaseDocumentPresentation.from(DocumentStatus.FAILED, "unexpected-private-detail"),
         )
+        assertEquals(
+            KnowledgeBaseDocumentPresentation.Failure("知识库模型版本未同步，请重试导入"),
+            KnowledgeBaseDocumentPresentation.from(DocumentStatus.FAILED, "TOKENIZER_MISMATCH"),
+        )
+        assertEquals(
+            KnowledgeBaseDocumentPresentation.Failure("文档切块失败"),
+            KnowledgeBaseDocumentPresentation.from(DocumentStatus.FAILED, "CHUNK_FAILED"),
+        )
     }
 
     @Test
