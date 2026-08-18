@@ -32,6 +32,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.example.minicpm_v_demo.rag.RagTurnPlan
 import com.example.minicpm_v_demo.rag.plainModelPromptOrNull
 import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
+import com.example.minicpm_v_demo.rag.retrieval.RagVisualGroundingPolicy
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import com.example.minicpm_v_demo.rag.RagTurnTransaction
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyLogFormatter
@@ -1862,9 +1863,14 @@ class MainActivity : StatusBarVisibleActivity() {
                         refreshInputControls()
                         return@withContext
                     }
-                    val responseDecision = engine.evaluateVisualResponse(
+                    val baselineVisualDecision = engine.evaluateVisualResponse(
                         response = candidateResponse,
                         hadVisualContext = generationHadVisualContext
+                    )
+                    val responseDecision = RagVisualGroundingPolicy.resolve(
+                        baseline = baselineVisualDecision,
+                        response = candidateResponse,
+                        sources = if (ragRunId != null) ragSources else emptyList(),
                     )
                     val contentDecision = ContentSafetyPolicyEngine.evaluate(
                         LocalContentSafetyClassifier.classify(candidateResponse)
