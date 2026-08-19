@@ -27,7 +27,16 @@
     <string name="rag_documents_queued">已加入后台队列：%1$d/%2$d 个文档</string>
     <string name="rag_import_notification_channel">知识库文档导入</string>
     <string name="rag_import_notification_title">正在导入知识库文档</string>
-    <string name="rag_import_notification_body">正在安全复制并加密文档</string>
+    <string name="rag_import_notification_body">正在处理知识库文档</string>
+    <string name="rag_document_stage_status">%1$s\n%2$s</string>
+    <string name="rag_document_stage_queued">等待后台处理</string>
+    <string name="rag_document_stage_copying">正在安全复制并加密文档</string>
+    <string name="rag_document_stage_parsing">正在解析文档内容</string>
+    <string name="rag_document_stage_ocr">正在识别文档文字</string>
+    <string name="rag_document_stage_chunking">正在整理知识片段</string>
+    <string name="rag_document_stage_embedding">正在生成向量索引</string>
+    <string name="rag_document_stage_indexing">正在完成知识库索引</string>
+    <string name="rag_document_stage_ready">导入完成</string>
     <string name="rag_empty_knowledge_bases">还没有知识库\n点击下方按钮新建一个</string>
     <string name="rag_delete_knowledge_base">删除知识库</string>
     <string name="rag_delete_knowledge_base_confirm">确定删除“%1$s”吗？其中的文档和索引也会一并删除，此操作无法撤销。</string>
@@ -45,7 +54,7 @@
     <string name="rag_reply_no_evidence">在当前对话选择的知识库中没有找到足够依据。你可以换一种问法，或检查文档是否已处理完成。</string>
     <string name="rag_reply_unavailable">本地知识库暂时无法检索。请稍后重试，或在“当前对话 RAG”中关闭知识库后继续普通聊天。</string>
     <string name="rag_document_processing">%1$s\n正在安全导入…</string>
-    <string name="rag_document_uploaded">%1$s\n上传成功</string>
+    <string name="rag_document_uploaded">%1$s\n导入完成</string>
     <string name="rag_document_failed">%1$s\n失败：%2$s</string>
     <string name="settings_model_summary">当前模型：%1$s</string>
     <string name="settings_slice_summary">当前切片数：%1$d · 越高细节越清晰</string>
@@ -197,6 +206,10 @@
 
     <!-- LlamaEngine download progress -->
     <string name="source_direct">直链</string>
+    <string name="rag_source_chip">%1$s · %2$s · %3$s</string>
+    <string name="rag_source_chip_description">来源 %1$s，文件 %2$s，位置 %3$s</string>
+    <string name="rag_source_detail_title">来源 %1$s</string>
+    <string name="rag_source_detail_body">文件：%1$s\n位置：%2$s\n\n归档摘录：\n%3$s</string>
     <string name="download_race_start">%1$s 多源 race 启动…</string>
     <string name="download_all_complete">所有模型文件下载完成!</string>
     <string name="download_verifying_existing">校验已存在的 %1$s …</string>

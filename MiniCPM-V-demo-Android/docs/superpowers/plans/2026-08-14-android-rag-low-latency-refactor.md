@@ -1,5 +1,7 @@
 # Android 端侧 RAG 低延迟重构实施计划
 
+> **Archived 2026-08-18:** 本文保留低延迟重构、checkpoint、混合检索和双分类器的实施历史；当前进度和剩余任务统一由 [MiniCPM Android 统一进度与后续实施计划](2026-08-18-minicpm-android-unified-progress-plan.md) 跟踪。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将当前“每次 RAG 提问销毁 native context 并重放全部历史”的实现替换为选择性检索、受限证据和可回滚 native 状态分支，使普通聊天零 RAG 开销，并将 RAG 相对普通生成的额外 P95 前处理时间控制在 $1.5\text{ s}$ 以内。
@@ -658,3 +660,26 @@ interface VectorSearchBackend {
 - [ ] 日志不包含问题、文档正文、文件名、电话、地址或身份证号。
 - [ ] 后台、取消和异常不会遗留 checkpoint 或永久禁用输入框。
 - [ ] 所有设备安装先通过 `verifyInstallationSigning`，只使用 `adb install -r`。
+
+## 9. 2026-08-18 双三分类器检查点
+
+当前实现基线为分支 `codex/rag-all-queries-experiment`、提交 `1f0b016`。本检查点只建立
+Answerability 与 Groundedness 的共享契约和训练数据，不提前改变现有 App 运行路径。
+
+- [x] 新增 `rag/guard/RagGuardClassifier.kt`，固定一个共享编码骨干、两个独立分类头的接口。
+- [x] Groundedness 标签固定为 `GROUNDED/PARTIAL/UNGROUNDED`，概率和模型 SHA-256 严格校验。
+- [x] 新增 `RagOutputReviewPolicy`：有依据立即接受；部分或无依据最多重生成一次；再次失败使用不进入上下文的本地提示。
+- [x] 新增匿名合成数据生成器，第一版各生成 3000 条 Answerability 和 Groundedness 样本。
+- [x] 数据按 `document_id` 固定划分 train/calibration/test，并包含字段缺失、相似但不可回答、混合支持和错误数字等困难负样本。
+- [x] 历史绕过、伪引用、文档提示注入和文字资料视觉描述保存为 test-only 回归种子。
+- [x] 原 320 条语料继续作为检索评测集；由于缺少回答级标签，不将检索相关性标签伪装成三分类训练标签。
+- [x] 已在单张 RTX 4090 上微调 `multilingual-e5-small` 共享编码骨干和两个三分类头；固定种子 42、BF16、4 epochs，Safetensors SHA-256 为 `9e2166a86487fec359eb36de69a08165eff9b6d2561a609942bc852af8fd05e6`。
+- [x] 合成测试集两个任务 macro-F1 均为 1.0；以 ECE 打破同 F1 检查点并列后，测试集 Answerability ECE 为 0.0547、Groundedness ECE 为 0.0602。该结果只证明训练管线和标签契约可学习，不视为真实办公分布的上线结论。
+- [x] 已导出单个 INT8 ONNX 模型包：118,169,267 bytes，SHA-256 为 `45d42125648c169a19697ce8b64f6883e63c2d8a45fd666c73bf163a3c59e097`。量化覆盖 `MatMul/Gemm/Gather`，压缩比 0.2513，INT8/FP32 标签一致率 0.9984，现有 calibration/test/test-only 回归集最大 macro-F1 降幅为 0.0；模型和完整导出审计文件已固化至训练机持久存储。
+- [ ] 补充脱敏真实办公分布样本并完成独立质量门槛；当前合成数据和 test-only 种子不能替代真实分布验收。
+- [x] 已在 Android 端实现固定 manifest、文件长度与 SHA-256 校验、E5 tokenizer SHA 绑定、训练输入格式复现、保留结束 token 的 256-token 截断、共享 session 双任务推理、稳定 softmax 解码、单实例缓存和资源关闭，并通过对应 JVM 单元测试。`MiniCPMApplication` 暴露惰性管理器但在质量闸门通过前不预加载 Guard；检索接受策略仍保持 `classifier=null/profile=null` 上线闸门。
+- [x] 已将固定 E5 INT8 模型包从本机精确缓存复制到独立备份 `D:\MiniCPM-V\artifacts\multilingual-e5-small-int8-pinned-132949c958b5`，并记录逐文件长度与 SHA-256；Guard INT8 模型包保存在 `D:\MiniCPM-V\artifacts\rag-guard-dual-head-v2`。两套模型均经设备临时目录、应用私有 `.part` 目录和最终目录三段 SHA-256 校验后原子恢复到 vivo `V2359A`，未卸载应用、未清除会话或知识库数据。
+- [x] E5 真机仪器测试 1/1 通过。Guard 使用 ORT CPU、2 个 intra-op 线程，模型打开耗时 `1385.750 ms`；30 次 Answerability 推理 P50/P95 为 `9.905/12.814 ms`，Groundedness 推理 P50/P95 为 `13.062/17.906 ms`，失败数为 0，测试进程 PSS 增量为 `239199 KB`。延迟满足单次推理门槛，但内存增量及真实办公分布质量仍未达到生产启用条件。
+- [x] 顶层 Gradle 已禁止 `connectedCheck` 和所有 `connected*AndroidTest` 任务，避免 Android Gradle Plugin 自动卸载测试目标并连带清除应用数据；真机测试固定采用 `assembleDebugAndroidTest`、主/测试 APK `adb install -r` 和 `scripts/run-device-instrumentation.ps1`。保护脚本 `scripts/test-connected-device-test-guard.ps1`、全量 JVM 测试、主 APK、测试 APK及固定签名校验均已通过。
+- [x] 新增 `tools/rag_guard/score_office_holdout.py`、`quality_gate.py` 和独立办公分布验收说明：评分器使用与 Android 相同的 `tokenizer.onnx`，验证 manifest、长度和 Guard/tokenizer SHA-256，并复现结束 token 保留截断；校准集与最终测试集严格分离，且与训练文档 ID 两两隔离。门槛工具只输出聚合指标，默认要求 Answerability 精确率/召回率不低于 `0.95/0.90`、Groundedness macro-F1 不低于 `0.85`、ECE 不高于 `0.10`。Windows 现有 `.rag-python-tools` CPU 环境已用真实 tokenizer 和 Guard INT8 ONNX 完成匿名样本端到端评分：Answerability `SUPPORTED=0.9415`、Groundedness `GROUNDED=0.9067`，概率和均为 1；无需显卡、CUDA、PyTorch或新环境。当前尚无脱敏真实办公评测数据，因此生产质量验收仍未完成。
+- [ ] 模型通过离线质量和真机性能门槛后，才替换 `MiniCPMApplication` 中的 `classifier=null/profile=null`。

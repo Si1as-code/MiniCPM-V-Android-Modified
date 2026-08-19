@@ -23,7 +23,9 @@ class RagCoordinatorTest {
         assertEquals(
             RagEvidenceBudget(List(4) { valid.copy(chunkId = it + 1L) }, 12),
             SourceCountRagEvidenceBudgeter(maxSources = 4).budget(
+                "question",
                 List(6) { valid.copy(chunkId = it + 1L) },
+                null,
             ),
         )
     }
@@ -220,6 +222,20 @@ class RagCoordinatorTest {
     }
 
     @Test
+    fun finalNativePromptCheckFallsBackWhenAnswerReserveWouldBeConsumed() = runBlocking {
+        val fixture = Fixture()
+        val counter = object : RagPromptTokenCounter {
+            override suspend fun count(text: String): Int = 400
+            override suspend fun remainingContextTokens(): Int = 1_000
+        }
+
+        val result = fixture.coordinator.plan(CONVERSATION_ID, "policy", tokenCounter = counter)
+
+        assertEquals(RagTurnPlan.NoEvidence, result)
+        assertFalse(fixture.calls.contains("run-id"))
+    }
+
+    @Test
     fun cancellationIsPropagatedInsteadOfConvertedToAFailurePlan() {
         listOf("retrieve", "accept").forEach { stage ->
             val fixture = Fixture(cancellationAt = stage)
@@ -283,7 +299,7 @@ class RagCoordinatorTest {
             failIfRequested("reduce")
             reducedEvidence ?: evidence
         }
-        private val budgeter = RagEvidenceBudgeter { evidence ->
+        private val budgeter = RagEvidenceBudgeter { _, evidence, _ ->
             calls += "budget"
             failIfRequested("budget")
             budget ?: RagEvidenceBudget(evidence, evidence.sumOf(RetrievedChunk::tokenCount))

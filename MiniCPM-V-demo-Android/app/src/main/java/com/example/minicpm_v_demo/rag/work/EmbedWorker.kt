@@ -33,7 +33,13 @@ class EmbedWorker(appContext: Context, parameters: WorkerParameters) : Coroutine
             return@withContext Result.failure()
         }
         try {
-            setForeground(RagImportNotifications.foregroundInfo(applicationContext, documentId))
+            setForeground(
+                RagImportNotifications.foregroundInfo(
+                    applicationContext,
+                    documentId,
+                    DocumentStatus.EMBEDDING,
+                ),
+            )
             val allChunks = chunkDao.findByDocument(documentId)
             val chunks = chunkDao.findChunksNeedingEmbedding(documentId, embedder.modelSha256)
             val alreadyDone = allChunks.size - chunks.size

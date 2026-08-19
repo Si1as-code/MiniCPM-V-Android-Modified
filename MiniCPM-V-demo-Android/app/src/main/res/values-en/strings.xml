@@ -25,13 +25,22 @@
     <string name="rag_documents_queued">Queued for background import: %1$d/%2$d documents</string>
     <string name="rag_import_notification_channel">Knowledge base imports</string>
     <string name="rag_import_notification_title">Importing knowledge base document</string>
-    <string name="rag_import_notification_body">Securely copying and encrypting the document</string>
+    <string name="rag_import_notification_body">Processing knowledge-base document</string>
+    <string name="rag_document_stage_status">%1$s\n%2$s</string>
+    <string name="rag_document_stage_queued">Waiting for background processing</string>
+    <string name="rag_document_stage_copying">Securely copying and encrypting document</string>
+    <string name="rag_document_stage_parsing">Parsing document content</string>
+    <string name="rag_document_stage_ocr">Recognizing document text</string>
+    <string name="rag_document_stage_chunking">Preparing knowledge chunks</string>
+    <string name="rag_document_stage_embedding">Generating vector index</string>
+    <string name="rag_document_stage_indexing">Finalizing knowledge-base index</string>
+    <string name="rag_document_stage_ready">Import complete</string>
     <string name="rag_empty_knowledge_bases">No knowledge bases yet\nCreate one using the button below</string>
     <string name="rag_delete_knowledge_base">Delete knowledge base</string>
     <string name="rag_delete_knowledge_base_confirm">Delete “%1$s”? Its documents and index will also be deleted. This cannot be undone.</string>
     <string name="rag_knowledge_base_deleted">Knowledge base deleted</string>
     <string name="rag_document_processing">%1$s\nImporting securely…</string>
-    <string name="rag_document_uploaded">%1$s\nUploaded</string>
+    <string name="rag_document_uploaded">%1$s\nImport complete</string>
     <string name="rag_document_failed">%1$s\nFailed: %2$s</string>
     <string name="settings_model_summary">Current model: %1$s</string>
     <string name="settings_slice_summary">Current slices: %1$d · Higher preserves more detail</string>
@@ -182,6 +191,10 @@
 
     <!-- LlamaEngine download progress -->
     <string name="source_direct">Direct</string>
+    <string name="rag_source_chip">%1$s · %2$s · %3$s</string>
+    <string name="rag_source_chip_description">Source %1$s, file %2$s, location %3$s</string>
+    <string name="rag_source_detail_title">Source %1$s</string>
+    <string name="rag_source_detail_body">File: %1$s\nLocation: %2$s\n\nArchived excerpt:\n%3$s</string>
     <string name="download_race_start">%1$s multi-source race started…</string>
     <string name="download_all_complete">All model files downloaded!</string>
     <string name="download_verifying_existing">Verifying existing %1$s…</string>

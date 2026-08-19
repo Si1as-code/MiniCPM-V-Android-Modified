@@ -3,7 +3,7 @@ package com.example.minicpm_v_demo.rag.ui
 import com.example.minicpm_v_demo.rag.db.DocumentStatus
 
 sealed interface KnowledgeBaseDocumentPresentation {
-    data object Processing : KnowledgeBaseDocumentPresentation
+    data class Processing(val status: DocumentStatus) : KnowledgeBaseDocumentPresentation
     data object Uploaded : KnowledgeBaseDocumentPresentation
     data class Failure(val reason: String) : KnowledgeBaseDocumentPresentation
 
@@ -11,14 +11,13 @@ sealed interface KnowledgeBaseDocumentPresentation {
         fun from(status: DocumentStatus, errorCode: String?): KnowledgeBaseDocumentPresentation? = when (status) {
             DocumentStatus.QUEUED,
             DocumentStatus.COPYING,
-            -> Processing
-
             DocumentStatus.PARSING,
+            DocumentStatus.OCR,
             DocumentStatus.CHUNKING,
             DocumentStatus.EMBEDDING,
             DocumentStatus.INDEXING,
-            DocumentStatus.READY,
-            -> Uploaded
+            -> Processing(status)
+            DocumentStatus.READY -> Uploaded
             DocumentStatus.FAILED -> Failure(ERROR_REASONS[errorCode] ?: "导入失败")
             else -> null
         }

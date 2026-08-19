@@ -35,6 +35,11 @@ import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
 import com.example.minicpm_v_demo.rag.retrieval.RagVisualGroundingPolicy
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import com.example.minicpm_v_demo.rag.RagTurnTransaction
+import com.example.minicpm_v_demo.rag.RagPromptTokenCounter
+import com.example.minicpm_v_demo.rag.guard.ExperimentalGroundednessCalibration
+import com.example.minicpm_v_demo.rag.guard.GroundednessClassifier
+import com.example.minicpm_v_demo.rag.guard.RagReviewedGenerator
+import com.example.minicpm_v_demo.rag.guard.ReviewedRagGeneration
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyLogFormatter
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyTrace
 import com.example.minicpm_v_demo.rag.telemetry.RagPhase
@@ -48,6 +53,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -197,6 +203,7 @@ class MainActivity : StatusBarVisibleActivity() {
         chatAdapter.setOnWelcomeAction(::handleWelcomeAction)
         chatAdapter.setOnPrivacyInputChoice(::handlePrivacyInputChoice)
         chatAdapter.setOnMessageLongClick(::showMessageActions)
+        chatAdapter.setOnCitationClick(::showCitationDetails)
 
         recyclerChat.layoutManager = LinearLayoutManager(this)
         recyclerChat.adapter = chatAdapter
@@ -214,6 +221,20 @@ class MainActivity : StatusBarVisibleActivity() {
         if (messages.isEmpty()) messages.add(createWelcomeMessage(selectedModel))
         restorePendingPrivacyInput()
         submitMessages()
+    }
+
+    private fun showCitationDetails(citation: CitationRef) {
+        val details = getString(
+            R.string.rag_source_detail_body,
+            citation.documentNameSnapshot,
+            citation.locator,
+            citation.quotedText,
+        )
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.rag_source_detail_title, citation.sourceId))
+            .setMessage(details)
+            .setPositiveButton(R.string.confirm, null)
+            .show()
     }
 
     private fun loadConversationArchive(): ConversationArchive? = try {
@@ -1720,7 +1741,6 @@ class MainActivity : StatusBarVisibleActivity() {
         val conversationIdAtSubmission = conversationStore.activeConversationId
         generationJob = lifecycleScope.launch(Dispatchers.Default) {
             val fullResponse = StringBuilder()
-            var localRagReply = false
             var ragRunId: String? = null
             var ragSources: List<RetrievedChunk> = emptyList()
             var ragTransaction: RagTurnTransaction? = null
@@ -1730,8 +1750,20 @@ class MainActivity : StatusBarVisibleActivity() {
             try {
                 latencyTrace.begin(RagPhase.ROUTE)
                 val turnPlan = try {
-                    (application as MiniCPMApplication).ragCoordinator
-                        .plan(conversationIdAtSubmission, userMsg)
+                    withTimeoutOrNull(RAG_PLANNING_TIMEOUT_MS) {
+                        (application as MiniCPMApplication).ragCoordinator
+                            .plan(
+                                conversationIdAtSubmission,
+                                userMsg,
+                                tokenCounter = object : RagPromptTokenCounter {
+                                    override suspend fun count(text: String): Int =
+                                        engine.countPromptTokens(text)
+
+                                    override suspend fun remainingContextTokens(): Int =
+                                        engine.remainingContextTokens()
+                                },
+                            )
+                    } ?: RagTurnPlan.Failed(com.example.minicpm_v_demo.rag.RagTurnFailure.STATE_UNAVAILABLE)
                 } finally {
                     latencyTrace.end(RagPhase.ROUTE)
                 }
@@ -1746,43 +1778,37 @@ class MainActivity : StatusBarVisibleActivity() {
                         error("Plain-model RAG turn was not handled")
                     }
                     is RagTurnPlan.Ready -> {
-                        traceResult = RagTraceResult.AUGMENTED
-                        ragRunId = turnPlan.runId
-                        ragSources = turnPlan.citations.toList()
-                        latencyTrace.recordCandidateCount(ragSources.size)
-                        latencyTrace.recordEvidenceTokenCount(turnPlan.evidenceTokenCount)
-                        latencyTrace.begin(RagPhase.PREFILL)
-                        try {
-                            val checkpoint = engine.beginEphemeralTurn()
-                            ragTransaction = RagTurnTransaction(engine, checkpoint)
-                            usesPreparedPrompt = true
-                        } finally {
-                            latencyTrace.end(RagPhase.PREFILL)
+                        val app = application as MiniCPMApplication
+                        val groundednessReady =
+                            app.ragGuardModelManager.openInstalled() != null
+                        if (!groundednessReady) {
+                            traceResult = RagTraceResult.PASS_THROUGH
+                            userMsg
+                        } else {
+                            traceResult = RagTraceResult.AUGMENTED
+                            ragRunId = turnPlan.runId
+                            ragSources = turnPlan.citations.toList()
+                            latencyTrace.recordCandidateCount(ragSources.size)
+                            latencyTrace.recordEvidenceTokenCount(turnPlan.evidenceTokenCount)
+                            latencyTrace.begin(RagPhase.PREFILL)
+                            try {
+                                val checkpoint = engine.beginEphemeralTurn()
+                                ragTransaction = RagTurnTransaction(engine, checkpoint)
+                                usesPreparedPrompt = true
+                            } finally {
+                                latencyTrace.end(RagPhase.PREFILL)
+                            }
+                            turnPlan.prompt
                         }
-                        turnPlan.prompt
                     }
                     RagTurnPlan.NoSelection,
                     RagTurnPlan.Indexing,
                     RagTurnPlan.ModelRequired,
                     is RagTurnPlan.Failed -> {
-                        traceResult = if (turnPlan is RagTurnPlan.Failed) {
-                            RagTraceResult.FAILED
-                        } else {
-                            RagTraceResult.LOCAL_REPLY
-                        }
-                        localRagReply = true
-                        fullResponse.append(
-                            getString(
-                                when (turnPlan) {
-                                    RagTurnPlan.NoSelection -> R.string.rag_reply_selection_required
-                                    RagTurnPlan.Indexing -> R.string.rag_reply_indexing
-                                    RagTurnPlan.ModelRequired -> R.string.rag_reply_model_required
-                                    is RagTurnPlan.Failed -> R.string.rag_reply_unavailable
-                                    else -> error("Unexpected local RAG plan")
-                                },
-                            ),
-                        )
-                        null
+                        // RAG is an optional augmentation. Any unavailable/not-ready path
+                        // falls back to the original prompt without showing a RAG notice.
+                        traceResult = RagTraceResult.PASS_THROUGH
+                        userMsg
                     }
                 }
                 modelPrompt?.let { prompt ->
@@ -1802,6 +1828,57 @@ class MainActivity : StatusBarVisibleActivity() {
                             waitingForFirstToken = false
                         }
                         fullResponse.append(token)
+                    }
+                }
+                if (ragRunId != null && ragTransaction != null && fullResponse.isNotBlank()) {
+                    val app = application as MiniCPMApplication
+                    val installedClassifier = app.ragGuardModelManager.openInstalled()
+                    val profile = ExperimentalGroundednessCalibration.profile
+                    val reviewed = if (installedClassifier != null) {
+                        RagReviewedGenerator(
+                            classifier = GroundednessClassifier { question, sources, answer ->
+                                installedClassifier.classifyGroundedness(question, sources, answer)
+                            },
+                            profile = profile,
+                        ).review(userMsg, ragSources, fullResponse.toString()) { correctionPrompt ->
+                            ragTransaction?.rollback(
+                                keepUserInHistory = false,
+                                originalUserText = userMsg,
+                            )
+                            val correctionCheckpoint = engine.beginEphemeralTurn()
+                            ragTransaction = RagTurnTransaction(engine, correctionCheckpoint)
+                            val correctedResponse = StringBuilder()
+                            engine.sendPreparedPrompt(
+                                modelPrompt = correctionPrompt,
+                                originalUserTextForSafety = userMsg,
+                            ).collect { token ->
+                                correctedResponse.append(token)
+                            }
+                            correctedResponse.toString()
+                        }
+                    } else {
+                        ReviewedRagGeneration.FallbackToNormalGeneration
+                    }
+                    when (reviewed) {
+                        is ReviewedRagGeneration.Accepted -> {
+                            fullResponse.clear()
+                            fullResponse.append(reviewed.answer)
+                        }
+                        ReviewedRagGeneration.FallbackToNormalGeneration -> {
+                            ragTransaction?.rollback(
+                                keepUserInHistory = false,
+                                originalUserText = userMsg,
+                            )
+                            ragTransaction = null
+                            ragRunId = null
+                            ragSources = emptyList()
+                            usesPreparedPrompt = false
+                            traceResult = RagTraceResult.PASS_THROUGH
+                            fullResponse.clear()
+                            engine.sendUserPrompt(userMsg).collect { token ->
+                                fullResponse.append(token)
+                            }
+                        }
                     }
                 }
             } catch (e: CancellationException) {
@@ -1827,32 +1904,6 @@ class MainActivity : StatusBarVisibleActivity() {
                 withContext(NonCancellable + Dispatchers.Main) {
                     val index = messages.indexOfFirst { it.id == aiMsgId }
                     val candidateResponse = fullResponse.toString()
-                    if (localRagReply) {
-                        if (index >= 0) {
-                            val current = messages[index] as? ChatMessage.AiMessage
-                            messages[index] = (current ?: aiMessage).copy(
-                                text = "",
-                                isGenerating = true,
-                                includeInModelContext = false,
-                            )
-                        }
-                        streamIntoAiMessage(aiMsgId, candidateResponse, aiMessage.copy(includeInModelContext = false))
-                        if (index >= 0) {
-                            messages[index] = aiMessage.copy(
-                                text = candidateResponse,
-                                isGenerating = false,
-                                includeInModelContext = false,
-                            )
-                        }
-                        chatAdapter.setGeneratingDone(aiMsgId)
-                        chatAdapter.clearActiveAiMessage()
-                        submitMessages()
-                        isSubmitting = false
-                        generationJob = null
-                        refreshInputControls()
-                        if (index >= 0) scrollToBottom()
-                        return@withContext
-                    }
                     if (traceResult == RagTraceResult.CANCELLED) {
                         if (index >= 0) messages.removeAt(index)
                         chatAdapter.setGeneratingDone(aiMsgId)
@@ -2156,5 +2207,6 @@ class MainActivity : StatusBarVisibleActivity() {
         private const val MAX_EDIT_MESSAGE_CHARACTERS = 250_000
         private const val MAX_CITATION_QUOTE_CHARS = 600
         private const val RAG_RETRIEVAL_VERSION = 1
+        private const val RAG_PLANNING_TIMEOUT_MS = 15_000L
     }
 }

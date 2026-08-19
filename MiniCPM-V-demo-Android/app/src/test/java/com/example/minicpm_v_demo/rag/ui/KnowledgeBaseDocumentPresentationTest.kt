@@ -27,18 +27,25 @@ class KnowledgeBaseDocumentPresentationTest {
     }
 
     @Test
-    fun `active documents show processing and completed copy remains visible as success`() {
-        assertEquals(
-            KnowledgeBaseDocumentPresentation.Processing,
-            KnowledgeBaseDocumentPresentation.from(DocumentStatus.COPYING, null),
+    fun `every active stage remains processing and only ready is completed`() {
+        val active = listOf(
+            DocumentStatus.QUEUED,
+            DocumentStatus.COPYING,
+            DocumentStatus.PARSING,
+            DocumentStatus.OCR,
+            DocumentStatus.CHUNKING,
+            DocumentStatus.EMBEDDING,
+            DocumentStatus.INDEXING,
         )
+        active.forEach { status ->
+            assertEquals(
+                KnowledgeBaseDocumentPresentation.Processing(status),
+                KnowledgeBaseDocumentPresentation.from(status, null),
+            )
+        }
         assertEquals(
             KnowledgeBaseDocumentPresentation.Uploaded,
-            KnowledgeBaseDocumentPresentation.from(DocumentStatus.PARSING, null),
-        )
-        assertEquals(
-            KnowledgeBaseDocumentPresentation.Uploaded,
-            KnowledgeBaseDocumentPresentation.from(DocumentStatus.CHUNKING, null),
+            KnowledgeBaseDocumentPresentation.from(DocumentStatus.READY, null),
         )
     }
 

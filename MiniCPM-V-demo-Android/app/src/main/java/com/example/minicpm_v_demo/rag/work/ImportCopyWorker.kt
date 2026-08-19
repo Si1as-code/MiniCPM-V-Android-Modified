@@ -40,7 +40,13 @@ class ImportCopyWorker(
         if (sourceUri.scheme != "content") return@withContext Result.failure()
 
         try {
-            setForeground(RagImportNotifications.foregroundInfo(applicationContext, documentId))
+            setForeground(
+                RagImportNotifications.foregroundInfo(
+                    applicationContext,
+                    documentId,
+                    DocumentStatus.COPYING,
+                ),
+            )
             if (document.status == DocumentStatus.QUEUED) {
                 dao.transition(documentId, DocumentStatus.COPYING, 0, 1, System.currentTimeMillis())
             } else if (document.status != DocumentStatus.COPYING) {

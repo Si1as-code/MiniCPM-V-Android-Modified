@@ -941,6 +941,7 @@ class LlamaEngine private constructor(
     private external fun currentChatHistoryDigestNative(): String
     private external fun currentImagePrefilledNative(): Boolean
     private external fun currentVisionModeNative(): Boolean
+    private external fun countPromptTokensNative(text: String): Int
     private external fun unload()
     private external fun shutdown()
 
@@ -1349,6 +1350,22 @@ class LlamaEngine private constructor(
                 visionMode = currentVisionModeNative(),
             )
         }
+
+    suspend fun countPromptTokens(text: String): Int = withContext(llamaDispatcher) {
+        check(_state.value is LlamaState.ModelReady) {
+            "Cannot count prompt tokens in ${_state.value.javaClass.simpleName}"
+        }
+        countPromptTokensNative(text).also { count ->
+            check(count >= 0) { "Native prompt tokenization failed" }
+        }
+    }
+
+    suspend fun remainingContextTokens(): Int = withContext(llamaDispatcher) {
+        check(_state.value is LlamaState.ModelReady) {
+            "Cannot inspect context capacity in ${_state.value.javaClass.simpleName}"
+        }
+        (currentContextCapacityNative() - currentContextPositionNative()).coerceAtLeast(0)
+    }
 
     suspend fun unloadModel() = withContext(llamaDispatcher) {
         if (_state.value is LlamaState.ModelReady) {

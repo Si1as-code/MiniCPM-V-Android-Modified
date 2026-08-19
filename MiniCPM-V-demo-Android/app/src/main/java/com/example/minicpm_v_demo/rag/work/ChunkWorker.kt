@@ -57,7 +57,13 @@ class ChunkWorker(
         )
         if (!parsedFile.isFile) return@withContext fail(documentId, "PARSED_BLOCKS_UNAVAILABLE")
         try {
-            setForeground(RagImportNotifications.foregroundInfo(applicationContext, documentId))
+            setForeground(
+                RagImportNotifications.foregroundInfo(
+                    applicationContext,
+                    documentId,
+                    DocumentStatus.CHUNKING,
+                ),
+            )
             val store = EncryptedFileStore(app.ragKeyManager::getOrCreateMasterKey)
             var chunkCount = 0
             store.withDecryptedInput(parsedFile) { plaintext ->

@@ -12,11 +12,16 @@ import androidx.core.content.ContextCompat
 import androidx.work.ForegroundInfo
 import com.example.minicpm_v_demo.KnowledgeBaseActivity
 import com.example.minicpm_v_demo.R
+import com.example.minicpm_v_demo.rag.db.DocumentStatus
 
 object RagImportNotifications {
     private const val CHANNEL_ID = "rag_document_import"
 
-    fun foregroundInfo(context: Context, documentId: String): ForegroundInfo {
+    fun foregroundInfo(
+        context: Context,
+        documentId: String,
+        status: DocumentStatus,
+    ): ForegroundInfo {
         ensureChannel(context)
         val openIntent = PendingIntent.getActivity(
             context,
@@ -34,7 +39,7 @@ object RagImportNotifications {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle(context.getString(R.string.rag_import_notification_title))
-            .setContentText(context.getString(R.string.rag_import_notification_body))
+            .setContentText(context.getString(RagDocumentStageResources.bodyFor(status)))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setProgress(0, 0, true)

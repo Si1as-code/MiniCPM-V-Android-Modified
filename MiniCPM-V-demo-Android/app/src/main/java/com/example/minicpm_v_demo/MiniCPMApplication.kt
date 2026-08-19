@@ -4,20 +4,23 @@ import android.app.Application
 import com.example.minicpm_v_demo.rag.crypto.RagKeyManager
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
 import com.example.minicpm_v_demo.rag.retrieval.CascadedEvidenceAcceptancePolicy
+import com.example.minicpm_v_demo.rag.retrieval.ExperimentalAnswerabilityCalibration
 import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
+import com.example.minicpm_v_demo.rag.retrieval.LazyAnswerabilityClassifier
 import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
-import com.example.minicpm_v_demo.rag.IdentityRagEvidenceReducer
 import com.example.minicpm_v_demo.rag.RagCoordinator
 import com.example.minicpm_v_demo.rag.RagPromptBuilder
 import com.example.minicpm_v_demo.rag.RagRunIdFactory
 import com.example.minicpm_v_demo.rag.RagRetrievalMode
 import com.example.minicpm_v_demo.rag.RoomRagStateQueries
-import com.example.minicpm_v_demo.rag.SourceCountRagEvidenceBudgeter
+import com.example.minicpm_v_demo.rag.prompt.RagContextBudgeter
 import com.example.minicpm_v_demo.rag.db.RagDatabaseFactory
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
+import com.example.minicpm_v_demo.rag.guard.RagGuardModelManager
 import com.example.minicpm_v_demo.rag.retrieval.RoomDenseEvidenceRetriever
 import com.example.minicpm_v_demo.rag.retrieval.HybridRetriever
 import com.example.minicpm_v_demo.rag.retrieval.RagPromptAssembler
+import com.example.minicpm_v_demo.rag.retrieval.SentenceWindowEvidenceReducer
 import com.example.minicpm_v_demo.rag.retrieval.RoomLexicalEvidenceRetriever
 import com.example.minicpm_v_demo.rag.route.DefaultRagQueryRouter
 import com.example.minicpm_v_demo.rag.work.RagWorkRecovery
@@ -30,6 +33,9 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 class MiniCPMApplication : Application() {
     val embeddingModelManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { EmbeddingModelManager(this) }
+    val ragGuardModelManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        RagGuardModelManager(this, embeddingModelManager)
+    }
     val ragKeyManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagKeyManager(this)
     }
@@ -59,11 +65,11 @@ class MiniCPMApplication : Application() {
             retriever = hybridRagRetriever,
             acceptancePolicy = CascadedEvidenceAcceptancePolicy(
                 retrievalKey = CurrentRetrievalCalibration.key,
-                classifier = null,
-                profile = null,
+                classifier = LazyAnswerabilityClassifier(ragGuardModelManager::openInstalled),
+                profile = ExperimentalAnswerabilityCalibration.profile,
             ),
-            reducer = IdentityRagEvidenceReducer,
-            budgeter = SourceCountRagEvidenceBudgeter(),
+            reducer = SentenceWindowEvidenceReducer,
+            budgeter = RagContextBudgeter(),
             promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
             runIdFactory = RagRunIdFactory { UUID.randomUUID().toString() },
             retrievalMode = RagRetrievalMode.ALL_QUERIES,

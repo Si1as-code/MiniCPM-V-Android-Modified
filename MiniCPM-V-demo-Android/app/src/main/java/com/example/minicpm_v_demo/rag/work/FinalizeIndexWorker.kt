@@ -23,6 +23,13 @@ class FinalizeIndexWorker(appContext: Context, parameters: WorkerParameters) : C
         val document = documentDao.findById(documentId) ?: return@withContext Result.failure()
         if (document.status == DocumentStatus.READY) return@withContext Result.success()
         if (document.status != DocumentStatus.INDEXING) return@withContext Result.failure()
+        setForeground(
+            RagImportNotifications.foregroundInfo(
+                applicationContext,
+                documentId,
+                DocumentStatus.INDEXING,
+            ),
+        )
         val modelSha = E5ModelSpec.PINNED.files.getValue("model.int8.onnx")
         val chunks = chunkDao.findByDocument(documentId)
         if (chunks.isEmpty() || chunkDao.findChunksNeedingEmbedding(documentId, modelSha).isNotEmpty() ||

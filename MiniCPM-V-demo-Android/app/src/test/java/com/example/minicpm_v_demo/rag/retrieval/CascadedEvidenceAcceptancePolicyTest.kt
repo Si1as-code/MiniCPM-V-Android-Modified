@@ -38,6 +38,26 @@ class CascadedEvidenceAcceptancePolicyTest {
     }
 
     @Test
+    fun `unqualified production profile keeps semantic evidence closed without opening model`() = runBlocking {
+        var opens = 0
+        val lazyClassifier = LazyAnswerabilityClassifier {
+            opens++
+            AnswerabilityClassifier { _, _ -> verdict() }
+        }
+        val policy = CascadedEvidenceAcceptancePolicy(
+            retrievalKey = RETRIEVAL_KEY,
+            classifier = lazyClassifier,
+            profile = CurrentAnswerabilityCalibration.profile,
+        )
+
+        assertEquals(
+            emptyList<RetrievedChunk>(),
+            policy.accept("question", listOf(source(1).copy(denseScore = 0.9f))),
+        )
+        assertEquals(0, opens)
+    }
+
+    @Test
     fun `missing classifier and empty candidates fail closed`() = runBlocking {
         val candidate = source(1).copy(denseScore = 0.8f)
 

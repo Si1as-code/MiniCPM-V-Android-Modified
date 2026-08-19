@@ -38,7 +38,13 @@ class ParseWorker(
         if (!source.isFile) return@withContext fail(documentId, "SOURCE_UNAVAILABLE")
         val target = RagTempFileCleaner.parsedBlockFile(staging, documentId)
         try {
-            setForeground(RagImportNotifications.foregroundInfo(applicationContext, documentId))
+            setForeground(
+                RagImportNotifications.foregroundInfo(
+                    applicationContext,
+                    documentId,
+                    DocumentStatus.PARSING,
+                ),
+            )
             val store = EncryptedFileStore(app.ragKeyManager::getOrCreateMasterKey)
             val parser = ParserRegistry.forDocument(document.displayName, document.mimeType)
             store.withDecryptedInput(source) { plaintext ->

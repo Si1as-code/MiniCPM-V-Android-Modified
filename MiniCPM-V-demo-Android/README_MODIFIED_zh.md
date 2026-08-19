@@ -125,30 +125,41 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 
 ## 本地 RAG（开发中）
 
-项目已开始按端侧离线 RAG 方案分阶段开发。目标是在不上传用户文档、不替换现有 MiniCPM-V/llama.cpp-omni 推理链路的前提下，支持办公文档导入、混合检索、严格来源引用和可恢复的后台索引。
+项目正在按端侧离线 RAG 方案分阶段开发。当前已经跑通“手机导入文档 -> 加密保存 -> 解析/OCR -> 切块 -> E5 向量化 -> 会话选择知识库 -> 混合检索 -> 临时证据注入 -> 输出依据性审查 -> 回答与引用归档”的基础闭环。真实办公分布最终资格、大库近似索引和完整压力验收仍未完成，因此继续标记为开发中。
 
 - 架构决策：[docs/architecture/ADR-001-local-rag-stack.md](docs/architecture/ADR-001-local-rag-stack.md)
 - 威胁模型：[docs/architecture/rag-threat-model.md](docs/architecture/rag-threat-model.md)
-- 完整实施计划：[docs/superpowers/plans/2026-08-10-android-local-rag.md](docs/superpowers/plans/2026-08-10-android-local-rag.md)
+- 唯一活动计划：[docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md](docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md)
+- 历史总体设计：[docs/superpowers/plans/2026-08-10-android-local-rag.md](docs/superpowers/plans/2026-08-10-android-local-rag.md)
 
-当前阶段先建立固定依赖、版本化数据库和安全边界；RAG 功能在通过迁移、安全、检索质量和真机性能验证前不会标记为稳定功能。
+当前工程估算：RAG 基础闭环约完成 `90%`，完整办公发布目标约完成 `72%`。详细口径、验证证据和后续唯一执行顺序以统一活动计划为准。
 
 当前已经完成：
 
-- 固定 Room、WorkManager、SQLCipher、ONNX Runtime、ML Kit、PDFBox 和 KSP 版本；
-- 建立知识库、文档、文本块、FTS4、会话绑定和引用关系的 Room v1 schema；
-- 使用 Android Keystore AES-GCM 包装随机 SQLCipher 口令，数据库和 RAG 文件支持静态加密、篡改检测与原子替换；
-- 排除 RAG 数据库、加密原文和设备绑定密钥材料的云备份与设备迁移；
-- 建立解析限额、文档状态转换和基于文件魔数的初步类型识别。
+- 知识库命名、选择、删除、会话级开关和永久绑定；
+- SAF 多文档导入、WorkManager 可恢复流水线、持续失败原因和取消；
+- TXT、Markdown、CSV、HTML、PDF/OCR、DOCX、PPTX、XLSX 安全解析；
+- SQLCipher、Keystore、AES-GCM 原文容器、原子替换和备份排除；
+- 结构化切块、中文检索文本、E5 INT8 ONNX 嵌入和真机推理；
+- FTS4 BM25、dense、RRF 混合检索和受限候选；
+- `RagCoordinator` 状态决策、native checkpoint 临时证据事务和无结果普通回答；
+- Groundedness 完整候选审查、同证据最多一次纠偏重生成，以及审核失败后恢复 checkpoint 并静默回退普通回答；
+- 只有审核通过的 RAG 回答才显示“根据数据库中内容”标识，普通回答不冒充知识库回答；
+- 中文/英文句子、条款和表格行窗口缩减，MiniCPM 原生 tokenizer 证据预算，以及 XML 数据边界转义；
+- 小库连续向量缓存（最多 5000 chunks）和语料校验戳失效；
+- 引用白名单、引用快照、会话归档 v2，以及 AI 气泡来源 chip/归档摘录详情；
+- Answerability/Groundedness 双头 INT8 模型、Android runtime、CPU 真机性能和独立质量门槛工具。
 
-当前尚未完成，因而还不能在聊天中启用端到端 RAG：
+当前实验 Guard v3 的 INT8 SHA-256 为 `6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa`。它在本轮独立测试上的 Answerability/Groundedness macro-F1 分别约为 `0.9885/0.8088`，但未通过冻结的量化对齐发布门槛，因此只在当前实验分支使用 `0.95` 保守阈值；不能据此宣称稳定发布。模型缺失、哈希不符、低于阈值或输出审核失败时，App 会恢复 RAG checkpoint 并按普通模型回答。
 
-- SAF 安全文档导入、SHA-256 去重、可取消 WorkManager 索引任务和崩溃恢复；
-- TXT/Markdown/CSV/PDF/OOXML 解析、OCR、结构化切块与一致 tokenizer；
-- E5 ONNX 嵌入、加密 HNSW、FTS/向量混合检索、RRF/MMR 排序；
-- 临时证据 Prompt 注入、上下文重建、严格无答案策略和引用校验；
-- 知识库管理、会话绑定、索引进度、来源点击和删除 UI；
-- 迁移、恶意文件、检索质量、性能、内存与长时间运行验收。
+当前尚未完成，因而还不能标记为稳定 RAG：
+
+- 脱敏真实办公校准/测试集和生产 Answerability profile；
+- 新 Guard 模型最终 INT8 导出、固定哈希、阈值 profile 和真机模型包替换；
+- 大库 HNSW/分区后端和损坏恢复；
+- ADAPTIVE 正式路由、15 秒 watchdog、完整编辑/前后台状态矩阵；
+- 来源原文精确定位和“来源已删除”状态查询；
+- 功能、安全、压力、性能、内存、温升和固定签名覆盖安装验收。
 
 环境要求：
 

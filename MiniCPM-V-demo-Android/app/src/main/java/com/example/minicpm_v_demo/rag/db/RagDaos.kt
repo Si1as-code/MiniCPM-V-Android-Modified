@@ -13,6 +13,12 @@ data class ChunkFtsMatchInfoRow(
     val matchInfo: ByteArray,
 )
 
+data class EmbeddingCorpusStamp(
+    val embeddingCount: Int,
+    val maximumUpdatedAt: Long,
+    val chunkIdSum: Long,
+)
+
 @Dao
 interface KnowledgeBaseDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -371,6 +377,49 @@ interface ChunkDao {
         knowledgeBaseIds: List<String>,
         modelSha256: String,
         corpusVersion: Int,
+    ): List<ChunkEmbeddingEntity>
+
+    @Query(
+        """
+        SELECT COUNT(*) AS embeddingCount,
+               COALESCE(MAX(chunk_embeddings.updatedAt), 0) AS maximumUpdatedAt,
+               COALESCE(SUM(chunk_embeddings.chunkId), 0) AS chunkIdSum
+        FROM chunk_embeddings
+        JOIN chunks ON chunks.id = chunk_embeddings.chunkId
+        JOIN documents ON documents.id = chunks.documentId
+        JOIN knowledge_bases ON knowledge_bases.id = chunks.knowledgeBaseId
+        WHERE chunks.knowledgeBaseId IN (:knowledgeBaseIds)
+          AND documents.status = 'READY' AND knowledge_bases.enabled = 1
+          AND documents.chunkerVersion = :corpusVersion
+          AND chunk_embeddings.modelSha256 = :modelSha256
+        """,
+    )
+    suspend fun findReadyEmbeddingStamp(
+        knowledgeBaseIds: List<String>,
+        modelSha256: String,
+        corpusVersion: Int,
+    ): EmbeddingCorpusStamp
+
+    @Query(
+        """
+        SELECT chunk_embeddings.* FROM chunk_embeddings
+        JOIN chunks ON chunks.id = chunk_embeddings.chunkId
+        JOIN documents ON documents.id = chunks.documentId
+        JOIN knowledge_bases ON knowledge_bases.id = chunks.knowledgeBaseId
+        WHERE chunks.knowledgeBaseId IN (:knowledgeBaseIds)
+          AND documents.status = 'READY' AND knowledge_bases.enabled = 1
+          AND documents.chunkerVersion = :corpusVersion
+          AND chunk_embeddings.modelSha256 = :modelSha256
+        ORDER BY chunk_embeddings.chunkId
+        LIMIT :pageSize OFFSET :offset
+        """,
+    )
+    suspend fun findReadyEmbeddingsPage(
+        knowledgeBaseIds: List<String>,
+        modelSha256: String,
+        corpusVersion: Int,
+        pageSize: Int,
+        offset: Int,
     ): List<ChunkEmbeddingEntity>
 
     @Query("SELECT * FROM chunks WHERE id IN (:chunkIds)")

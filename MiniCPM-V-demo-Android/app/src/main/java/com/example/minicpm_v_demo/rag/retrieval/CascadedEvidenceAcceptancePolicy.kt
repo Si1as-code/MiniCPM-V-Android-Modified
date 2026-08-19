@@ -26,6 +26,22 @@ data class AnswerabilityCalibrationProfile(
     }
 }
 
+object CurrentAnswerabilityCalibration {
+    // Populated only from an independently evaluated, redacted real-office
+    // quality-gate report that is bound to the pinned Guard model SHA-256.
+    val profile: AnswerabilityCalibrationProfile? = null
+}
+
+object ExperimentalAnswerabilityCalibration {
+    val profile = AnswerabilityCalibrationProfile(
+        classifierSha256 =
+            "6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa",
+        minimumDenseForClassification = -1f,
+        supportedProbabilityThreshold = 0.95f,
+        maxCandidates = 3,
+    )
+}
+
 class CascadedEvidenceAcceptancePolicy(
     private val retrievalKey: RetrievalCalibrationKey,
     private val classifier: AnswerabilityClassifier?,

@@ -289,6 +289,24 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_systemInfo(JNIEnv *env, jobject /*
     return env->NewStringUTF(llama_print_system_info());
 }
 
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_countPromptTokensNative(
+        JNIEnv *env, jobject /*unused*/, jstring jtext) {
+    if (!g_context || !jtext) return -1;
+    const auto *raw_text = env->GetStringUTFChars(jtext, nullptr);
+    if (!raw_text) return -1;
+    const std::string text(raw_text);
+    env->ReleaseStringUTFChars(jtext, raw_text);
+    try {
+        const auto tokens = common_tokenize(g_context, text, false, true);
+        if (tokens.size() > static_cast<size_t>(INT32_MAX)) return -1;
+        return static_cast<jint>(tokens.size());
+    } catch (...) {
+        return -1;
+    }
+}
+
 constexpr const char *ROLE_SYSTEM       = "system";
 constexpr const char *ROLE_USER         = "user";
 constexpr const char *ROLE_ASSISTANT    = "assistant";

@@ -20,10 +20,33 @@ object RagPromptAssembler {
         require(question.isNotBlank() && sources.isNotEmpty())
         val promptLanguage = PromptLanguage.forQuestion(question)
         val references = sources.mapIndexed { index, source ->
-            "[S${index + 1}] ${source.displayName} " +
-                "(${source.locator.ifBlank { promptLanguage.unknownLocation }})\n${source.text}"
+            val sourceId = "S${index + 1}"
+            val name = escapeXml(source.displayName)
+            val locator = escapeXml(source.locator.ifBlank { promptLanguage.unknownLocation })
+            val text = escapeXml(source.text)
+            """
+                <source id="$sourceId" name="$name" locator="$locator">
+                [$sourceId] $name ($locator)
+                $text
+                </source>
+            """.trimIndent()
         }.joinToString("\n\n")
         return promptLanguage.buildPrompt(question, references)
+    }
+
+    private fun escapeXml(value: String): String = buildString(value.length) {
+        value.forEach { character ->
+            append(
+                when (character) {
+                    '&' -> "&amp;"
+                    '<' -> "&lt;"
+                    '>' -> "&gt;"
+                    '"' -> "&quot;"
+                    '\'' -> "&apos;"
+                    else -> character
+                },
+            )
+        }
     }
 
     private enum class PromptLanguage(val unknownLocation: String) {
@@ -42,8 +65,10 @@ object RagPromptAssembler {
                 - 使用 [S1]、[S2] 等标注支持答案的摘录来源。
                 - 视觉描述必须在同一句中标注有效来源，例如“资料中的图片显示设备接线图 [S1]”。
 
-                本地知识库摘录：
+                本地知识库摘录（仅 <source> 元素属于资料边界）：
+                <knowledge_base>
                 $references
+                </knowledge_base>
 
                 用户当前问题：
                 $question
@@ -64,8 +89,10 @@ object RagPromptAssembler {
                 - Cite supporting excerpts as [S1], [S2], and so on.
                 - A visual description must include a valid source citation in the same sentence. For example: "The document image shows a wiring diagram [S1]."
 
-                Local knowledge-base excerpts:
+                Local knowledge-base excerpts (only <source> elements are inside the data boundary):
+                <knowledge_base>
                 $references
+                </knowledge_base>
 
                 User question:
                 $question

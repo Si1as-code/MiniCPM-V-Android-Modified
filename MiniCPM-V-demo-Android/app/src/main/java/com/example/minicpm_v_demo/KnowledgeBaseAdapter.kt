@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.example.minicpm_v_demo.rag.db.DocumentEntity
 import com.example.minicpm_v_demo.rag.db.KnowledgeBaseEntity
 import com.example.minicpm_v_demo.rag.ui.KnowledgeBaseDocumentPresentation
+import com.example.minicpm_v_demo.rag.work.RagDocumentStageResources
 import com.google.android.material.card.MaterialCardView
 
 data class KnowledgeBaseListItem(
@@ -69,15 +70,19 @@ class KnowledgeBaseAdapter(
                 ?: return@forEach
             val status = inflater.inflate(R.layout.item_knowledge_base_document_status, statusContainer, false) as TextView
             status.text = when (presentation) {
-                KnowledgeBaseDocumentPresentation.Processing ->
-                    view.context.getString(R.string.rag_document_processing, document.displayName)
+                is KnowledgeBaseDocumentPresentation.Processing ->
+                    view.context.getString(
+                        R.string.rag_document_stage_status,
+                        document.displayName,
+                        view.context.getString(RagDocumentStageResources.bodyFor(presentation.status)),
+                    )
                 KnowledgeBaseDocumentPresentation.Uploaded ->
                     view.context.getString(R.string.rag_document_uploaded, document.displayName)
                 is KnowledgeBaseDocumentPresentation.Failure ->
                     view.context.getString(R.string.rag_document_failed, document.displayName, presentation.reason)
             }
             val color = when (presentation) {
-                KnowledgeBaseDocumentPresentation.Processing -> R.color.rag_status_neutral
+                is KnowledgeBaseDocumentPresentation.Processing -> R.color.rag_status_neutral
                 KnowledgeBaseDocumentPresentation.Uploaded -> R.color.rag_status_success
                 is KnowledgeBaseDocumentPresentation.Failure -> R.color.rag_status_error
             }
@@ -86,7 +91,7 @@ class KnowledgeBaseAdapter(
                 ContextCompat.getColor(
                     view.context,
                     when (presentation) {
-                        KnowledgeBaseDocumentPresentation.Processing -> R.color.rag_status_neutral_surface
+                        is KnowledgeBaseDocumentPresentation.Processing -> R.color.rag_status_neutral_surface
                         KnowledgeBaseDocumentPresentation.Uploaded -> R.color.rag_status_success_surface
                         is KnowledgeBaseDocumentPresentation.Failure -> R.color.rag_status_error_surface
                     },

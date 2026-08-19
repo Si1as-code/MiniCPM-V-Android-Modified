@@ -1,5 +1,7 @@
 # Android 端侧 RAG 完整实现方案
 
+> **Archived 2026-08-18:** 本文保留端侧 RAG 的总体架构和历史设计；当前进度、权威状态与后续唯一执行顺序已迁移到 [MiniCPM Android 统一进度与后续实施计划](2026-08-18-minicpm-android-unified-progress-plan.md)。
+
 > **For agentic workers:** 实施时按本文复选框逐项完成，并优先采用测试驱动。若要使用子代理并行执行，必须先取得用户对代理数量、职责和共享文件冲突风险的明确许可；未经许可由主代理顺序执行。
 
 **目标：** 在现有 MiniCPM-V Android 应用中实现一套默认完全离线、支持中英文办公文档、可追溯引用、可增量更新、可取消索引并具备安全边界的本地 RAG（Retrieval-Augmented Generation，检索增强生成）系统。

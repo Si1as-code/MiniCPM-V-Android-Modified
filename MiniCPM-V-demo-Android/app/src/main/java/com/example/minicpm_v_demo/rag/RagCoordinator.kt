@@ -134,7 +134,16 @@ data class RagEvidenceBudget(
 }
 
 fun interface RagEvidenceBudgeter {
-    fun budget(sources: List<RetrievedChunk>): RagEvidenceBudget
+    suspend fun budget(
+        question: String,
+        sources: List<RetrievedChunk>,
+        tokenCounter: RagPromptTokenCounter?,
+    ): RagEvidenceBudget
+}
+
+interface RagPromptTokenCounter {
+    suspend fun count(text: String): Int
+    suspend fun remainingContextTokens(): Int
 }
 
 class SourceCountRagEvidenceBudgeter(
@@ -144,7 +153,11 @@ class SourceCountRagEvidenceBudgeter(
         require(maxSources in 1..20)
     }
 
-    override fun budget(sources: List<RetrievedChunk>): RagEvidenceBudget {
+    override suspend fun budget(
+        question: String,
+        sources: List<RetrievedChunk>,
+        tokenCounter: RagPromptTokenCounter?,
+    ): RagEvidenceBudget {
         val bounded = sources.take(maxSources).toList()
         val tokenCount = bounded.fold(0L) { total, source -> total + source.tokenCount }
             .coerceAtMost(Int.MAX_VALUE.toLong())
@@ -208,6 +221,7 @@ class RagCoordinator(
         conversationId: Long,
         question: String,
         limit: Int = 6,
+        tokenCounter: RagPromptTokenCounter? = null,
     ): RagTurnPlan {
         require(conversationId > 0 && question.isNotBlank() && limit in 1..20)
         val boundedQuestion = question.takeCodePoints(MAX_QUERY_CODE_POINTS)
@@ -275,7 +289,7 @@ class RagCoordinator(
         }
         if (reduced.isEmpty()) return RagTurnPlan.NoEvidence
         val budget = try {
-            budgeter.budget(reduced)
+            budgeter.budget(boundedQuestion, reduced, tokenCounter)
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {
@@ -283,8 +297,16 @@ class RagCoordinator(
         }
         if (budget.sources.isEmpty()) return RagTurnPlan.NoEvidence
         val prompt = try {
-            promptBuilder.build(boundedQuestion, budget.sources).takeIf(String::isNotBlank)
+            val built = promptBuilder.build(boundedQuestion, budget.sources).takeIf(String::isNotBlank)
                 ?: return RagTurnPlan.Failed(RagTurnFailure.PROMPT_BUILD_FAILED)
+            if (
+                tokenCounter != null &&
+                tokenCounter.count(built) >
+                (tokenCounter.remainingContextTokens() - RESPONSE_RESERVE_TOKENS).coerceAtLeast(0)
+            ) {
+                return RagTurnPlan.NoEvidence
+            }
+            built
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {
@@ -313,5 +335,6 @@ class RagCoordinator(
 
     private companion object {
         const val MAX_QUERY_CODE_POINTS = 4_096
+        const val RESPONSE_RESERVE_TOKENS = 768
     }
 }

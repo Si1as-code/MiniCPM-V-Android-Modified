@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import io.noties.markwon.Markwon
 
@@ -28,6 +30,7 @@ class ChatAdapter(
     private var onImageClick: ((String) -> Unit)? = null
     private var onPrivacyInputChoice: ((Long, Boolean) -> Unit)? = null
     private var onMessageLongClick: ((ChatMessage) -> Unit)? = null
+    private var onCitationClick: ((CitationRef) -> Unit)? = null
 
     private var activeAiHolder: AiMessageViewHolder? = null
     private var activeAiId: Long = -1L
@@ -50,6 +53,10 @@ class ChatAdapter(
 
     fun setOnMessageLongClick(listener: (ChatMessage) -> Unit) {
         onMessageLongClick = listener
+    }
+
+    fun setOnCitationClick(listener: (CitationRef) -> Unit) {
+        onCitationClick = listener
     }
 
     fun setActiveAiMessage(id: Long) {
@@ -260,6 +267,7 @@ class ChatAdapter(
         private val tvThinkingLabel: TextView = itemView.findViewById(R.id.tv_thinking_label)
         private val tvThinkingText: TextView = itemView.findViewById(R.id.tv_thinking_text)
         private val dividerThinking: View = itemView.findViewById(R.id.divider_thinking)
+        private val sourceGroup: ChipGroup = itemView.findViewById(R.id.group_rag_sources)
 
         private var thinkingExpanded = false
         private var streamingMinWidth = 0
@@ -272,9 +280,39 @@ class ChatAdapter(
                 (tvText.parent as? ViewGroup)?.minimumWidth = 0
             }
             renderWithThinking(item.text, item.isGenerating)
+            bindSources(item.citations)
             btnStop.visibility = if (item.isGenerating) View.VISIBLE else View.GONE
             btnStop.setOnClickListener {
                 onStopClick?.invoke()
+            }
+        }
+
+        private fun bindSources(citations: List<CitationRef>) {
+            sourceGroup.removeAllViews()
+            sourceGroup.visibility = if (citations.isEmpty()) View.GONE else View.VISIBLE
+            citations.forEach { citation ->
+                sourceGroup.addView(
+                    Chip(itemView.context).apply {
+                        text = itemView.context.getString(
+                            R.string.rag_source_chip,
+                            citation.sourceId,
+                            citation.documentNameSnapshot,
+                            citation.locator,
+                        )
+                        contentDescription = itemView.context.getString(
+                            R.string.rag_source_chip_description,
+                            citation.sourceId,
+                            citation.documentNameSnapshot,
+                            citation.locator,
+                        )
+                        isCheckable = false
+                        isClickable = true
+                        setEnsureMinTouchTargetSize(true)
+                        setChipBackgroundColorResource(R.color.rag_selected_surface)
+                        setTextColor(itemView.context.getColor(R.color.on_surface_variant))
+                        setOnClickListener { onCitationClick?.invoke(citation) }
+                    },
+                )
             }
         }
 
@@ -398,7 +436,10 @@ class ChatAdapter(
                 oldItem is ChatMessage.AiMessage && newItem is ChatMessage.AiMessage ->
                     oldItem.isGenerating == newItem.isGenerating &&
                             oldItem.includeInModelContext == newItem.includeInModelContext &&
-                            (oldItem.isGenerating || oldItem.text == newItem.text)
+                            (oldItem.isGenerating || oldItem.text == newItem.text) &&
+                            oldItem.citations == newItem.citations &&
+                            oldItem.ragRunId == newItem.ragRunId &&
+                            oldItem.answerEdited == newItem.answerEdited
                 oldItem is ChatMessage.WelcomeCard && newItem is ChatMessage.WelcomeCard ->
                     oldItem.isTextOnly == newItem.isTextOnly &&
                         oldItem.hasVisualContext == newItem.hasVisualContext

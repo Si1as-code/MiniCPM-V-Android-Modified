@@ -57,7 +57,13 @@ class OcrWorker(
         val target = RagTempFileCleaner.parsedBlockFile(staging, documentId)
         if (!source.isFile) return@withContext fail(documentId, "SOURCE_UNAVAILABLE")
         try {
-            setForeground(RagImportNotifications.foregroundInfo(applicationContext, documentId))
+            setForeground(
+                RagImportNotifications.foregroundInfo(
+                    applicationContext,
+                    documentId,
+                    DocumentStatus.OCR,
+                ),
+            )
             val store = EncryptedFileStore(app.ragKeyManager::getOrCreateMasterKey)
             val blocks = store.withDecryptedInput(source) { plaintext ->
                 runBlocking { recognizePdf(plaintext, documentId) }
