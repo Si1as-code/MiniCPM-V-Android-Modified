@@ -181,6 +181,9 @@ interface DocumentDao {
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun findById(id: String): DocumentEntity?
 
+    @Query("DELETE FROM documents WHERE id = :id")
+    suspend fun deleteById(id: String): Int
+
     @Query("SELECT * FROM documents WHERE knowledgeBaseId = :knowledgeBaseId ORDER BY createdAt")
     suspend fun findByKnowledgeBase(knowledgeBaseId: String): List<DocumentEntity>
 

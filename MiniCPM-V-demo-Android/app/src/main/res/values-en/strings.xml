@@ -41,7 +41,16 @@
     <string name="rag_knowledge_base_deleted">Knowledge base deleted</string>
     <string name="rag_document_processing">%1$s\nImporting securely…</string>
     <string name="rag_document_uploaded">%1$s\nImport complete</string>
+    <string name="rag_document_uploaded_action">%1$s\nImport complete · Long-press to delete</string>
     <string name="rag_document_failed">%1$s\nFailed: %2$s</string>
+    <string name="rag_document_failed_dismiss">%1$s\n%2$s · Swipe left to dismiss</string>
+    <string name="rag_failed_import_swipe_description">%1$s, %2$s. Swipe left to dismiss this notice.</string>
+    <string name="rag_delete_document">Delete document</string>
+    <string name="rag_delete_document_confirm">Delete “%1$s”? Its chunks and vectors will also be removed.</string>
+    <string name="rag_document_deleted">Document deleted</string>
+    <string name="rag_document_delete_failed">Could not delete the document. Try again.</string>
+    <string name="rag_knowledge_base_delete_failed">Could not delete the knowledge base. Try again.</string>
+    <string name="rag_document_default_name">Document</string>
     <string name="settings_model_summary">Current model: %1$s</string>
     <string name="settings_slice_summary">Current slices: %1$d · Higher preserves more detail</string>
     <string name="settings_clear_chat_summary">Delete current messages, image cache, and model context</string>

@@ -153,8 +153,7 @@ class OcrWorker(
     }
 
     private suspend fun fail(documentId: String, code: String): Result {
-        terminal(documentId, DocumentStatus.FAILED, code)
-        return Result.failure()
+        return RagImportFailureHandler.fail(applicationContext, documentId, code)
     }
 
     private suspend fun terminal(documentId: String, status: DocumentStatus, code: String) {

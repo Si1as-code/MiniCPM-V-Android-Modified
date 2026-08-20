@@ -105,20 +105,19 @@ class ImportCopyWorker(
             throw cancelled
         } catch (error: DocumentImportException) {
             val cancelled = error.error.name == "CANCELLED"
-            if (cancelled) markCancelled(documentId) else markFailed(documentId, error.error.name)
-            if (cancelled) Result.failure() else Result.failure()
+            if (cancelled) {
+                markCancelled(documentId)
+                Result.failure()
+            } else {
+                RagImportFailureHandler.fail(applicationContext, documentId, error.error.name)
+            }
         } catch (error: Exception) {
-            markFailed(documentId, RagImportFailureClassifier.code(error))
-            Result.failure()
+            RagImportFailureHandler.fail(applicationContext, documentId, RagImportFailureClassifier.code(error))
         }
     }
 
     private suspend fun markCancelled(documentId: String) {
         transitionTerminal(documentId, DocumentStatus.CANCELLED, "CANCELLED")
-    }
-
-    private suspend fun markFailed(documentId: String, code: String) {
-        transitionTerminal(documentId, DocumentStatus.FAILED, code)
     }
 
     private suspend fun transitionTerminal(documentId: String, status: DocumentStatus, code: String) {

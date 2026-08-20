@@ -55,7 +55,16 @@
     <string name="rag_reply_unavailable">本地知识库暂时无法检索。请稍后重试，或在“当前对话 RAG”中关闭知识库后继续普通聊天。</string>
     <string name="rag_document_processing">%1$s\n正在安全导入…</string>
     <string name="rag_document_uploaded">%1$s\n导入完成</string>
+    <string name="rag_document_uploaded_action">%1$s\n导入完成 · 长按删除</string>
     <string name="rag_document_failed">%1$s\n失败：%2$s</string>
+    <string name="rag_document_failed_dismiss">%1$s\n%2$s · 左滑删除</string>
+    <string name="rag_failed_import_swipe_description">%1$s，%2$s，向左滑动可删除此提示</string>
+    <string name="rag_delete_document">删除文档</string>
+    <string name="rag_delete_document_confirm">确认删除“%1$s”吗？文档、切块和向量将一并删除。</string>
+    <string name="rag_document_deleted">文档已删除</string>
+    <string name="rag_document_delete_failed">文档删除失败，请重试</string>
+    <string name="rag_knowledge_base_delete_failed">知识库删除失败，请重试</string>
+    <string name="rag_document_default_name">文档</string>
     <string name="settings_model_summary">当前模型：%1$s</string>
     <string name="settings_slice_summary">当前切片数：%1$d · 越高细节越清晰</string>
     <string name="settings_clear_chat_summary">删除当前消息、图片缓存和模型上下文</string>

@@ -12,6 +12,9 @@ object RagWorkRecoveryPolicy {
             DocumentStatus.CHUNKING,
         )
 
-    fun <T> selectObservable(items: List<T>, isFinished: (T) -> Boolean): T? =
-        items.firstOrNull { !isFinished(it) } ?: items.firstOrNull()
+    fun <T> selectObservable(
+        items: List<T>,
+        isActive: (T) -> Boolean,
+        isFailed: (T) -> Boolean,
+    ): T? = items.firstOrNull(isActive) ?: items.firstOrNull(isFailed) ?: items.lastOrNull()
 }

@@ -43,7 +43,7 @@ class EmbedWorker(appContext: Context, parameters: WorkerParameters) : Coroutine
             val allChunks = chunkDao.findByDocument(documentId)
             val chunks = chunkDao.findChunksNeedingEmbedding(documentId, embedder.modelSha256)
             val alreadyDone = allChunks.size - chunks.size
-            if (allChunks.isEmpty()) return@withContext fail(app, documentId, "EMPTY_DOCUMENT")
+            if (allChunks.isEmpty()) return@withContext fail(documentId, "EMPTY_DOCUMENT")
             var done = alreadyDone
             chunks.chunked(BATCH_SIZE).forEach { batch ->
                 if (isStopped) throw CancellationException("Embedding cancelled")
@@ -71,18 +71,12 @@ class EmbedWorker(appContext: Context, parameters: WorkerParameters) : Coroutine
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            fail(app, documentId, "EMBED_FAILED")
+            fail(documentId, "EMBED_FAILED")
         }
     }
 
-    private suspend fun fail(app: MiniCPMApplication, documentId: String, code: String): Result {
-        val dao = app.ragDatabase.documentDao()
-        val current = dao.findById(documentId)
-        if (current?.status in DocumentStatus.activeWorkStates) {
-            dao.transition(documentId, DocumentStatus.FAILED, 0, 1, System.currentTimeMillis(), code)
-        }
-        return Result.failure()
-    }
+    private suspend fun fail(documentId: String, code: String): Result =
+        RagImportFailureHandler.fail(applicationContext, documentId, code)
 
     companion object { private const val BATCH_SIZE = 4 }
 }

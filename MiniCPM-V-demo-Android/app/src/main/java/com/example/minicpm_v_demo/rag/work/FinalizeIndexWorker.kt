@@ -34,7 +34,11 @@ class FinalizeIndexWorker(appContext: Context, parameters: WorkerParameters) : C
         val chunks = chunkDao.findByDocument(documentId)
         if (chunks.isEmpty() || chunkDao.findChunksNeedingEmbedding(documentId, modelSha).isNotEmpty() ||
             chunks.any { it.embeddingState != ChunkEntity.EMBEDDING_READY }
-        ) return@withContext Result.failure()
+        ) return@withContext RagImportFailureHandler.fail(
+            applicationContext,
+            documentId,
+            "INDEX_FINALIZATION_FAILED",
+        )
         documentDao.transition(documentId, DocumentStatus.READY, chunks.size, chunks.size, System.currentTimeMillis())
         Result.success()
     }

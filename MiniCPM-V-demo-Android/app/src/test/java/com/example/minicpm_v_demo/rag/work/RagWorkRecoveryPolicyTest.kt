@@ -27,13 +27,30 @@ class RagWorkRecoveryPolicyTest {
             "running",
             RagWorkRecoveryPolicy.selectObservable(
                 listOf(
-                    Candidate("old", finished = true),
-                    Candidate("running", finished = false),
+                    Candidate("old", active = false, failed = false),
+                    Candidate("running", active = true, failed = false),
                 ),
-                Candidate::finished,
+                Candidate::active,
+                Candidate::failed,
             )?.id,
         )
     }
 
-    private data class Candidate(val id: String, val finished: Boolean)
+    @Test
+    fun `failed stage is selected after the remaining chain is blocked`() {
+        assertEquals(
+            "parse-failed",
+            RagWorkRecoveryPolicy.selectObservable(
+                listOf(
+                    Candidate("copy-succeeded", active = false, failed = false),
+                    Candidate("parse-failed", active = false, failed = true),
+                    Candidate("chunk-blocked", active = false, failed = false),
+                ),
+                Candidate::active,
+                Candidate::failed,
+            )?.id,
+        )
+    }
+
+    private data class Candidate(val id: String, val active: Boolean, val failed: Boolean)
 }

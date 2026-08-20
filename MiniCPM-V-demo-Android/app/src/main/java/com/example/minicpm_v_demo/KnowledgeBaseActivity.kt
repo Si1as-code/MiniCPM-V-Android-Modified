@@ -10,20 +10,30 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
+import com.example.minicpm_v_demo.rag.db.DocumentEntity
+import com.example.minicpm_v_demo.rag.db.DocumentStatus
 import com.example.minicpm_v_demo.rag.db.KnowledgeBaseEntity
-import com.example.minicpm_v_demo.rag.ui.KnowledgeBaseEntityFactory
 import com.example.minicpm_v_demo.rag.importer.DocumentImportQueue
 import com.example.minicpm_v_demo.rag.naming.KnowledgeBaseNamePolicy
+import com.example.minicpm_v_demo.rag.storage.RagDocumentRemovalService
+import com.example.minicpm_v_demo.rag.ui.FailedImportNotice
+import com.example.minicpm_v_demo.rag.ui.KnowledgeBaseDocumentPresentation
+import com.example.minicpm_v_demo.rag.ui.KnowledgeBaseEntityFactory
+import com.example.minicpm_v_demo.rag.work.RagImportFailureClassifier
+import com.example.minicpm_v_demo.rag.work.RagWorkContract
 import com.example.minicpm_v_demo.rag.work.WorkManagerRagWorkCoordinator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
-import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 
 class KnowledgeBaseActivity : StatusBarVisibleActivity() {
     private lateinit var listView: ListView
@@ -35,8 +45,12 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
     private var knowledgeBases = emptyList<KnowledgeBaseEntity>()
     private var selectedKnowledgeBaseId: String? = null
     private val selectedConversationKnowledgeBaseIds = linkedSetOf<String>()
+    private val failedImportNotices = linkedMapOf<String, FailedImportNotice>()
+    private val observedImportIds = mutableSetOf<String>()
     private var conversationId: Long = -1L
     private val conversationSelectionMode: Boolean get() = conversationId > 0
+    private val workManager by lazy { WorkManager.getInstance(this) }
+    private val workCoordinator by lazy { WorkManagerRagWorkCoordinator(workManager) }
 
     private val openDocuments = registerForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments(),
@@ -44,15 +58,41 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
         val knowledgeBaseId = selectedKnowledgeBaseId ?: return@registerForActivityResult
         if (uris.isEmpty()) return@registerForActivityResult
         lifecycleScope.launch {
-            val imported = withContext(Dispatchers.IO) {
+            val outcomes = withContext(Dispatchers.IO) {
                 val app = application as MiniCPMApplication
                 val queue = DocumentImportQueue(
                     contentResolver = contentResolver,
                     documentDao = app.ragDatabase.documentDao(),
-                    workCoordinator = WorkManagerRagWorkCoordinator(WorkManager.getInstance(this@KnowledgeBaseActivity)),
+                    workCoordinator = workCoordinator,
                 )
-                uris.count { uri -> runCatching { queue.enqueue(uri, knowledgeBaseId) }.isSuccess }
+                uris.map { uri ->
+                    runCatching { queue.enqueue(uri, knowledgeBaseId) }
+                        .fold(
+                            onSuccess = { ImportEnqueueOutcome.Queued(it) },
+                            onFailure = { error ->
+                                ImportEnqueueOutcome.Failed(
+                                    FailedImportNotice(
+                                        id = "enqueue-${UUID.randomUUID()}",
+                                        knowledgeBaseId = knowledgeBaseId,
+                                        displayName = uri.lastPathSegment?.substringAfterLast('/')
+                                            ?.takeIf(String::isNotBlank) ?: getString(R.string.rag_document_default_name),
+                                        reason = KnowledgeBaseDocumentPresentation.failureReason(
+                                            RagImportFailureClassifier.code(error),
+                                        ),
+                                    ),
+                                )
+                            },
+                        )
+                }
             }
+            outcomes.forEach { outcome ->
+                when (outcome) {
+                    is ImportEnqueueOutcome.Queued -> observeImport(outcome.documentId)
+                    is ImportEnqueueOutcome.Failed -> failedImportNotices[outcome.notice.id] = outcome.notice
+                }
+            }
+            requestRefresh()
+            val imported = outcomes.count { it is ImportEnqueueOutcome.Queued }
             Toast.makeText(
                 this@KnowledgeBaseActivity,
                 getString(R.string.rag_documents_queued, imported, uris.size),
@@ -71,16 +111,23 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
         ragSwitch = findViewById(R.id.switch_conversation_rag)
         conversationId = intent.getLongExtra(EXTRA_CONVERSATION_ID, -1L)
         findViewById<android.view.View>(R.id.btn_back).setOnClickListener { finish() }
-        adapter = KnowledgeBaseAdapter(this, onSelect = { knowledgeBase ->
-            if (conversationSelectionMode) {
-                if (!selectedConversationKnowledgeBaseIds.add(knowledgeBase.id)) {
-                    selectedConversationKnowledgeBaseIds.remove(knowledgeBase.id)
+        adapter = KnowledgeBaseAdapter(
+            this,
+            onSelect = { knowledgeBase ->
+                if (conversationSelectionMode) {
+                    if (!selectedConversationKnowledgeBaseIds.add(knowledgeBase.id)) {
+                        selectedConversationKnowledgeBaseIds.remove(knowledgeBase.id)
+                    }
+                } else {
+                    selectedKnowledgeBaseId = knowledgeBase.id
                 }
-            } else {
-                selectedKnowledgeBaseId = knowledgeBase.id
-            }
-            requestRefresh()
-        }, onDelete = ::showDeleteConfirmation, showDelete = !conversationSelectionMode)
+                requestRefresh()
+            },
+            onDelete = ::showDeleteConfirmation,
+            onDocumentLongPress = ::showDocumentDeleteConfirmation,
+            onDismissFailedImport = ::dismissFailedImport,
+            showDelete = !conversationSelectionMode,
+        )
         listView.adapter = adapter
         createButton.setOnClickListener { showCreateDialog() }
         importButton.setOnClickListener {
@@ -136,16 +183,36 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
 
     private suspend fun refreshList() {
         val app = application as MiniCPMApplication
-        val items = withContext(Dispatchers.IO) {
-            knowledgeBases.map { kb ->
+        val knowledgeBaseSnapshot = knowledgeBases
+        val selectedConversationSnapshot = selectedConversationKnowledgeBaseIds.toSet()
+        val selectedKnowledgeBaseSnapshot = selectedKnowledgeBaseId
+        val refreshed = withContext(Dispatchers.IO) {
+            val recoveredFailures = mutableListOf<FailedImportNotice>()
+            val items = knowledgeBaseSnapshot.map { kb ->
                 val documents = app.ragDatabase.documentDao().findByKnowledgeBase(kb.id)
+                val visibleDocuments = documents.filterNot { document ->
+                    if (document.status != DocumentStatus.FAILED) return@filterNot false
+                    val removed = runCatching {
+                        documentRemovalService(app).remove(document)
+                    }.isSuccess
+                    if (removed) {
+                        recoveredFailures += document.toFailureNotice()
+                    }
+                    removed
+                }
                 KnowledgeBaseListItem(
                     kb,
-                    documents,
-                    if (conversationSelectionMode) kb.id in selectedConversationKnowledgeBaseIds
-                    else kb.id == selectedKnowledgeBaseId,
+                    visibleDocuments,
+                    emptyList(),
+                    if (conversationSelectionMode) kb.id in selectedConversationSnapshot
+                    else kb.id == selectedKnowledgeBaseSnapshot,
                 )
             }
+            items to recoveredFailures
+        }
+        refreshed.second.forEach { failedImportNotices[it.id] = it }
+        val items = refreshed.first.map { item ->
+            item.copy(failedImports = failedImportNotices.values.filter { it.knowledgeBaseId == item.knowledgeBase.id })
         }
         adapter.submitItems(items)
         val empty = items.isEmpty()
@@ -154,6 +221,35 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
         importButton.isEnabled = if (conversationSelectionMode) {
             !ragSwitch.isChecked || selectedConversationKnowledgeBaseIds.isNotEmpty()
         } else selectedKnowledgeBaseId != null
+    }
+
+    private fun observeImport(documentId: String) {
+        if (!observedImportIds.add(documentId)) return
+        lifecycleScope.launch {
+            val state = workCoordinator.observe(documentId)
+                .filterNotNull()
+                .first { it.state in setOf(WorkInfo.State.SUCCEEDED, WorkInfo.State.FAILED, WorkInfo.State.CANCELLED) }
+            if (state.state == WorkInfo.State.FAILED) {
+                val failureId = state.failureDocumentId
+                val knowledgeBaseId = state.failureKnowledgeBaseId
+                val displayName = state.failureDisplayName
+                if (failureId != null && knowledgeBaseId != null && displayName != null) {
+                    failedImportNotices[failureId] = FailedImportNotice(
+                        id = failureId,
+                        knowledgeBaseId = knowledgeBaseId,
+                        displayName = displayName,
+                        reason = KnowledgeBaseDocumentPresentation.failureReason(state.failureErrorCode),
+                    )
+                    requestRefresh()
+                }
+            }
+            observedImportIds.remove(documentId)
+        }
+    }
+
+    private fun dismissFailedImport(notice: FailedImportNotice) {
+        failedImportNotices.remove(notice.id)
+        requestRefresh()
     }
 
     private fun configureMode() {
@@ -198,32 +294,71 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
             .show()
     }
 
+    private fun showDocumentDeleteConfirmation(document: DocumentEntity) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.rag_delete_document)
+            .setMessage(getString(R.string.rag_delete_document_confirm, document.displayName))
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.delete) { _, _ -> deleteDocument(document) }
+            .show()
+    }
+
+    private fun deleteDocument(document: DocumentEntity) {
+        lifecycleScope.launch {
+            val removed = withContext(Dispatchers.IO) {
+                runCatching {
+                    workManager.cancelUniqueWork(RagWorkContract.uniqueWorkName(document.id)).result.get()
+                    val app = application as MiniCPMApplication
+                    val current = app.ragDatabase.documentDao().findById(document.id)
+                    if (current != null) documentRemovalService(app).remove(current)
+                }.isSuccess
+            }
+            Toast.makeText(
+                this@KnowledgeBaseActivity,
+                if (removed) R.string.rag_document_deleted else R.string.rag_document_delete_failed,
+                Toast.LENGTH_SHORT,
+            ).show()
+            if (removed) requestRefresh()
+        }
+    }
+
     private fun deleteKnowledgeBase(knowledgeBase: KnowledgeBaseEntity) {
         lifecycleScope.launch {
             val app = application as MiniCPMApplication
-            withContext(Dispatchers.IO) {
-                val documents = app.ragDatabase.documentDao().findByKnowledgeBase(knowledgeBase.id)
-                val coordinator = WorkManagerRagWorkCoordinator(WorkManager.getInstance(this@KnowledgeBaseActivity))
-                documents.forEach { document ->
-                    coordinator.cancel(document.id).result.get()
-                    if (isSafePrivateFileName(document.privateFileName)) {
-                        val staging = com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
-                            .stagingDirectory(noBackupFilesDir)
-                        staging
-                            .resolve(document.privateFileName)
-                            .delete()
-                        com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
-                            .parsedBlockFile(staging, document.id)
-                            .delete()
+            val deleted = withContext(Dispatchers.IO) {
+                runCatching {
+                    val documents = app.ragDatabase.documentDao().findByKnowledgeBase(knowledgeBase.id)
+                    documents.forEach { document ->
+                        workManager.cancelUniqueWork(RagWorkContract.uniqueWorkName(document.id)).result.get()
+                        documentRemovalService(app).remove(document)
                     }
-                }
-                app.ragDatabase.knowledgeBaseDao().deleteById(knowledgeBase.id)
+                    check(app.ragDatabase.knowledgeBaseDao().deleteById(knowledgeBase.id) == 1)
+                }.isSuccess
+            }
+            if (!deleted) {
+                Toast.makeText(this@KnowledgeBaseActivity, R.string.rag_knowledge_base_delete_failed, Toast.LENGTH_SHORT)
+                    .show()
+                return@launch
             }
             if (selectedKnowledgeBaseId == knowledgeBase.id) selectedKnowledgeBaseId = null
+            failedImportNotices.entries.removeAll { it.value.knowledgeBaseId == knowledgeBase.id }
             Toast.makeText(this@KnowledgeBaseActivity, R.string.rag_knowledge_base_deleted, Toast.LENGTH_SHORT).show()
             loadKnowledgeBases()
         }
     }
+
+    private fun documentRemovalService(app: MiniCPMApplication): RagDocumentRemovalService =
+        RagDocumentRemovalService(
+            stagingDirectory = RagTempFileCleaner.stagingDirectory(noBackupFilesDir),
+            deleteRecord = app.ragDatabase.documentDao()::deleteById,
+        )
+
+    private fun DocumentEntity.toFailureNotice(): FailedImportNotice = FailedImportNotice(
+        id = id,
+        knowledgeBaseId = knowledgeBaseId,
+        displayName = displayName,
+        reason = KnowledgeBaseDocumentPresentation.failureReason(lastErrorCode),
+    )
 
     private fun showCreateDialog() {
         val input = EditText(this).apply { maxLines = 1; hint = getString(R.string.rag_knowledge_base_name_hint) }
@@ -280,7 +415,10 @@ class KnowledgeBaseActivity : StatusBarVisibleActivity() {
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         )
 
-        private fun isSafePrivateFileName(name: String): Boolean =
-            File(name).name == name && name.endsWith(".src.enc")
+    }
+
+    private sealed interface ImportEnqueueOutcome {
+        data class Queued(val documentId: String) : ImportEnqueueOutcome
+        data class Failed(val notice: FailedImportNotice) : ImportEnqueueOutcome
     }
 }

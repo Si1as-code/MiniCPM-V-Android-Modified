@@ -8,6 +8,7 @@ import java.io.IOException
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
 import org.junit.Before
@@ -110,6 +111,22 @@ class RagDatabaseDaoTest {
         assertTrue(database.documentDao().findByKnowledgeBase("kb-delete").isEmpty())
         assertTrue(database.chunkDao().findByDocument("doc-delete").isEmpty())
         assertTrue(database.chunkDao().searchReadyChunks("payroll", "kb-delete", 10).isEmpty())
+    }
+
+    @Test
+    fun deletingDocumentReleasesContentHashForARepeatedImport() = runBlocking {
+        val now = 1_723_200_000_000L
+        database.knowledgeBaseDao().insert(KnowledgeBaseEntity("kb-1", "Office", "office", now, now))
+        val first = document("first", DocumentStatus.READY, now).copy(sha256 = "c".repeat(64))
+        database.documentDao().upsert(first)
+        database.chunkDao().insertAll(listOf(chunk(31, "first", "first copy")))
+
+        assertEquals(1, database.documentDao().deleteById(first.id))
+        val repeated = document("second", DocumentStatus.QUEUED, now + 1).copy(sha256 = first.sha256)
+        database.documentDao().upsert(repeated)
+
+        assertNotNull(database.documentDao().findById(repeated.id))
+        assertTrue(database.chunkDao().findByDocument(first.id).isEmpty())
     }
 
     @Test
