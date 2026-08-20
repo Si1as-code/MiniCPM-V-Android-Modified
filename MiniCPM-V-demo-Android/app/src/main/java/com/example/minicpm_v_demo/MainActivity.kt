@@ -40,6 +40,8 @@ import com.example.minicpm_v_demo.rag.guard.ExperimentalGroundednessCalibration
 import com.example.minicpm_v_demo.rag.guard.GroundednessClassifier
 import com.example.minicpm_v_demo.rag.guard.RagReviewedGenerator
 import com.example.minicpm_v_demo.rag.guard.ReviewedRagGeneration
+import com.example.minicpm_v_demo.rag.ui.CitationSourceResolution
+import com.example.minicpm_v_demo.rag.ui.CitationSourceResolver
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyLogFormatter
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyTrace
 import com.example.minicpm_v_demo.rag.telemetry.RagPhase
@@ -224,17 +226,49 @@ class MainActivity : StatusBarVisibleActivity() {
     }
 
     private fun showCitationDetails(citation: CitationRef) {
-        val details = getString(
-            R.string.rag_source_detail_body,
-            citation.documentNameSnapshot,
-            citation.locator,
-            citation.quotedText,
-        )
-        AlertDialog.Builder(this)
-            .setTitle(getString(R.string.rag_source_detail_title, citation.sourceId))
-            .setMessage(details)
-            .setPositiveButton(R.string.confirm, null)
-            .show()
+        lifecycleScope.launch {
+            val resolution = withContext(Dispatchers.IO) {
+                runCatching {
+                    val database = (application as MiniCPMApplication).ragDatabase
+                    CitationSourceResolver.resolve(
+                        citation = citation,
+                        document = database.documentDao().findById(citation.documentId),
+                        chunk = database.chunkDao().findByIds(listOf(citation.chunkId)).singleOrNull(),
+                    )
+                }.getOrElse {
+                    CitationSourceResolution.Unavailable(
+                        documentNameSnapshot = citation.documentNameSnapshot,
+                        locator = citation.locator,
+                        archivedExcerpt = citation.quotedText,
+                    )
+                }
+            }
+            val details = when (resolution) {
+                is CitationSourceResolution.Available -> getString(
+                    R.string.rag_source_available_body,
+                    resolution.documentName,
+                    resolution.locator,
+                    resolution.indexedText,
+                )
+                is CitationSourceResolution.Deleted -> getString(
+                    R.string.rag_source_deleted_body,
+                    resolution.documentNameSnapshot,
+                    resolution.locator,
+                    resolution.archivedExcerpt,
+                )
+                is CitationSourceResolution.Unavailable -> getString(
+                    R.string.rag_source_unavailable_body,
+                    resolution.documentNameSnapshot,
+                    resolution.locator,
+                    resolution.archivedExcerpt,
+                )
+            }
+            AlertDialog.Builder(this@MainActivity)
+                .setTitle(getString(R.string.rag_source_detail_title, citation.sourceId))
+                .setMessage(details)
+                .setPositiveButton(R.string.confirm, null)
+                .show()
+        }
     }
 
     private fun loadConversationArchive(): ConversationArchive? = try {

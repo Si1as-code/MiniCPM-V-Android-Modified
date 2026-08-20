@@ -190,8 +190,8 @@
     "semantic_hash": "842a5ffe0e6516e3c43dbe86b6f8f479"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt": {
-    "mtime": 1787117641.114612,
-    "ast_hash": "1af91e30a46def9e96c2e294eb0497c6",
+    "mtime": 1787206986.1829524,
+    "ast_hash": "5678f0b64d0740e6694c409ebe093d77",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/MarkdownEscape.kt": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": "6112ddff6d42aba66988515d27814b46"
   },
   "docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md": {
-    "mtime": 1787118321.5289564,
-    "ast_hash": "8cf1298146a449d9ee08558a2ff14fc2",
+    "mtime": 1787207086.166155,
+    "ast_hash": "65af4f10b0609b2e7f6e25afe745bde9",
     "semantic_hash": ""
   },
   "tools/rag_guard/OFFICE_QUALITY_GATE.md": {
@@ -1330,8 +1330,23 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-08-19-rag-document-delete-and-failure-dismiss.md": {
-    "mtime": 1787122833.9160738,
-    "ast_hash": "1683d86c807c7d65f0b0fd19a100598c",
+    "mtime": 1787207086.1641386,
+    "ast_hash": "7d72d6e9d8fee40f54fc07f3004039f6",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/ui/CitationSourceResolver.kt": {
+    "mtime": 1787206725.9941428,
+    "ast_hash": "e6984a11c1224f7771cecd38d6c79b86",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/ui/CitationSourceResolverTest.kt": {
+    "mtime": 1787206725.993129,
+    "ast_hash": "9c41589fc30e2f1b5372ec963e8ddd5f",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-20-rag-source-lifecycle.md": {
+    "mtime": 1787207482.9587033,
+    "ast_hash": "a563e4de9bf4357ec9b5b7143a59452f",
     "semantic_hash": ""
   }
 }

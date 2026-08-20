@@ -8,6 +8,8 @@
 
 **Tech Stack:** Kotlin、Android ListView/Material Components、Room、WorkManager、JUnit4、AndroidX instrumented tests。
 
+> **Completed 2026-08-20:** 代码、JVM 回归、真机 Room 级联/同内容重传、成功文档长按删除、失败提示左滑移除和同名重传均已验收；实现提交为 `9b229c220690123af5ec00b37742d110f9bcc18b`。
+
 ---
 
 ### Task 1: 固定安全清理和同名重传的数据行为

@@ -1,30 +1,30 @@
 # Graph Report - MiniCPM-V-demo-Android  (2026-08-20)
 
 ## Corpus Check
-- 263 files · ~106,713 words
+- 266 files · ~107,598 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2626 nodes · 5229 edges · 193 communities (122 shown, 71 thin omitted)
+- 2648 nodes · 5277 edges · 191 communities (121 shown, 70 thin omitted)
 - Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 323 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b2a79c26`
+- Built from commit: `9b229c22`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - MainActivity
-- ValueError
+- build_multisource_dataset.py
 - llama_jni.cpp
 - KnowledgeBaseActivity
-- .syntheticOfficeSuiteProducesVersionedThresholdsOnRealE5AndFts
+- RetrievalCalibrationKey
 - RagPhase
 - EncryptedFileStore
 - LlamaEngine
 - ImportCopyWorker.kt
-- RagCoordinator.kt
+- .plan
 - train.py
 - ModelDownloadService
 - RagMigrations
@@ -51,7 +51,7 @@
 - RagGuardInstrumentedTest
 - .refreshInputControls
 - RagQueryRouterTest
-- RagImportCancelReceiver.kt
+- RagDatabase
 - E5Embedder
 - fail
 - ConversationStore
@@ -60,7 +60,7 @@
 - RagRetrievalRequest
 - ParserInput
 - RagContextBudgeter
-- TtsEngine
+- ConversationRagDao
 - VisualContextPolicy
 - ChatAdapter
 - ImageSourceCache
@@ -69,18 +69,17 @@
 - IOException
 - ConversationArchiveCodec
 - Context
-- score_office_holdout.py
+- ValueError
 - Java_com_example_minicpm_1v_1demo_TtsEngine_nativeTtsGenerate
-- Result
+- CitationRef
 - BlockStructure
 - AppLanguage
-- RagReviewedGenerator
+- EmbeddingModelManager
 - ParserError
 - XlsxParser
 - AnswerabilityClassifier
 - ChunkDao
 - ChunkWorker.kt
-- .onCreate
 - MiniCPMApplication
 - RuntimeException
 - FakeStateQueries
@@ -88,13 +87,13 @@
 - LocalGuardReplyPolicy.kt
 - TokenSpan
 - format_model_input
-- RagOutputReviewAction
+- RagGuardClassifier.kt
 - AnswerabilityModelManifestTest
 - RagDocumentRemovalService
 - ContentSafetyPolicyTest
 - Bounded Mobile RAG Context
-- AudioRecorder
-- OriginalImageViewerActivity.kt
+- build_dataset
+- RagSchemaV2DaoTest
 - DocumentEntity
 - RagPromptAssembler
 - VisualContextPolicy.kt
@@ -108,14 +107,14 @@
 - LlamaVisualCheckpointInstrumentedTest
 - RagGuardModelManifest
 - ChunkPrerequisiteDecision
-- LlamaEngine.kt
+- RagWorkRecoveryTest
 - ContentSafetyDecision
 - CalibrationCategory
 - VisualResponseAssertion
 - DocumentImportQueue
 - DetectedFileType
-- StatusBarVisibleActivity
-- FloatVectorCodec
+- .onCreate
+- CitationSourceResolverTest
 - SyntheticOfficeCalibrationCorpus.kt
 - ContentSafetyPolicy.kt
 - ExifOrientationTransform
@@ -126,8 +125,8 @@
 - FtsMatchInfoTest
 - RAG Guard 中英文多来源训练集 v3
 - ContentDisplayAction
-- CascadedEvidenceAcceptancePolicy
-- .initEngine
+- RagEvidenceAcceptancePolicy
+- .handleSelectedVideo
 - ImageDecodePolicyTest
 - LlamaCheckpointInstrumentedTest
 - ConfirmationDecision
@@ -137,12 +136,10 @@
 - ByteBuffer
 - .maskedMeanAndNormalize
 - KnowledgeBaseDocumentPresentation
-- ExactVectorBufferTest
-- .createWelcomeMessage
+- RetrievalCalibrationInstrumentedTest.kt
 - KnowledgeBaseAdapter.kt
 - WelcomeSuggestionMode
 - RagGuardInferenceContractTest
-- FinalizeIndexWorker.kt
 - EvidenceReducerTest
 - ExactAnchorMatcherTest
 - RagVisualGroundingPolicyTest
@@ -152,7 +149,7 @@
 - LocalContentSafetyClassifier
 - CpuFeatures
 - VisualPromptDecision
-- RagDocumentArtifactCleanerTest
+- RagTurnFailure
 - SafeFtsQuery
 - RAG 文档删除与失败提示 Implementation Plan
 - RagQueryFeatureExtractor
@@ -163,13 +160,13 @@
 - RagDaos.kt
 - BuildDatasetTest
 - MainActivityUiTest
-- EmbedWorker.kt
+- RAG Source Lifecycle Implementation Plan
 - PrivacyDataType
 - CjkBigramEncoder
 - Utf8TokenOffsets
 - KnowledgeBaseDocumentPresentationTest
 - CitationValidator
-- WelcomeAction
+- RagPromptTokenCounter
 - CjkBigramEncoderTest
 - RagLimitsTest
 - RagTempFileCleanerTest
@@ -188,10 +185,9 @@
 - CameraFileProviderTest
 - CheckpointTestHostActivityInstrumentedTest
 - ExampleInstrumentedTest
-- CancelImportWorker.kt
+- ModelInfo
 - MarkdownEscape
 - ModelDownloadPromptPolicy
-- CitationValidatorTest
 - AiMessageEditAffordanceTest
 - ExampleUnitTest
 - ChunkIdentityTest
@@ -202,17 +198,16 @@
 - Recoverable Indexing Worker Chain
 - Synthetic Guard Dataset
 - HorizontalSwipeDismissPolicyTest
-- RagDocumentStageResourcesTest
 
 ## God Nodes (most connected - your core abstractions)
 1. `MainActivity` - 95 edges
 2. `LlamaEngine` - 86 edges
 3. `RetrievedChunk` - 68 edges
-4. `DocumentStatus` - 61 edges
-5. `TtsActivity` - 35 edges
-6. `MiniCPMApplication` - 34 edges
-7. `KnowledgeBaseEntity` - 32 edges
-8. `DocumentEntity` - 32 edges
+4. `DocumentStatus` - 63 edges
+5. `DocumentEntity` - 36 edges
+6. `TtsActivity` - 35 edges
+7. `MiniCPMApplication` - 34 edges
+8. `KnowledgeBaseEntity` - 32 edges
 9. `KnowledgeBaseActivity` - 29 edges
 10. `PendingImageViewModel` - 29 edges
 
@@ -236,15 +231,15 @@
 - **Production RAG Guard Qualification** — minicpm_v_apps_minicpm_v_demo_android_docs_execution_evidence_rag_retrieval_calibration_20260817_answerability_cascade, minicpm_v_apps_minicpm_v_demo_android_tools_rag_guard_office_quality_gate_office_quality_gate, minicpm_v_apps_minicpm_v_demo_android_tools_rag_guard_training_quantized_onnx_export [INFERRED 0.85]
 - **Local RAG Evidence Lifecycle** — minicpm_v_apps_minicpm_v_demo_android_docs_architecture_adr_001_local_rag_stack_local_rag_stack, minicpm_v_apps_minicpm_v_demo_android_docs_architecture_adr_001_local_rag_stack_ephemeral_rag_evidence, minicpm_v_apps_minicpm_v_demo_android_docs_superpowers_plans_2026_08_14_android_rag_low_latency_refactor_native_checkpoint_transaction [INFERRED 0.85]
 
-## Communities (193 total, 71 thin omitted)
+## Communities (191 total, 70 thin omitted)
 
 ### Community 0 - "MainActivity"
-Cohesion: 0.10
-Nodes (14): Bitmap, ImageView, Job, RecyclerView, TextInputEditText, TextView, Uri, View (+6 more)
+Cohesion: 0.12
+Nodes (12): ImageView, Job, RecyclerView, TextInputEditText, TextView, View, MainActivity, plainModelPromptOrNull() (+4 more)
 
-### Community 1 - "ValueError"
-Cohesion: 0.06
-Nodes (74): _base_case(), build_dataset(), main(), Path, Build deterministic, privacy-safe synthetic corpora for the two RAG guard heads., _row(), _split(), _write_jsonl() (+66 more)
+### Community 1 - "build_multisource_dataset.py"
+Cohesion: 0.07
+Nodes (65): _balanced(), build_balanced_rows(), _capped_documents(), _capped_prompts(), _clean(), _conversation_rows(), CorpusExample, _deduplicate_examples() (+57 more)
 
 ### Community 2 - "llama_jni.cpp"
 Cohesion: 0.08
@@ -254,25 +249,25 @@ Nodes (71): assistant_turn_prefix(), chat_add_and_format(), jint, JNIEnv, JNIEXP
 Cohesion: 0.16
 Nodes (10): Failed, ImportEnqueueOutcome, KnowledgeBaseActivity, Bundle, TextView, Queued, FailedImportNotice, Button (+2 more)
 
-### Community 4 - ".syntheticOfficeSuiteProducesVersionedThresholdsOnRealE5AndFts"
-Cohesion: 0.08
-Nodes (13): T, RetrievalCalibrationInstrumentedTest, CalibratedEvidenceAcceptancePolicy, CurrentRetrievalCalibration, ExactAnchorMatcher, RetrievalCalibrationKey, RetrievalCalibrationProfile, RetrievalCalibrationMetrics (+5 more)
+### Community 4 - "RetrievalCalibrationKey"
+Cohesion: 0.11
+Nodes (11): CalibratedEvidenceAcceptancePolicy, CurrentRetrievalCalibration, ExactAnchorMatcher, RetrievalCalibrationKey, RetrievalCalibrationProfile, RetrievalCalibrationMetrics, RetrievalCalibrationObservation, RetrievalCalibrationResult (+3 more)
 
 ### Community 5 - "RagPhase"
 Cohesion: 0.07
 Nodes (23): MonotonicClock, RagLatencyLogFormatter, RagLatencySnapshot, RagLatencyTrace, RagPhase, CHECKPOINT_RESTORE, CHECKPOINT_SAVE, DENSE (+15 more)
 
 ### Community 6 - "EncryptedFileStore"
-Cohesion: 0.07
-Nodes (17): ConsumerProbeException, FailingInputStream, ByteArray, Context, RagEncryptionTest, EncryptedFileStore, ByteArray, T (+9 more)
+Cohesion: 0.10
+Nodes (13): ConsumerProbeException, FailingInputStream, ByteArray, Context, RagEncryptionTest, EncryptedFileStore, ByteArray, T (+5 more)
 
 ### Community 8 - "ImportCopyWorker.kt"
 Cohesion: 0.11
 Nodes (19): CopiedSource, DocumentImporter, DocumentImportError, CANCELLED, DECLARATION_MISMATCH, DUPLICATE_CONTENT, EMPTY_SOURCE, PERSIST_PERMISSION_DENIED (+11 more)
 
-### Community 9 - "RagCoordinator.kt"
-Cohesion: 0.07
-Nodes (26): BasicRagEvidenceAcceptancePolicy, Disabled, Failed, IdentityRagEvidenceReducer, Indexing, ModelRequired, NoEvidence, NoRetrieval (+18 more)
+### Community 9 - ".plan"
+Cohesion: 0.14
+Nodes (10): Disabled, Failed, Indexing, NoEvidence, NoRetrieval, NoSelection, RagPromptTokenCounter, RagSelectionState (+2 more)
 
 ### Community 10 - "train.py"
 Cohesion: 0.09
@@ -291,24 +286,24 @@ Cohesion: 0.08
 Nodes (14): ChatInputControls, Empty, PendingImageCancellationDisplay, CLEARING, HIDDEN, PendingImageCancellationMode, CONTEXT_RESET, USER_REMOVE (+6 more)
 
 ### Community 14 - "quality_gate.py"
-Cohesion: 0.15
-Nodes (22): _answerability_metrics(), assert_document_isolation(), _binary_metrics(), evaluate_quality_gate(), _groundedness_metrics(), _load_document_ids(), load_scored_jsonl(), main() (+14 more)
+Cohesion: 0.16
+Nodes (21): _answerability_metrics(), assert_document_isolation(), _binary_metrics(), evaluate_quality_gate(), _groundedness_metrics(), _load_document_ids(), load_scored_jsonl(), main() (+13 more)
 
 ### Community 15 - "PendingImageViewModel"
 Cohesion: 0.13
 Nodes (15): AndroidViewModel, Clearing, Empty, Error, Flow, Job, StateFlow, Uri (+7 more)
 
 ### Community 16 - "DocumentStatus"
-Cohesion: 0.06
-Nodes (23): DocumentStatus, CANCELLED, CHUNKING, COPYING, DELETING, EMBEDDING, FAILED, INDEXING (+15 more)
+Cohesion: 0.05
+Nodes (24): DocumentStatus, CANCELLED, CHUNKING, COPYING, DELETING, EMBEDDING, FAILED, INDEXING (+16 more)
 
 ### Community 17 - "ModelManagerActivity"
-Cohesion: 0.14
-Nodes (11): RecyclerView, TextView, ViewGroup, ModelAdapter, ViewHolder, Bundle, LinearProgressIndicator, MaterialButton (+3 more)
+Cohesion: 0.08
+Nodes (19): RecyclerView, TextView, ViewGroup, ModelAdapter, ViewHolder, Bundle, LinearProgressIndicator, MaterialButton (+11 more)
 
 ### Community 18 - "RetrievedChunk"
 Cohesion: 0.12
-Nodes (9): GroundednessLabel, GROUNDED, PARTIAL, UNGROUNDED, RagGuardClassifier, LongArray, RagGuardInput, RetrievedChunk (+1 more)
+Nodes (6): RagGuardClassifier, LongArray, RagGuardInput, RetrievedChunk, CitationValidatorTest, RagPromptAssemblerTest
 
 ### Community 20 - "RagTurnTransaction"
 Cohesion: 0.18
@@ -327,16 +322,16 @@ Cohesion: 0.26
 Nodes (5): ChunkConfig, ChunkDraft, DocumentChunker, ParsedBlock, DocumentChunkerTest
 
 ### Community 24 - "TtsActivity"
-Cohesion: 0.15
-Nodes (10): IntArray, Job, LinearProgressIndicator, MaterialButton, TextInputEditText, TextView, View, TtsActivity (+2 more)
+Cohesion: 0.06
+Nodes (24): AudioRecorder, ByteArray, Bundle, IntArray, Job, LinearProgressIndicator, MaterialButton, TextInputEditText (+16 more)
 
 ### Community 25 - "WorkManagerRagWorkCoordinator"
-Cohesion: 0.21
-Nodes (6): Flow, RagWorkCoordinator, RagWorkUiState, WorkManagerRagWorkCoordinator, RagWorkRecovery, Operation
+Cohesion: 0.20
+Nodes (9): Context, Intent, RagImportCancelReceiver, Flow, RagWorkCoordinator, RagWorkUiState, WorkManagerRagWorkCoordinator, BroadcastReceiver (+1 more)
 
 ### Community 26 - "KnowledgeBaseEntity"
-Cohesion: 0.05
-Nodes (14): RagDatabaseDaoTest, RagSchemaV2DaoTest, RagWorkRecoveryTest, ConversationRagDao, KnowledgeBaseDao, RagDatabase, ChunkFtsEntity, CitationEntity (+6 more)
+Cohesion: 0.14
+Nodes (5): RagDatabaseDaoTest, KnowledgeBaseDao, KnowledgeBaseEntity, KnowledgeBaseEntityFactory, E5Tokenizer
 
 ### Community 27 - "PptxParser"
 Cohesion: 0.27
@@ -347,44 +342,44 @@ Cohesion: 0.28
 Nodes (10): Attempt, Failure, HybridRetriever, T, LexicalEvidenceRetriever, LexicalRetrievedChunk, Success, FakeDense (+2 more)
 
 ### Community 29 - "LlamaState"
-Cohesion: 0.17
-Nodes (12): Error, Generating, Initialized, Initializing, LlamaState, LoadingModel, ModelReady, PrefillingImage (+4 more)
+Cohesion: 0.10
+Nodes (16): Error, Generating, Initialized, Initializing, Flow, StateFlow, LlamaState, LoadingModel (+8 more)
 
 ### Community 30 - "AnswerabilityVerdict"
 Cohesion: 0.13
 Nodes (9): AnswerabilityLabel, PARTIAL, SUPPORTED, UNSUPPORTED, AnswerabilityVerdict, RagGuardClassifier, RagGuardContractTest, RagGuardClassifier (+1 more)
 
 ### Community 31 - "GroundednessVerdict"
-Cohesion: 0.19
-Nodes (9): GroundednessVerdict, CurrentGroundednessCalibration, ExperimentalGroundednessCalibration, GroundednessCalibrationProfile, GroundednessClassifier, RagReviewedGenerationTest, GroundednessClassifier, GroundednessClassifier (+1 more)
+Cohesion: 0.12
+Nodes (15): GroundednessVerdict, Accepted, ClassifierIdentityMismatchException, CurrentGroundednessCalibration, EmptyVisibleAnswerException, ExperimentalGroundednessCalibration, FallbackToNormalGeneration, GroundednessCalibrationProfile (+7 more)
 
 ### Community 32 - "Fixture"
-Cohesion: 0.15
-Nodes (6): RagEvidenceBudget, SourceCountRagEvidenceBudgeter, Fixture, RagPromptTokenCounter, RagCoordinatorTest, RagPromptTokenCounter
+Cohesion: 0.17
+Nodes (5): RagEvidenceBudget, Fixture, RagPromptTokenCounter, RagCoordinatorTest, RagPromptTokenCounter
 
 ### Community 34 - ".refreshInputControls"
-Cohesion: 0.15
-Nodes (3): RagPromptTokenCounter, RagPromptTokenCounter, RevealResponse
+Cohesion: 0.21
+Nodes (4): PendingPrivacyAction, RevealResponse, SubmitPrompt, GroundednessClassifier
 
 ### Community 35 - "RagQueryRouterTest"
 Cohesion: 0.17
 Nodes (8): RagQueryRoute, COMPLEX_RETRIEVAL, NO_RETRIEVAL, SINGLE_RETRIEVAL, RagQueryRouter, RagRouteInput, RagQueryRouterTest, RouteCase
 
-### Community 36 - "RagImportCancelReceiver.kt"
-Cohesion: 0.53
-Nodes (4): Context, Intent, RagImportCancelReceiver, BroadcastReceiver
+### Community 36 - "RagDatabase"
+Cohesion: 0.12
+Nodes (7): T, RetrievalCalibrationInstrumentedTest, RagDatabase, RagDatabaseFactory, LexicalScore, RoomLexicalEvidenceRetriever, RoomDatabase
 
 ### Community 37 - "E5Embedder"
-Cohesion: 0.07
-Nodes (16): E5Embedder, E5InputKind, PASSAGE, QUERY, Encoded, AutoCloseable, E5Tokenizer, FloatArray (+8 more)
+Cohesion: 0.06
+Nodes (22): E5Embedder, Encoded, AutoCloseable, E5Tokenizer, FloatArray, LongArray, E5ModelSpec, EmbeddingModelManifest (+14 more)
 
 ### Community 38 - "fail"
 Cohesion: 0.20
 Nodes (6): fail(), ParsedBlockCodec, ByteArray, SafeOoxmlReader, LocatedLine, StrictTextSource
 
 ### Community 39 - "ConversationStore"
-Cohesion: 0.09
-Nodes (6): CitationRef, Conversation, ConversationStore, ModelHistoryText, TimelineMutation, ConversationStoreTest
+Cohesion: 0.10
+Nodes (5): Conversation, ConversationStore, ModelHistoryText, TimelineMutation, ConversationStoreTest
 
 ### Community 40 - "VisualResponseDecision"
 Cohesion: 0.25
@@ -396,7 +391,7 @@ Nodes (3): Context, RagImportNotifications, ForegroundInfo
 
 ### Community 42 - "RagRetrievalRequest"
 Cohesion: 0.15
-Nodes (12): EmbeddingCorpusKey, ExactVectorBuffer, ExactVectorBufferCache, FloatArray, PartitionedExactVectorRanker, Evidence, RagEvidenceRetriever, RagRetrievalOutcome (+4 more)
+Nodes (13): EmbeddingCorpusKey, ExactVectorBuffer, ExactVectorBufferCache, FloatArray, PartitionedExactVectorRanker, Evidence, ModelRequired, RagEvidenceRetriever (+5 more)
 
 ### Community 43 - "ParserInput"
 Cohesion: 0.08
@@ -406,17 +401,17 @@ Nodes (13): CsvParser, DocumentParser, ParserInput, HtmlParser, MarkdownParser, 
 Cohesion: 0.20
 Nodes (7): RagPromptTokenCounter, RagContextBudgeter, RagPromptTokenCounter, RagEvidenceBudgeter, RagPromptTokenCounter, RagContextBudgeterTest, WordCounter
 
-### Community 45 - "TtsEngine"
-Cohesion: 0.15
-Nodes (10): Error, Generating, Initializing, Context, StateFlow, LoadingModel, Ready, TtsEngine (+2 more)
+### Community 45 - "ConversationRagDao"
+Cohesion: 0.16
+Nodes (5): ConversationRagDao, ChunkFtsEntity, CitationEntity, ConversationKnowledgeBaseCrossRef, ConversationRagStateEntity
 
 ### Community 46 - "VisualContextPolicy"
 Cohesion: 0.15
 Nodes (3): StateFlow, VisualContextPolicy, VisualContextPolicyTest
 
 ### Community 47 - "ChatAdapter"
-Cohesion: 0.10
-Nodes (14): AiMessageViewHolder, ChatAdapter, ImageView, LinearProgressIndicator, MaterialButton, RecyclerView, TextView, View (+6 more)
+Cohesion: 0.07
+Nodes (21): AiMessageViewHolder, ChatAdapter, DiffCallback, Bitmap, ImageView, LinearProgressIndicator, MaterialButton, RecyclerView (+13 more)
 
 ### Community 48 - "ImageSourceCache"
 Cohesion: 0.18
@@ -434,21 +429,17 @@ Nodes (8): HybridRetrievalUnavailableException, IllegalStateException, Accumulat
 Cohesion: 0.17
 Nodes (9): CachedImageSource, ImageSourceTooLargeException, ImageSourceUnreadableException, ImageMetadata, Bitmap, RagImportFailureClassifier, RagImportFailureClassifierTest, FileOutputStream (+1 more)
 
-### Community 53 - "Context"
-Cohesion: 0.17
-Nodes (3): Context, Context, ModelInfo
-
-### Community 54 - "score_office_holdout.py"
+### Community 54 - "ValueError"
 Cohesion: 0.20
-Nodes (15): _load_jsonl(), _load_manifest(), main(), _parse_args(), Namespace, Path, Score redacted office holdout rows with the pinned ONNX guard package., score_rows() (+7 more)
+Nodes (17): validate_redacted_text(), _load_jsonl(), _load_manifest(), main(), _parse_args(), Namespace, Path, Score redacted office holdout rows with the pinned ONNX guard package. (+9 more)
 
 ### Community 55 - "Java_com_example_minicpm_1v_1demo_TtsEngine_nativeTtsGenerate"
 Cohesion: 0.30
 Nodes (14): jint, JNIEnv, JNIEXPORT, jstring, string, vector, Java_com_example_minicpm_1v_1demo_TtsEngine_nativeInitOmni(), Java_com_example_minicpm_1v_1demo_TtsEngine_nativeOmniFree() (+6 more)
 
-### Community 56 - "Result"
-Cohesion: 0.47
-Nodes (4): Context, Uri, Result, VideoFrameExtractor
+### Community 56 - "CitationRef"
+Cohesion: 0.24
+Nodes (6): CitationRef, Available, CitationSourceResolution, CitationSourceResolver, Deleted, Unavailable
 
 ### Community 57 - "BlockStructure"
 Cohesion: 0.14
@@ -458,9 +449,9 @@ Nodes (8): Handler, Attributes, CharArray, BlockStructure, CODE, HEADING, PARAGR
 Cohesion: 0.31
 Nodes (6): AppLanguage, EN, ZH, Activity, Context, LocaleManager
 
-### Community 59 - "RagReviewedGenerator"
-Cohesion: 0.25
-Nodes (7): Accepted, ClassifierIdentityMismatchException, EmptyVisibleAnswerException, FallbackToNormalGeneration, IllegalStateException, RagReviewedGenerator, ReviewedRagGeneration
+### Community 59 - "EmbeddingModelManager"
+Cohesion: 0.19
+Nodes (4): EmbeddingModelManager, AutoCloseable, AutoCloseable, RagGuardModelManager
 
 ### Community 60 - "ParserError"
 Cohesion: 0.09
@@ -479,16 +470,16 @@ Cohesion: 0.15
 Nodes (5): RagTempFileCleaner, E5TokenizerRegistry, E5Tokenizer, ChunkWorker, CoroutineWorker
 
 ### Community 66 - "MiniCPMApplication"
-Cohesion: 0.13
-Nodes (12): E5EmbedderInstrumentedTest, HybridRetrieverInstrumentedTest, MiniCPMApplication, DatabaseRagTurnStateSource, RagCoordinator, RagPromptBuilder, RagRunIdFactory, RoomRagStateQueries (+4 more)
+Cohesion: 0.10
+Nodes (19): E5EmbedderInstrumentedTest, HybridRetrieverInstrumentedTest, MiniCPMApplication, DatabaseRagTurnStateSource, IdentityRagEvidenceReducer, RagCoordinator, RagEvidenceReducer, RagPromptBuilder (+11 more)
 
 ### Community 67 - "RuntimeException"
 Cohesion: 0.32
 Nodes (4): FileSource, ByteArray, RaceWinner, RuntimeException
 
 ### Community 69 - "ChatMessage"
-Cohesion: 0.19
-Nodes (8): DiffCallback, Bitmap, AiMessage, ChatMessage, confirmedForSubmission(), UserMessage, WelcomeCard, DiffUtil
+Cohesion: 0.25
+Nodes (5): AiMessage, ChatMessage, confirmedForSubmission(), UserMessage, WelcomeCard
 
 ### Community 70 - "LocalGuardReplyPolicy.kt"
 Cohesion: 0.18
@@ -502,9 +493,9 @@ Nodes (8): E5Tokenizer, TokenSpan, validatedTokenSpans(), CodePointTokenizer, E5
 Cohesion: 0.25
 Nodes (9): _softmax(), _task_metrics(), TrainingDataTest, expected_calibration_error(), format_model_input(), load_jsonl(), macro_f1(), Path (+1 more)
 
-### Community 73 - "RagOutputReviewAction"
-Cohesion: 0.33
-Nodes (5): RagOutputReviewAction, ACCEPT, REGENERATE, REJECT_WITH_LOCAL_REPLY, RagOutputReviewPolicy
+### Community 73 - "RagGuardClassifier.kt"
+Cohesion: 0.18
+Nodes (9): GroundednessLabel, GROUNDED, PARTIAL, UNGROUNDED, RagOutputReviewAction, ACCEPT, REGENERATE, REJECT_WITH_LOCAL_REPLY (+1 more)
 
 ### Community 74 - "AnswerabilityModelManifestTest"
 Cohesion: 0.24
@@ -518,17 +509,13 @@ Nodes (5): RagDocumentRemovalService, Context, RagImportFailureHandler, RagDocum
 Cohesion: 0.18
 Nodes (12): Bounded Vector Backend, Guard v3 Training Result, Reviewed Generation Transaction, Sentence and Token Budget, Bounded Mobile RAG Context, Grounded RAG Fallback Policy, Guard v3 Release Boundary, Local RAG Experimental Pipeline (+4 more)
 
-### Community 78 - "AudioRecorder"
-Cohesion: 0.33
-Nodes (3): AudioRecorder, ByteArray, AudioRecord
-
-### Community 79 - "OriginalImageViewerActivity.kt"
-Cohesion: 0.29
-Nodes (6): Bitmap, Bundle, Context, Intent, OriginalImageViewerActivity, ImageButton
+### Community 78 - "build_dataset"
+Cohesion: 0.39
+Nodes (8): _base_case(), build_dataset(), main(), Path, Build deterministic, privacy-safe synthetic corpora for the two RAG guard heads., _row(), _split(), _write_jsonl()
 
 ### Community 80 - "DocumentEntity"
-Cohesion: 0.12
-Nodes (6): DocumentDao, DocumentEntity, RagDocumentArtifactCleaner, RagImportFailureData, RagImportFailureDataTest, Data
+Cohesion: 0.10
+Nodes (7): DocumentDao, DocumentEntity, RagDocumentArtifactCleaner, RagImportFailureData, RagDocumentArtifactCleanerTest, RagImportFailureDataTest, Data
 
 ### Community 81 - "RagPromptAssembler"
 Cohesion: 0.24
@@ -543,7 +530,7 @@ Cohesion: 0.20
 Nodes (11): Android Build and Installation Rules, Graphify Completion Check, Always-On Graphify Guidance, Graphify Incremental Update, Graphify Scoped Query Protocol, Graphify Semantic Refresh Requirement, Stable Application Signing, Android ABI Configuration (+3 more)
 
 ### Community 84 - "FtsMatchInfo"
-Cohesion: 0.36
+Cohesion: 0.31
 Nodes (4): FtsMatchInfo, FtsMatchInfoFormatException, ByteArray, IllegalArgumentException
 
 ### Community 85 - "OnnxRagGuardClassifier"
@@ -570,10 +557,6 @@ Nodes (5): CurrentRagGuardModel, RagGuardModelFile, RagGuardModelManifest, RagGu
 Cohesion: 0.20
 Nodes (7): ChunkPrerequisiteDecision, MODEL_REQUIRED, READY, TOKENIZER_MISMATCH, ChunkWorkPolicy, TokenizerIdentity, ChunkWorkPolicyTest
 
-### Community 93 - "LlamaEngine.kt"
-Cohesion: 0.22
-Nodes (5): Flow, StateFlow, NativeContextDebugSnapshot, SharedPreferences, URL
-
 ### Community 94 - "ContentSafetyDecision"
 Cohesion: 0.22
 Nodes (7): ContentSafetyAssessment, ContentSafetyDecision, ALLOW, BLOCK, REVIEW, WARNING, ContentSafetyPolicyEngine
@@ -587,20 +570,12 @@ Cohesion: 0.25
 Nodes (5): VisualResponseAssertion, NON_VISUAL_RESPONSE, UNCERTAIN_VISUAL_ASSERTION, VISUAL_ASSERTION, VisualResponseDetector
 
 ### Community 97 - "DocumentImportQueue"
-Cohesion: 0.50
+Cohesion: 0.44
 Nodes (3): DocumentImportQueue, Uri, SourceMetadata
 
 ### Community 98 - "DetectedFileType"
 Cohesion: 0.22
 Nodes (9): DetectedFileType, EMPTY, JPEG, OOXML_ZIP, PDF, PNG, TEXT, UNSUPPORTED_BINARY (+1 more)
-
-### Community 99 - "StatusBarVisibleActivity"
-Cohesion: 0.33
-Nodes (3): Bundle, StatusBarVisibleActivity, AppCompatActivity
-
-### Community 100 - "FloatVectorCodec"
-Cohesion: 0.38
-Nodes (3): FloatVectorCodec, ByteArray, FloatArray
 
 ### Community 101 - "SyntheticOfficeCalibrationCorpus.kt"
 Cohesion: 0.43
@@ -626,9 +601,9 @@ Nodes (7): RAG Guard 中英文多来源训练集 v3, 当前规模, 数据安全�
 Cohesion: 0.29
 Nodes (6): ContentDisplayAction, REQUEST_PRIVACY_CONFIRMATION, SHOW_CANDIDATE, SHOW_ILLEGAL_REFUSAL, SHOW_REVIEW_FALLBACK, SHOW_VISUAL_GUARD
 
-### Community 111 - "CascadedEvidenceAcceptancePolicy"
-Cohesion: 0.43
-Nodes (4): AnswerabilityCalibrationProfile, CascadedEvidenceAcceptancePolicy, CurrentAnswerabilityCalibration, ExperimentalAnswerabilityCalibration
+### Community 111 - "RagEvidenceAcceptancePolicy"
+Cohesion: 0.25
+Nodes (6): BasicRagEvidenceAcceptancePolicy, RagEvidenceAcceptancePolicy, AnswerabilityCalibrationProfile, CascadedEvidenceAcceptancePolicy, CurrentAnswerabilityCalibration, ExperimentalAnswerabilityCalibration
 
 ### Community 115 - "ConfirmationDecision"
 Cohesion: 0.33
@@ -650,6 +625,10 @@ Nodes (3): E5Pooling, FloatArray, LongArray
 Cohesion: 0.43
 Nodes (4): Failure, KnowledgeBaseDocumentPresentation, Processing, Uploaded
 
+### Community 122 - "RetrievalCalibrationInstrumentedTest.kt"
+Cohesion: 0.14
+Nodes (9): E5InputKind, PASSAGE, QUERY, FloatVectorCodec, ByteArray, FloatArray, CoroutineWorker, ExactVectorBufferTest (+1 more)
+
 ### Community 124 - "KnowledgeBaseAdapter.kt"
 Cohesion: 0.19
 Nodes (7): KnowledgeBaseAdapter, KnowledgeBaseListItem, TextView, View, ViewGroup, HorizontalSwipeDismissPolicy, BaseAdapter
@@ -657,10 +636,6 @@ Nodes (7): KnowledgeBaseAdapter, KnowledgeBaseListItem, TextView, View, ViewGrou
 ### Community 125 - "WelcomeSuggestionMode"
 Cohesion: 0.33
 Nodes (5): WelcomeSuggestionMode, TEXT_PROMPTS, VISUAL_INPUT_ACTIONS, VISUAL_PROMPTS, WelcomeSuggestionPolicy
-
-### Community 127 - "FinalizeIndexWorker.kt"
-Cohesion: 0.40
-Nodes (3): E5ModelSpec, FinalizeIndexWorker, CoroutineWorker
 
 ### Community 133 - "CheckpointTestHostActivity.kt"
 Cohesion: 0.60
@@ -670,17 +645,21 @@ Nodes (3): CheckpointTestHostActivity, Activity, Bundle
 Cohesion: 0.40
 Nodes (4): VisualPromptDecision, ALLOW, BLOCK_NEEDS_VISUAL, BLOCK_UNCERTAIN
 
+### Community 137 - "RagTurnFailure"
+Cohesion: 0.33
+Nodes (6): RagTurnFailure, EVIDENCE_PROCESSING_FAILED, PROMPT_BUILD_FAILED, RETRIEVAL_UNAVAILABLE, ROUTING_UNAVAILABLE, STATE_UNAVAILABLE
+
 ### Community 139 - "RAG 文档删除与失败提示 Implementation Plan"
 Cohesion: 0.33
 Nodes (5): RAG 文档删除与失败提示 Implementation Plan, Task 1: 固定安全清理和同名重传的数据行为, Task 2: Make failed imports self-cleaning and observable without a RAG document row, Task 3: Add long-press deletion and swipe-dismiss failure notices, Task 4: Verify build, security boundaries and persisted project graph
 
+### Community 148 - "RAG Source Lifecycle Implementation Plan"
+Cohesion: 0.40
+Nodes (4): RAG Source Lifecycle Implementation Plan, Task 1: Resolve current and deleted sources, Task 2: Connect source chips to Room lifecycle state, Task 3: Synchronize active progress and Graphify
+
 ### Community 149 - "PrivacyDataType"
 Cohesion: 0.50
 Nodes (4): PrivacyDataType, CHINESE_ID_CARD, MOBILE_PHONE, POSTAL_ADDRESS
-
-### Community 154 - "WelcomeAction"
-Cohesion: 0.33
-Nodes (4): PickMedia, SendPrompt, TakePhoto, WelcomeAction
 
 ### Community 165 - "gradlew"
 Cohesion: 0.83
@@ -707,19 +686,19 @@ Cohesion: 0.67
 Nodes (3): Fail-Closed Integrity Validation, Local RAG Threat Model, Untrusted Document Boundary
 
 ## Knowledge Gaps
-- **223 isolated node(s):** `RELEVANT`, `SIMILAR_BUT_WRONG`, `UNRELATED`, `GREETING`, `IDENTIFIER` (+218 more)
+- **226 isolated node(s):** `RELEVANT`, `SIMILAR_BUT_WRONG`, `UNRELATED`, `GREETING`, `IDENTIFIER` (+221 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **71 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **70 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `MainActivity` connect `MainActivity` to `.onCreate`, `.refreshInputControls`, `StatusBarVisibleActivity`, `ChatMessage`, `ConversationStore`, `LlamaEngine`, `ChatAdapter`, `ImageSourceCache`, `PendingImageViewModel`, `OriginalImageViewerActivity.kt`, `ConversationArchive`, `WelcomeAction`, `.createWelcomeMessage`, `LlamaState`?**
-  _High betweenness centrality (0.187) - this node is a cross-community bridge._
-- **Why does `RetrievedChunk` connect `RetrievedChunk` to `MainActivity`, `EvidenceReducerTest`, `ExactAnchorMatcherTest`, `RagVisualGroundingPolicyTest`, `.syntheticOfficeSuiteProducesVersionedThresholdsOnRealE5AndFts`, `RagCoordinator.kt`, `CitationValidator`, `HybridRetriever`, `AnswerabilityVerdict`, `GroundednessVerdict`, `Fixture`, `RagGuardInstrumentedTest`, `RagQueryRouterTest`, `VisualResponseDecision`, `RagRetrievalRequest`, `RagContextBudgeter`, `CitationValidatorTest`, `RagReviewedGenerator`, `AnswerabilityClassifier`, `MiniCPMApplication`, `RagPromptAssembler`, `OnnxRagGuardClassifier`, `SentenceWindowEvidenceReducer`, `LazyAnswerabilityClassifier`, `CascadedEvidenceAcceptancePolicy`, `RagGuardInferenceContractTest`?**
-  _High betweenness centrality (0.134) - this node is a cross-community bridge._
-- **Why does `LlamaEngine` connect `LlamaEngine` to `MainActivity`, `RuntimeException`, `.readyEngine`, `EncryptedFileStore`, `VisualPromptDecision`, `VisualResponseDecision`, `VisualContextPolicy`, `ModelManagerActivity`, `LlamaCheckpointInstrumentedTest`, `LlamaState`, `RagTurnTransaction`, `Context`, `LlamaVisualCheckpointInstrumentedTest`, `LlamaEngine.kt`?**
-  _High betweenness centrality (0.094) - this node is a cross-community bridge._
+- **Why does `MainActivity` connect `MainActivity` to `.clearChatUI`, `.refreshInputControls`, `.onCreate`, `ChatMessage`, `ConversationStore`, `LlamaEngine`, `ChatAdapter`, `ImageSourceCache`, `.handleSelectedVideo`, `PendingImageViewModel`, `ModelManagerActivity`, `ConversationArchive`, `CitationRef`, `.rebuildActiveConversationContext`, `LlamaState`, `.showChatSettingsDialog`?**
+  _High betweenness centrality (0.169) - this node is a cross-community bridge._
+- **Why does `RetrievedChunk` connect `RetrievedChunk` to `MainActivity`, `EvidenceReducerTest`, `ExactAnchorMatcherTest`, `RagVisualGroundingPolicyTest`, `RetrievalCalibrationKey`, `.plan`, `CitationValidator`, `HybridRetriever`, `AnswerabilityVerdict`, `GroundednessVerdict`, `Fixture`, `RagGuardInstrumentedTest`, `RagQueryRouterTest`, `RagDatabase`, `VisualResponseDecision`, `RagRetrievalRequest`, `RagContextBudgeter`, `AnswerabilityClassifier`, `MiniCPMApplication`, `RagGuardClassifier.kt`, `RagPromptAssembler`, `OnnxRagGuardClassifier`, `SentenceWindowEvidenceReducer`, `LazyAnswerabilityClassifier`, `RagEvidenceAcceptancePolicy`, `RagGuardInferenceContractTest`?**
+  _High betweenness centrality (0.141) - this node is a cross-community bridge._
+- **Why does `LlamaEngine` connect `LlamaEngine` to `MainActivity`, `RuntimeException`, `.readyEngine`, `EncryptedFileStore`, `VisualPromptDecision`, `VisualResponseDecision`, `ModelInfo`, `VisualContextPolicy`, `ModelManagerActivity`, `LlamaCheckpointInstrumentedTest`, `RagTurnTransaction`, `Context`, `LlamaVisualCheckpointInstrumentedTest`, `LlamaState`?**
+  _High betweenness centrality (0.091) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `MainActivity` (e.g. with `ConversationArchiveDiskStore` and `ConversationStore`) actually correct?**
   _`MainActivity` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 15 inferred relationships involving `RetrievedChunk` (e.g. with `.retrieve()` and `.retrieve()`) actually correct?**
@@ -727,4 +706,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 36 inferred relationships involving `ValueError` (e.g. with `build_dataset()` and `_balanced()`) actually correct?**
   _`ValueError` has 36 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `RELEVANT`, `SIMILAR_BUT_WRONG`, `UNRELATED` to the rest of the system?**
-  _223 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _226 weakly-connected nodes found - possible documentation gaps or missing edges._

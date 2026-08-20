@@ -204,6 +204,9 @@
     <string name="rag_source_chip_description">Source %1$s, file %2$s, location %3$s</string>
     <string name="rag_source_detail_title">Source %1$s</string>
     <string name="rag_source_detail_body">File: %1$s\nLocation: %2$s\n\nArchived excerpt:\n%3$s</string>
+    <string name="rag_source_available_body">Source status: current source available\nFile: %1$s\nLocation: %2$s\n\nCurrent indexed text:\n%3$s</string>
+    <string name="rag_source_deleted_body">Source status: source deleted; the archived excerpt from answer time is retained\nFile: %1$s\nLocation: %2$s\n\nArchived excerpt:\n%3$s</string>
+    <string name="rag_source_unavailable_body">Source status: current index unavailable; the archived excerpt from answer time is retained\nFile: %1$s\nLocation: %2$s\n\nArchived excerpt:\n%3$s</string>
     <string name="download_race_start">%1$s multi-source race started…</string>
     <string name="download_all_complete">All model files downloaded!</string>
     <string name="download_verifying_existing">Verifying existing %1$s…</string>

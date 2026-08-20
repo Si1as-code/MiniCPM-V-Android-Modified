@@ -8,6 +8,8 @@
 
 **Tech Stack:** Kotlin、Java、C++17/JNI、Android SDK 36、JDK 21、Gradle 9.6.1、Room、SQLCipher、WorkManager、ONNX Runtime Android、ONNX Runtime Extensions、PDFBox、ML Kit、JUnit 4、Android instrumentation。
 
+> **2026-08-20 增量：** `9b229c2` 已完成单文档长按删除、失败导入无持久文档记录、失败提示左滑移除和同名/同内容重传；本轮继续完成来源 Chip 的当前索引块定位、来源删除状态和归档摘录降级。
+
 ---
 
 ## 1. 文档权威性与使用规则
@@ -71,8 +73,8 @@
 | 项目 | 当前值 |
 |---|---|
 | 分支 | `codex/rag-all-queries-experiment` |
-| 已提交基线 | `1f0b0160ffb352c962986950288880d25ceb09bd` |
-| 工作树 | 存在尚未提交的 Guard、质量门槛、构建保护和计划文档改动 |
+| 已提交基线 | `9b229c220690123af5ec00b37742d110f9bcc18b` |
+| 工作树 | 正在实现来源生命周期；Guard、检索和导入删除改动均已提交 |
 | Android 包名 | `com.example.minicpm_v_demo` |
 | 目标真机 | vivo `V2359A` |
 | 安装规则 | 先执行 `verifyInstallationSigning`，只允许 `adb install -r`，禁止自动卸载和清除数据 |
@@ -97,17 +99,17 @@
 | 子系统 | 完成度 | 状态 | 关键结论 |
 |---|---:|---|---|
 | 数据库、迁移和加密 | `95%` | `COMPLETED` | Room schema、SQLCipher、Keystore、加密原文、迁移和防备份已实现 |
-| 知识库 UI | `85%` | `PARTIAL` | 创建、命名、淡蓝选择、导入状态、删除二次确认已实现；来源 UI 未完成 |
+| 知识库 UI | `95%` | `COMPLETED` | 创建、命名、淡蓝选择、阶段状态、知识库删除、单文档长按删除、失败提示左滑移除及同名重传已实现并验收 |
 | 文件导入与恢复 | `90%` | `COMPLETED` | SAF、WorkManager、取消、失败原因、恢复和原子文件流程已实现 |
 | 文档解析 | `90%` | `COMPLETED` | TXT、Markdown、CSV、HTML、PDF/OCR、DOCX、PPTX、XLSX 已有解析器和限额 |
 | 切块与嵌入 | `90%` | `VERIFIED` | 结构化 chunk、中文 bigram、E5 tokenizer、INT8 embedding 和真机推理已通过 |
 | 混合检索 | `75%` | `PARTIAL` | FTS4 BM25、dense、RRF、SQL 过滤已实现；普通语义证据仍被生产门闸关闭 |
 | RAG 状态协调 | `90%` | `COMPLETED` | Disabled、NoSelection、Indexing、NoEvidence、Ready 和匿名失败已统一 |
 | 临时上下文事务 | `90%` | `VERIFIED` | native checkpoint 保存/恢复、取消恢复、视觉 checkpoint 和证据不残留已验证 |
-| 引用归档与校验 | `75%` | `PARTIAL` | 引用白名单和不可变快照已实现；AI 气泡来源 chip 和原文定位未完成 |
+| 引用归档与校验 | `90%` | `PARTIAL` | 引用白名单、不可变快照、来源 chip、当前索引块定位和来源删除归档状态已实现；外部二进制文件页/单元格深链为后续增强 |
 | Answerability 门控 | `70%` | `IMPLEMENTED_NOT_ENABLED` | 模型、Android runtime、性能和离线门槛工具完成；缺真实办公质量数据和生产 profile |
-| Groundedness 输出审查 | `85%` | `IMPLEMENTED_NOT_ENABLED` | 候选隐藏、一次同证据重生成、checkpoint 回退和普通回答降级已接入；等待 v3 INT8 哈希和阈值 profile 启用 |
-| 证据压缩和 token 预算 | `25%` | `PARTIAL` | 目前仍使用 `IdentityRagEvidenceReducer` 和来源数量预算 |
+| Groundedness 输出审查 | `90%` | `IMPLEMENTED_NOT_ENABLED` | 候选隐藏、一次同证据重生成、checkpoint 回退和普通回答降级已接入实验路径；等待真机错误金额/伪引用验收 |
+| 证据压缩和 token 预算 | `90%` | `PARTIAL` | 句子窗口缩减、跨来源去重、真实模型 token 计数和动态预算已接入；等待真机 token 对齐验收 |
 | 大知识库向量索引 | `20%` | `NOT_STARTED` | 当前精确搜索可支撑小库；连续缓存、HNSW、分区降级和损坏恢复未实现 |
 | 生命周期和 watchdog | `40%` | `PARTIAL` | 基础取消和事务恢复存在；完整前后台、编辑冲突和 15 秒 watchdog 未完成 |
 | 性能/压力/灰度发布 | `30%` | `PARTIAL` | checkpoint、E5、Guard 单项真机数据存在；完整矩阵和灰度开关未完成 |
@@ -133,7 +135,7 @@
 - 知识库选择使用淡蓝背景，不使用勾号；删除知识库有二次确认。
 - SAF 支持一次选择多个文档，导入任务使用唯一 WorkManager 工作链。
 - 文档状态覆盖复制、解析、OCR、切块、嵌入、最终 READY、失败、取消和恢复。
-- 成功导入保留正常状态显示；失败状态持续显示具体匿名原因。
+- 成功导入保留正常状态显示并支持长按二次确认删除；失败导入清理实际文件和文档记录，仅在页面显示可左滑移除的匿名原因，同名/同内容可再次上传。
 - 文件类型同时使用扩展名、MIME 和魔数检测，避免仅凭 TXT 扩展名误判。
 - 原始文档复制到应用私有隔离区并加密；数据库使用 SQLCipher，密钥由 Android Keystore 保护。
 - 文档解析、chunk 和 embedding 受文件大小、页数、行数、解压大小、token 和维度上限保护。
@@ -198,7 +200,7 @@ profile = CurrentAnswerabilityCalibration.profile
 2. `PARTIAL/UNGROUNDED` 且尚未重生成：最多重生成一次。
 3. 第二次仍失败：显示不进入上下文的本地固定提示。
 
-该策略尚未接入 `MainActivity` 的真实 RAG 流式生成事务，不能声明输出审查已经生效。
+该策略已接入 `MainActivity` 的真实 RAG 候选隐藏、一次同证据重生成和普通回答降级事务；因 v3 质量门槛未通过，仍只能声明为实验路径，不能标记为稳定生产审查。
 
 ### 6.3 ALL_QUERIES 实验模式
 
@@ -277,10 +279,10 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 
 ### 7.7 来源和阶段 UI
 
-- `正在检索知识库`、`正在整理依据`、`正在生成回答` 三类可行动阶段。
+- `正在检索知识库`、`正在整理依据`、`正在生成回答` 三类可行动阶段仍待实现。
 - 普通聊天不显示 RAG 阶段。
-- [已实现] AI 气泡下显示 `S1 · 文件名 · 定位` 来源 chip，并可打开归档摘录详情。
-- 来源存在时打开原文定位；来源删除后继续显示归档摘录并标记“来源已删除”。
+- [已实现] AI 气泡下显示 `S1 · 文件名 · 定位` 来源 chip；点击后按 `documentId + chunkId` 定位当前索引原文。
+- [已实现] 来源删除后继续显示回答时的归档摘录并标记“来源已删除”；索引不匹配单独标记“当前索引不可用”。
 - chip 整体可点击、有 contentDescription、长名称省略且详情可查看完整名称。
 
 ### 7.8 全链验收和发布
@@ -382,7 +384,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - [ ] **Step 2：实现 15 秒阶段 watchdog。** 超时必须恢复事务、恢复输入框并显示本地提示。
 - [ ] **Step 3：完成编辑和会话切换状态矩阵。** RAG turn 与时间线编辑互斥，旧引用正确截断。
 - [ ] **Step 4：增加三个 RAG 阶段文案。** 普通聊天不显示阶段，禁止伪百分比。
-- [ ] **Step 5：增加来源 chip 和定位。** 来源 chip 和归档摘录详情已完成；原文精确定位及“来源已删除”状态仍待实现。
+- [x] **Step 5：增加来源 chip 和定位。** 来源 chip、当前索引块定位、归档摘录、“来源已删除”和“当前索引不可用”状态已完成；外部 PDF 页/表格单元格二进制深链不作为最小闭环门槛。
 - [ ] **Step 6：完成无障碍和视觉检查。** 使用现有淡蓝、绿色和红色状态体系。
 
 ### Task 6：全链验收、灰度和文档
