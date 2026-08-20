@@ -10,6 +10,8 @@
 
 > **2026-08-20 增量：** `9b229c2` 已完成单文档长按删除、失败导入无持久文档记录、失败提示左滑移除和同名/同内容重传；本轮继续完成来源 Chip 的当前索引块定位、来源删除状态和归档摘录降级。
 
+> **2026-08-20 阶段 UI 增量：** `RagCoordinator` 已增加真实 `RETRIEVING/ORGANIZING` 回调，AI 占位气泡增加不入归档的 `RETRIEVING/ORGANIZING/GENERATING` 内存态；规划和 Groundedness 分类分别使用 15 秒边界，分类超时沿现有 checkpoint 路径降级普通回答。
+
 ---
 
 ## 1. 文档权威性与使用规则
@@ -111,7 +113,7 @@
 | Groundedness 输出审查 | `90%` | `IMPLEMENTED_NOT_ENABLED` | 候选隐藏、一次同证据重生成、checkpoint 回退和普通回答降级已接入实验路径；等待真机错误金额/伪引用验收 |
 | 证据压缩和 token 预算 | `90%` | `PARTIAL` | 句子窗口缩减、跨来源去重、真实模型 token 计数和动态预算已接入；等待真机 token 对齐验收 |
 | 大知识库向量索引 | `20%` | `NOT_STARTED` | 当前精确搜索可支撑小库；连续缓存、HNSW、分区降级和损坏恢复未实现 |
-| 生命周期和 watchdog | `40%` | `PARTIAL` | 基础取消和事务恢复存在；完整前后台、编辑冲突和 15 秒 watchdog 未完成 |
+| 生命周期和 watchdog | `75%` | `PARTIAL` | 规划超时、Groundedness 分类 watchdog、后台取消、编辑前 cancel-and-join 和 checkpoint 恢复已实现；仍需完整前后台/旋转/会话切换压力矩阵 |
 | 性能/压力/灰度发布 | `30%` | `PARTIAL` | checkpoint、E5、Guard 单项真机数据存在；完整矩阵和灰度开关未完成 |
 
 ## 5. 已完成内容
@@ -279,7 +281,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 
 ### 7.7 来源和阶段 UI
 
-- `正在检索知识库`、`正在整理依据`、`正在生成回答` 三类可行动阶段仍待实现。
+- [已实现] `正在检索知识库`、`正在整理依据`、`正在生成回答` 三类真实阶段；普通 Disabled/NoRetrieval 不显示，阶段字段不进入归档或模型上下文。
 - 普通聊天不显示 RAG 阶段。
 - [已实现] AI 气泡下显示 `S1 · 文件名 · 定位` 来源 chip；点击后按 `documentId + chunkId` 定位当前索引原文。
 - [已实现] 来源删除后继续显示回答时的归档摘录并标记“来源已删除”；索引不匹配单独标记“当前索引不可用”。
@@ -381,9 +383,9 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/ui/RagAnswerUiTest.kt`
 
 - [ ] **Step 1：将正式默认模式改回 ADAPTIVE。** 保留 ALL_QUERIES 为显式实验开关；问候路径断言 E5、DAO、Guard 和 checkpoint 调用均为 0。
-- [ ] **Step 2：实现 15 秒阶段 watchdog。** 超时必须恢复事务、恢复输入框并显示本地提示。
+- [x] **Step 2：实现 15 秒阶段 watchdog。** 规划阶段超时直接使用原问题普通回答；Groundedness 分类超时触发现有 checkpoint 回滚和普通回答降级；模型正常生成不受该上限限制。
 - [ ] **Step 3：完成编辑和会话切换状态矩阵。** RAG turn 与时间线编辑互斥，旧引用正确截断。
-- [ ] **Step 4：增加三个 RAG 阶段文案。** 普通聊天不显示阶段，禁止伪百分比。
+- [x] **Step 4：增加三个 RAG 阶段文案。** 只显示真实检索、整理和生成状态，不显示伪百分比，且不持久化。
 - [x] **Step 5：增加来源 chip 和定位。** 来源 chip、当前索引块定位、归档摘录、“来源已删除”和“当前索引不可用”状态已完成；外部 PDF 页/表格单元格二进制深链不作为最小闭环门槛。
 - [ ] **Step 6：完成无障碍和视觉检查。** 使用现有淡蓝、绿色和红色状态体系。
 

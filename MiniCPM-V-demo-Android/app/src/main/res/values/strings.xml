@@ -222,6 +222,9 @@
     <string name="rag_source_available_body">来源状态：当前原文可用\n文件：%1$s\n位置：%2$s\n\n当前索引原文：\n%3$s</string>
     <string name="rag_source_deleted_body">来源状态：来源已删除，已保留回答时的归档摘录\n文件：%1$s\n位置：%2$s\n\n归档摘录：\n%3$s</string>
     <string name="rag_source_unavailable_body">来源状态：当前索引不可用，已保留回答时的归档摘录\n文件：%1$s\n位置：%2$s\n\n归档摘录：\n%3$s</string>
+    <string name="rag_stage_retrieving">正在检索知识库…</string>
+    <string name="rag_stage_organizing">正在整理依据…</string>
+    <string name="rag_stage_generating">正在生成回答…</string>
     <string name="download_race_start">%1$s 多源 race 启动…</string>
     <string name="download_all_complete">所有模型文件下载完成!</string>
     <string name="download_verifying_existing">校验已存在的 %1$s …</string>

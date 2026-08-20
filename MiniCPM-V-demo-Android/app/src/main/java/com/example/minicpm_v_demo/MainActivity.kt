@@ -30,6 +30,7 @@ import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.example.minicpm_v_demo.rag.RagTurnPlan
+import com.example.minicpm_v_demo.rag.RagPlanningStage
 import com.example.minicpm_v_demo.rag.plainModelPromptOrNull
 import com.example.minicpm_v_demo.rag.retrieval.CitationValidator
 import com.example.minicpm_v_demo.rag.retrieval.RagVisualGroundingPolicy
@@ -40,6 +41,7 @@ import com.example.minicpm_v_demo.rag.guard.ExperimentalGroundednessCalibration
 import com.example.minicpm_v_demo.rag.guard.GroundednessClassifier
 import com.example.minicpm_v_demo.rag.guard.RagReviewedGenerator
 import com.example.minicpm_v_demo.rag.guard.ReviewedRagGeneration
+import com.example.minicpm_v_demo.rag.guard.WatchdogGroundednessClassifier
 import com.example.minicpm_v_demo.rag.ui.CitationSourceResolution
 import com.example.minicpm_v_demo.rag.ui.CitationSourceResolver
 import com.example.minicpm_v_demo.rag.telemetry.RagLatencyLogFormatter
@@ -1796,6 +1798,15 @@ class MainActivity : StatusBarVisibleActivity() {
                                     override suspend fun remainingContextTokens(): Int =
                                         engine.remainingContextTokens()
                                 },
+                                onStage = { stage ->
+                                    updateRagGenerationStage(
+                                        aiMsgId,
+                                        when (stage) {
+                                            RagPlanningStage.RETRIEVING -> RagGenerationStage.RETRIEVING
+                                            RagPlanningStage.ORGANIZING -> RagGenerationStage.ORGANIZING
+                                        },
+                                    )
+                                },
                             )
                     } ?: RagTurnPlan.Failed(com.example.minicpm_v_demo.rag.RagTurnFailure.STATE_UNAVAILABLE)
                 } finally {
@@ -1803,6 +1814,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 }
                 val plainModelPrompt = turnPlan.plainModelPromptOrNull(userMsg)
                 val modelPrompt = if (plainModelPrompt != null) {
+                    updateRagGenerationStage(aiMsgId, null)
                     traceResult = RagTraceResult.PASS_THROUGH
                     plainModelPrompt
                 } else when (turnPlan) {
@@ -1846,6 +1858,10 @@ class MainActivity : StatusBarVisibleActivity() {
                     }
                 }
                 modelPrompt?.let { prompt ->
+                    updateRagGenerationStage(
+                        aiMsgId,
+                        if (usesPreparedPrompt) RagGenerationStage.GENERATING else null,
+                    )
                     var waitingForFirstToken = true
                     latencyTrace.begin(RagPhase.TTFT)
                     val tokens = if (usesPreparedPrompt) {
@@ -1870,9 +1886,12 @@ class MainActivity : StatusBarVisibleActivity() {
                     val profile = ExperimentalGroundednessCalibration.profile
                     val reviewed = if (installedClassifier != null) {
                         RagReviewedGenerator(
-                            classifier = GroundednessClassifier { question, sources, answer ->
-                                installedClassifier.classifyGroundedness(question, sources, answer)
-                            },
+                            classifier = WatchdogGroundednessClassifier(
+                                delegate = GroundednessClassifier { question, sources, answer ->
+                                    installedClassifier.classifyGroundedness(question, sources, answer)
+                                },
+                                timeoutMs = RAG_REVIEW_TIMEOUT_MS,
+                            ),
                             profile = profile,
                         ).review(userMsg, ragSources, fullResponse.toString()) { correctionPrompt ->
                             ragTransaction?.rollback(
@@ -2030,6 +2049,7 @@ class MainActivity : StatusBarVisibleActivity() {
                             includeInModelContext = responseAccepted,
                             citations = citationSnapshots,
                             ragRunId = ragRunId,
+                            ragGenerationStage = null,
                         )
                     }
                     if (displayAction != ContentDisplayAction.SHOW_CANDIDATE) {
@@ -2048,6 +2068,17 @@ class MainActivity : StatusBarVisibleActivity() {
             }
         }
         return true
+    }
+
+    private suspend fun updateRagGenerationStage(
+        aiMessageId: Long,
+        stage: RagGenerationStage?,
+    ) = withContext(Dispatchers.Main.immediate) {
+        val index = messages.indexOfFirst { it.id == aiMessageId }
+        val current = messages.getOrNull(index) as? ChatMessage.AiMessage ?: return@withContext
+        if (!current.isGenerating || current.ragGenerationStage == stage) return@withContext
+        messages[index] = current.copy(ragGenerationStage = stage)
+        chatAdapter.submitList(messages.toList()) { scrollToBottom() }
     }
 
     private fun showLocalGuardReply(userMessageText: String, kind: LocalGuardReplyKind) {
@@ -2242,5 +2273,6 @@ class MainActivity : StatusBarVisibleActivity() {
         private const val MAX_CITATION_QUOTE_CHARS = 600
         private const val RAG_RETRIEVAL_VERSION = 1
         private const val RAG_PLANNING_TIMEOUT_MS = 15_000L
+        private const val RAG_REVIEW_TIMEOUT_MS = 15_000L
     }
 }

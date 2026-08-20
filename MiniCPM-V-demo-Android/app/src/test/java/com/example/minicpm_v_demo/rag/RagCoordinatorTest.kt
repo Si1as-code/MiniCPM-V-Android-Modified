@@ -80,6 +80,27 @@ class RagCoordinatorTest {
     }
 
     @Test
+    fun readyTurnReportsRetrievalThenEvidenceOrganization() = runBlocking {
+        val fixture = Fixture()
+        val stages = mutableListOf<RagPlanningStage>()
+
+        val result = fixture.coordinator.plan(CONVERSATION_ID, "policy", onStage = stages::add)
+
+        assertTrue(result is RagTurnPlan.Ready)
+        assertEquals(listOf(RagPlanningStage.RETRIEVING, RagPlanningStage.ORGANIZING), stages)
+    }
+
+    @Test
+    fun noRetrievalTurnDoesNotReportRagStages() = runBlocking {
+        val fixture = Fixture(route = RagQueryRoute.NO_RETRIEVAL)
+        val stages = mutableListOf<RagPlanningStage>()
+
+        fixture.coordinator.plan(CONVERSATION_ID, "hello", onStage = stages::add)
+
+        assertTrue(stages.isEmpty())
+    }
+
+    @Test
     fun allQueriesModeBypassesRouterAndRetrievesEvenForOrdinaryChat() = runBlocking {
         val fixture = Fixture(
             enabled = true,

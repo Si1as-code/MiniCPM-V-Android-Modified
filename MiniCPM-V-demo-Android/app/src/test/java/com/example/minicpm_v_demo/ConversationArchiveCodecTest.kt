@@ -105,6 +105,33 @@ class ConversationArchiveCodecTest {
     }
 
     @Test
+    fun transientRagGenerationStageIsNotPersisted() {
+        val archive = ConversationArchive(
+            activeConversationId = 1,
+            conversations = listOf(
+                Conversation(
+                    id = 1,
+                    title = "working",
+                    messages = mutableListOf(
+                        ChatMessage.AiMessage(
+                            id = 5,
+                            text = "",
+                            isGenerating = true,
+                            includeInModelContext = false,
+                            ragGenerationStage = RagGenerationStage.RETRIEVING,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val restored = ConversationArchiveCodec.read(ByteArrayInputStream(encoded(archive)))
+        val message = restored.conversations.single().messages.single() as ChatMessage.AiMessage
+
+        assertNull(message.ragGenerationStage)
+    }
+
+    @Test
     fun rejectsUnknownVersionAndTruncatedArchive() {
         val bytes = encoded(sampleArchive())
         ByteBuffer.wrap(bytes, 4, 4).putInt(99)

@@ -120,14 +120,14 @@
     "semantic_hash": "24227e22ca1a26324485dec50cd45fe2"
   },
   "app/src/main/java/com/example/minicpm_v_demo/ChatAdapter.kt": {
-    "mtime": 1787112233.3300061,
-    "ast_hash": "89657d66ac42730cb61901c717de640d",
+    "mtime": 1787208881.053498,
+    "ast_hash": "73d0a7a016e7a3a7f777ba7de2eb115c",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/ChatMessage.kt": {
-    "mtime": 1786674556.4248233,
-    "ast_hash": "1ced72303d1264546336593c705b9cca",
-    "semantic_hash": "1ced72303d1264546336593c705b9cca"
+    "mtime": 1787208881.0514796,
+    "ast_hash": "d2e589ac4217d2d2ba0408b971e0ae8f",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/ContentSafetyPolicy.kt": {
     "mtime": 1785897480.5092013,
@@ -190,8 +190,8 @@
     "semantic_hash": "842a5ffe0e6516e3c43dbe86b6f8f479"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt": {
-    "mtime": 1787206986.1829524,
-    "ast_hash": "5678f0b64d0740e6694c409ebe093d77",
+    "mtime": 1787209403.376798,
+    "ast_hash": "f3a104bcb798497565cfde0f1730745b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/MarkdownEscape.kt": {
@@ -280,8 +280,8 @@
     "semantic_hash": "e9483586c12e4223a4c1fbe292b6fa82"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/RagCoordinator.kt": {
-    "mtime": 1787113738.7719762,
-    "ast_hash": "6dc0f4486d028a16a1cf934451dea052",
+    "mtime": 1787208524.8048756,
+    "ast_hash": "59e6007835b569f7c718e204d6fa55bd",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/RagTurnDeliveryPolicy.kt": {
@@ -715,9 +715,9 @@
     "semantic_hash": "4c8b0a816bdc7a7fad9603feb08b1927"
   },
   "app/src/test/java/com/example/minicpm_v_demo/ConversationArchiveCodecTest.kt": {
-    "mtime": 1786674556.4704318,
-    "ast_hash": "548b783c5b3960b141c992ffd1c2c55f",
-    "semantic_hash": "548b783c5b3960b141c992ffd1c2c55f"
+    "mtime": 1787208725.656437,
+    "ast_hash": "1d767cc3ff5931f5857244ce599ee137",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/ConversationStoreTest.kt": {
     "mtime": 1786674556.4714322,
@@ -765,8 +765,8 @@
     "semantic_hash": "fb070b0cdb4d847d3ddb590527aebba1"
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/RagCoordinatorTest.kt": {
-    "mtime": 1787113741.2740319,
-    "ast_hash": "ab57be244d2ab0f3a46262a145bf33f6",
+    "mtime": 1787208409.2866645,
+    "ast_hash": "d66b4b376c2e8606ff6154098edbd967",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/RagTurnDeliveryPolicyTest.kt": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": "6112ddff6d42aba66988515d27814b46"
   },
   "docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md": {
-    "mtime": 1787207086.166155,
-    "ast_hash": "65af4f10b0609b2e7f6e25afe745bde9",
+    "mtime": 1787209264.4802985,
+    "ast_hash": "5332dcae2dcbcf3c249ae3655b5adb2b",
     "semantic_hash": ""
   },
   "tools/rag_guard/OFFICE_QUALITY_GATE.md": {
@@ -1205,8 +1205,8 @@
     "semantic_hash": "f173c24bacf92b8f62630fe3c4a04514"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagReviewedGenerator.kt": {
-    "mtime": 1787117635.955703,
-    "ast_hash": "cc69771c5ec8236f581e3e34862bbdb8",
+    "mtime": 1787208524.8076105,
+    "ast_hash": "075ec75d2476edae4924238812423b4f",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/ExactVectorBuffer.kt": {
@@ -1225,8 +1225,8 @@
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagReviewedGenerationTest.kt": {
-    "mtime": 1787113345.7049384,
-    "ast_hash": "c6987d5b123648977eadfcdd4c4e90d9",
+    "mtime": 1787208409.2890913,
+    "ast_hash": "d389edb10075c32e666d04403327e60e",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/index/ExactVectorBufferTest.kt": {
@@ -1347,6 +1347,11 @@
   "docs/superpowers/plans/2026-08-20-rag-source-lifecycle.md": {
     "mtime": 1787207482.9587033,
     "ast_hash": "a563e4de9bf4357ec9b5b7143a59452f",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-20-rag-stage-watchdog.md": {
+    "mtime": 1787209264.4792986,
+    "ast_hash": "207cac901bb69510114ae9bf4ebb3d67",
     "semantic_hash": ""
   }
 }

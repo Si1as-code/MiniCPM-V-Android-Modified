@@ -279,7 +279,17 @@ class ChatAdapter(
                 streamingMinWidth = 0
                 (tvText.parent as? ViewGroup)?.minimumWidth = 0
             }
-            renderWithThinking(item.text, item.isGenerating)
+            val renderedText = if (item.isGenerating && item.text.isBlank()) {
+                when (item.ragGenerationStage) {
+                    RagGenerationStage.RETRIEVING -> itemView.context.getString(R.string.rag_stage_retrieving)
+                    RagGenerationStage.ORGANIZING -> itemView.context.getString(R.string.rag_stage_organizing)
+                    RagGenerationStage.GENERATING -> itemView.context.getString(R.string.rag_stage_generating)
+                    null -> item.text
+                }
+            } else {
+                item.text
+            }
+            renderWithThinking(renderedText, item.isGenerating)
             bindSources(item.citations)
             btnStop.visibility = if (item.isGenerating) View.VISIBLE else View.GONE
             btnStop.setOnClickListener {
@@ -439,7 +449,8 @@ class ChatAdapter(
                             (oldItem.isGenerating || oldItem.text == newItem.text) &&
                             oldItem.citations == newItem.citations &&
                             oldItem.ragRunId == newItem.ragRunId &&
-                            oldItem.answerEdited == newItem.answerEdited
+                            oldItem.answerEdited == newItem.answerEdited &&
+                            oldItem.ragGenerationStage == newItem.ragGenerationStage
                 oldItem is ChatMessage.WelcomeCard && newItem is ChatMessage.WelcomeCard ->
                     oldItem.isTextOnly == newItem.isTextOnly &&
                         oldItem.hasVisualContext == newItem.hasVisualContext

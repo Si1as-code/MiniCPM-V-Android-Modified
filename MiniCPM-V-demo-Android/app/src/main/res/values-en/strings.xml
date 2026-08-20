@@ -207,6 +207,9 @@
     <string name="rag_source_available_body">Source status: current source available\nFile: %1$s\nLocation: %2$s\n\nCurrent indexed text:\n%3$s</string>
     <string name="rag_source_deleted_body">Source status: source deleted; the archived excerpt from answer time is retained\nFile: %1$s\nLocation: %2$s\n\nArchived excerpt:\n%3$s</string>
     <string name="rag_source_unavailable_body">Source status: current index unavailable; the archived excerpt from answer time is retained\nFile: %1$s\nLocation: %2$s\n\nArchived excerpt:\n%3$s</string>
+    <string name="rag_stage_retrieving">Searching the knowledge base…</string>
+    <string name="rag_stage_organizing">Organizing supporting evidence…</string>
+    <string name="rag_stage_generating">Generating the answer…</string>
     <string name="download_race_start">%1$s multi-source race started…</string>
     <string name="download_all_complete">All model files downloaded!</string>
     <string name="download_verifying_existing">Verifying existing %1$s…</string>

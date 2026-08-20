@@ -48,6 +48,7 @@ sealed class ChatMessage {
         val citations: List<CitationRef> = emptyList(),
         val ragRunId: String? = null,
         val answerEdited: Boolean = false,
+        val ragGenerationStage: RagGenerationStage? = null,
     ) : ChatMessage()
 
     data class WelcomeCard(
@@ -55,6 +56,12 @@ sealed class ChatMessage {
         val isTextOnly: Boolean = false,
         val hasVisualContext: Boolean = false
     ) : ChatMessage()
+}
+
+enum class RagGenerationStage {
+    RETRIEVING,
+    ORGANIZING,
+    GENERATING,
 }
 
 fun ChatMessage.UserMessage.confirmedForSubmission(

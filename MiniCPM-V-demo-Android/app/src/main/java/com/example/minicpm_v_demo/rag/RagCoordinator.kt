@@ -206,6 +206,11 @@ enum class RagRetrievalMode {
     ALL_QUERIES,
 }
 
+enum class RagPlanningStage {
+    RETRIEVING,
+    ORGANIZING,
+}
+
 class RagCoordinator(
     private val stateSource: RagTurnStateSource,
     private val router: RagQueryRouter,
@@ -222,6 +227,7 @@ class RagCoordinator(
         question: String,
         limit: Int = 6,
         tokenCounter: RagPromptTokenCounter? = null,
+        onStage: suspend (RagPlanningStage) -> Unit = {},
     ): RagTurnPlan {
         require(conversationId > 0 && question.isNotBlank() && limit in 1..20)
         val boundedQuestion = question.takeCodePoints(MAX_QUERY_CODE_POINTS)
@@ -261,6 +267,7 @@ class RagCoordinator(
             RagSelectionState.Indexing -> return RagTurnPlan.Indexing
             is RagSelectionState.Ready -> selection.knowledgeBaseIds
         }
+        reportStage(RagPlanningStage.RETRIEVING, onStage)
         val retrieval = try {
             retriever.retrieve(RagRetrievalRequest(knowledgeBaseIds, boundedQuestion, limit))
         } catch (error: CancellationException) {
@@ -280,6 +287,7 @@ class RagCoordinator(
             return RagTurnPlan.Failed(RagTurnFailure.EVIDENCE_PROCESSING_FAILED)
         }
         if (accepted.isEmpty()) return RagTurnPlan.NoEvidence
+        reportStage(RagPlanningStage.ORGANIZING, onStage)
         val reduced = try {
             reducer.reduce(boundedQuestion, accepted).toList()
         } catch (error: CancellationException) {
@@ -326,6 +334,19 @@ class RagCoordinator(
             citations = budget.sources.toList(),
             evidenceTokenCount = budget.tokenCount,
         )
+    }
+
+    private suspend fun reportStage(
+        stage: RagPlanningStage,
+        callback: suspend (RagPlanningStage) -> Unit,
+    ) {
+        try {
+            callback(stage)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            // UI/telemetry observers must not change the retrieval decision.
+        }
     }
 
     private fun String.takeCodePoints(maxCodePoints: Int): String {

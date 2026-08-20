@@ -3,6 +3,7 @@ package com.example.minicpm_v_demo.rag.guard
 import com.example.minicpm_v_demo.rag.retrieval.RagPromptAssembler
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 
 fun interface GroundednessClassifier {
     suspend fun classify(
@@ -10,6 +11,25 @@ fun interface GroundednessClassifier {
         sources: List<RetrievedChunk>,
         answer: String,
     ): GroundednessVerdict
+}
+
+class WatchdogGroundednessClassifier(
+    private val delegate: GroundednessClassifier,
+    private val timeoutMs: Long,
+) : GroundednessClassifier {
+    init {
+        require(timeoutMs > 0)
+    }
+
+    override suspend fun classify(
+        question: String,
+        sources: List<RetrievedChunk>,
+        answer: String,
+    ): GroundednessVerdict = withTimeoutOrNull(timeoutMs) {
+        delegate.classify(question, sources, answer)
+    } ?: throw GroundednessReviewTimeoutException()
+
+    private class GroundednessReviewTimeoutException : IllegalStateException()
 }
 
 data class GroundednessCalibrationProfile(

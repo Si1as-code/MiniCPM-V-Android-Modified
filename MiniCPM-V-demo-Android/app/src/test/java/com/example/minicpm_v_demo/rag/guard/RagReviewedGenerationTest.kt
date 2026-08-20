@@ -3,6 +3,7 @@ package com.example.minicpm_v_demo.rag.guard
 import com.example.minicpm_v_demo.rag.retrieval.RetrievalCalibrationKey
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,6 +69,25 @@ class RagReviewedGenerationTest {
         val result = reviewer.review("question", SOURCES, "candidate") { "unused" }
 
         assertEquals(ReviewedRagGeneration.FallbackToNormalGeneration, result)
+    }
+
+    @Test
+    fun `groundedness watchdog falls back without exposing a timed out candidate`() = runBlocking {
+        val reviewer = RagReviewedGenerator(
+            classifier = WatchdogGroundednessClassifier(
+                delegate = GroundednessClassifier { _, _, _ ->
+                    delay(100)
+                    GroundednessVerdict(GroundednessLabel.GROUNDED, 0.99f, SHA)
+                },
+                timeoutMs = 1,
+            ),
+            profile = GroundednessCalibrationProfile(SHA, 0.80f),
+        )
+
+        val result = reviewer.review("question", SOURCES, "private timed out candidate") { "unused" }
+
+        assertEquals(ReviewedRagGeneration.FallbackToNormalGeneration, result)
+        assertFalse(result.toString().contains("private timed out candidate"))
     }
 
     @Test
