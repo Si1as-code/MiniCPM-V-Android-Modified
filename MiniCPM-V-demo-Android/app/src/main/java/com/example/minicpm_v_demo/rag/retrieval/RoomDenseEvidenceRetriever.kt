@@ -8,15 +8,16 @@ import com.example.minicpm_v_demo.rag.embed.E5InputKind
 import com.example.minicpm_v_demo.rag.embed.E5ModelSpec
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
 import com.example.minicpm_v_demo.rag.index.EmbeddingCorpusKey
-import com.example.minicpm_v_demo.rag.index.ExactVectorBuffer
-import com.example.minicpm_v_demo.rag.index.ExactVectorBufferCache
-import com.example.minicpm_v_demo.rag.index.PartitionedExactVectorRanker
+import com.example.minicpm_v_demo.rag.index.ExactVectorSearchBackend
+import com.example.minicpm_v_demo.rag.index.VectorEmbeddingSource
+import com.example.minicpm_v_demo.rag.index.VectorSearchBackend
+import com.example.minicpm_v_demo.rag.index.VectorSearchRequest
 
 class RoomDenseEvidenceRetriever(
     private val database: RagDatabase,
     private val modelManager: EmbeddingModelManager,
     private val corpusVersion: Int = CurrentRetrievalCalibration.key.corpusVersion,
-    private val bufferCache: ExactVectorBufferCache = ExactVectorBufferCache(),
+    private val vectorSearchBackend: VectorSearchBackend = ExactVectorSearchBackend(),
 ) : RagEvidenceRetriever {
     override suspend fun retrieve(request: RagRetrievalRequest): RagRetrievalOutcome {
         require(request.knowledgeBaseIds.isNotEmpty())
@@ -39,23 +40,29 @@ class RoomDenseEvidenceRetriever(
             maximumUpdatedAt = stamp.maximumUpdatedAt,
             chunkIdSum = stamp.chunkIdSum,
         )
-        val ranked = if (stamp.embeddingCount <= MAX_CACHED_CHUNKS) {
-            val vectorBuffer = bufferCache.get(cacheKey) ?: ExactVectorBuffer.from(
-                database.chunkDao().findReadyEmbeddings(
+        val ranked = vectorSearchBackend.search(
+            request = VectorSearchRequest(
+                corpusKey = cacheKey,
+                query = queryVector,
+                limit = request.limit,
+            ),
+            source = object : VectorEmbeddingSource {
+                override suspend fun loadAll() = database.chunkDao().findReadyEmbeddings(
                     sortedKnowledgeBaseIds,
                     modelSha,
                     corpusVersion,
-                ),
-            ).also { bufferCache.put(cacheKey, it) }
-            vectorBuffer.rank(queryVector, request.limit)
-        } else {
-            rankPartitioned(
-                queryVector = queryVector,
-                knowledgeBaseIds = sortedKnowledgeBaseIds,
-                modelSha = modelSha,
-                limit = request.limit,
-            )
-        }
+                )
+
+                override suspend fun loadPage(offset: Int, pageSize: Int) =
+                    database.chunkDao().findReadyEmbeddingsPage(
+                        knowledgeBaseIds = sortedKnowledgeBaseIds,
+                        modelSha256 = modelSha,
+                        corpusVersion = corpusVersion,
+                        pageSize = pageSize,
+                        offset = offset,
+                    )
+            },
+        )
         val finalStamp = database.chunkDao().findReadyEmbeddingStamp(
             sortedKnowledgeBaseIds,
             modelSha,
@@ -84,36 +91,4 @@ class RoomDenseEvidenceRetriever(
         )
     }
 
-    private suspend fun rankPartitioned(
-        queryVector: FloatArray,
-        knowledgeBaseIds: List<String>,
-        modelSha: String,
-        limit: Int,
-    ): List<RankedChunkId> {
-        var offset = 0
-        var ranked = emptyList<RankedChunkId>()
-        while (true) {
-            val page = database.chunkDao().findReadyEmbeddingsPage(
-                knowledgeBaseIds = knowledgeBaseIds,
-                modelSha256 = modelSha,
-                corpusVersion = corpusVersion,
-                pageSize = PARTITION_CHUNKS,
-                offset = offset,
-            )
-            if (page.isEmpty()) break
-            ranked = PartitionedExactVectorRanker.merge(
-                ranked,
-                ExactVectorBuffer.from(page).rank(queryVector, limit),
-                limit,
-            )
-            offset += page.size
-            if (page.size < PARTITION_CHUNKS) break
-        }
-        return ranked
-    }
-
-    private companion object {
-        const val MAX_CACHED_CHUNKS = 5_000
-        const val PARTITION_CHUNKS = 1_000
-    }
 }

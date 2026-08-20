@@ -12,6 +12,12 @@
 
 > **2026-08-20 阶段 UI 增量：** `RagCoordinator` 已增加真实 `RETRIEVING/ORGANIZING` 回调，AI 占位气泡增加不入归档的 `RETRIEVING/ORGANIZING/GENERATING` 内存态；规划和 Groundedness 分类分别使用 15 秒边界，分类超时沿现有 checkpoint 路径降级普通回答。
 
+> **2026-08-20 checkpoint 压力增量：** native 调试快照已增加只读活动 checkpoint 计数；vivo V2359A 真机通过 100 次恢复、50 次取消释放和 20 次生产 `MainActivity.onStop()` 取消矩阵，最终活动数均为 0。checkpoint 大小 20,546,716 bytes，保存 P95 19.036 ms、恢复 P95 16.599385 ms；编辑用户消息会截断生成中 RAG 尾部，切换后的另一会话保持隔离。
+
+> **2026-08-20 大库后端增量：** 已增加 `VectorSearchBackend`、`VectorEmbeddingSource` 和 `ExactVectorSearchBackend`，`RoomDenseEvidenceRetriever` 已通过统一接口保留 5000 chunks 连续缓存与 1000-row 分页精确降级；分页结果与 exact oracle 一致。HNSW sidecar、原子 generation、损坏恢复和 1k/5k/20k benchmark 仍待完成。
+
+> **2026-08-20 HNSW 边界增量：** 已实现有界元数据 codec、严格 UTF-8、corpus generation 匹配、SHA-256 命名的受控路径、单次流式长度/摘要校验和应用内存预算 10% 的 RSS 准入；截断、尾随字节、路径穿越、摘要不一致和超预算测试均通过。native HNSW 与认证原子发布尚未接入。
+
 ---
 
 ## 1. 文档权威性与使用规则
@@ -112,8 +118,8 @@
 | Answerability 门控 | `70%` | `IMPLEMENTED_NOT_ENABLED` | 模型、Android runtime、性能和离线门槛工具完成；缺真实办公质量数据和生产 profile |
 | Groundedness 输出审查 | `90%` | `IMPLEMENTED_NOT_ENABLED` | 候选隐藏、一次同证据重生成、checkpoint 回退和普通回答降级已接入实验路径；等待真机错误金额/伪引用验收 |
 | 证据压缩和 token 预算 | `90%` | `PARTIAL` | 句子窗口缩减、跨来源去重、真实模型 token 计数和动态预算已接入；等待真机 token 对齐验收 |
-| 大知识库向量索引 | `20%` | `NOT_STARTED` | 当前精确搜索可支撑小库；连续缓存、HNSW、分区降级和损坏恢复未实现 |
-| 生命周期和 watchdog | `75%` | `PARTIAL` | 规划超时、Groundedness 分类 watchdog、后台取消、编辑前 cancel-and-join 和 checkpoint 恢复已实现；仍需完整前后台/旋转/会话切换压力矩阵 |
+| 大知识库向量索引 | `40%` | `PARTIAL` | 统一后端、精确降级、HNSW 元数据/路径/完整性/RSS 边界已实现；native HNSW、认证原子 generation、损坏恢复和规模 benchmark 未实现 |
+| 生命周期和 watchdog | `90%` | `PARTIAL` | 规划/审查超时、后台取消、编辑前 cancel-and-join、checkpoint 活动计数及 100/50/20 真机矩阵已实现；仍需最终完整 UI 操作验收和旋转观察 |
 | 性能/压力/灰度发布 | `30%` | `PARTIAL` | checkpoint、E5、Guard 单项真机数据存在；完整矩阵和灰度开关未完成 |
 
 ## 5. 已完成内容
@@ -365,7 +371,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/work/FinalizeIndexWorker.kt`
 - Test: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/VectorSearchBackendInstrumentedTest.kt`
 
-- [ ] **Step 1：写统一接口和精确 oracle 测试。** 所有后端返回稳定 chunk ID、score 和 generation。
+- [x] **Step 1：写统一接口和精确 oracle 测试。** `VectorSearchBackend` 已接入，分页精确结果与连续 exact oracle 一致，稳定按 score/chunk ID 排序。
 - [x] **Step 2：实现小库连续 float buffer。** 最多 5000 chunks；缓存键绑定有序知识库集合、模型 SHA、corpusVersion、数量、最大更新时间和 chunk ID 校验和。
 - [ ] **Step 3：实现大库 HNSW/分区后端。** 打开前验证文件头、长度、哈希和 RSS 预算。
 - [ ] **Step 4：实现原子构建和损坏恢复。** 查询期间不得返回旧 generation。
@@ -399,7 +405,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - Modify: `docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md`
 
 - [ ] **Step 1：执行功能矩阵。** 覆盖第 7.8 节全部场景并保存聚合证据。
-- [ ] **Step 2：执行 checkpoint 压力矩阵。** 100 次成功、50 次取消、20 次前后台切换后活动 checkpoint 必须为 0。
+- [x] **Step 2：执行 checkpoint 压力矩阵。** 100 次成功、50 次取消和 20 次生产 MainActivity 前后台取消均在 vivo V2359A 通过，最终活动 checkpoint 为 0。
 - [ ] **Step 3：执行性能矩阵。** 空历史、10 轮和 30 轮分别测试普通聊天与 RAG。
 - [ ] **Step 4：执行安全矩阵。** 隐私、违法、无图、RAG 视觉绕过、提示注入和伪引用不得退化。
 - [ ] **Step 5：执行固定签名覆盖安装。** 只使用 `adb install -r`，验证会话、知识库和模型仍存在。

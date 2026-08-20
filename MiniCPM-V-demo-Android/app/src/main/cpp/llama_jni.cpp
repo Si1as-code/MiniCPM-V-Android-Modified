@@ -774,6 +774,13 @@ Java_com_example_minicpm_1v_1demo_LlamaEngine_checkpointSizeBytesNative(
 
 extern "C"
 JNIEXPORT jint JNICALL
+Java_com_example_minicpm_1v_1demo_LlamaEngine_currentActiveCheckpointCountNative(
+        JNIEnv *, jobject) {
+    return g_active_checkpoint == nullptr ? 0 : 1;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
 Java_com_example_minicpm_1v_1demo_LlamaEngine_currentContextPositionNative(JNIEnv *, jobject) {
     return static_cast<jint>(current_position);
 }

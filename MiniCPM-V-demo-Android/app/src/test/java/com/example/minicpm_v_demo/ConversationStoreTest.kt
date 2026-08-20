@@ -55,6 +55,44 @@ class ConversationStoreTest {
     }
 
     @Test
+    fun editingOneConversationTruncatesItsGeneratingRagTailWithoutChangingAnotherConversation() {
+        val store = populatedStore()
+        val firstConversationId = store.activeConversationId
+        store.active.messages += ChatMessage.AiMessage(
+            id = 5,
+            text = "",
+            isGenerating = true,
+            ragRunId = "active-rag-run",
+            ragGenerationStage = RagGenerationStage.RETRIEVING,
+        )
+        val secondConversationId = store.createConversation(
+            listOf(
+                ChatMessage.UserMessage(6, "independent question"),
+                ChatMessage.AiMessage(7, "independent answer"),
+            ),
+        )
+
+        assertTrue(store.switchTo(firstConversationId))
+        val mutation = store.editUserAndTruncate(1, "edited first question")!!
+
+        assertEquals(listOf(2L, 3L, 4L, 5L), mutation.removed.map { it.id })
+        assertEquals(listOf(1L), store.active.messages.map { it.id })
+        assertEquals(listOf(1L), store.replayMessages().map { it.id })
+        assertTrue(store.switchTo(secondConversationId))
+        assertEquals(listOf(6L, 7L), store.active.messages.map { it.id })
+        assertEquals(
+            listOf("independent question", "independent answer"),
+            store.active.messages.map { message ->
+                when (message) {
+                    is ChatMessage.UserMessage -> message.text
+                    is ChatMessage.AiMessage -> message.text
+                    is ChatMessage.WelcomeCard -> error("Unexpected welcome card")
+                }
+            },
+        )
+    }
+
+    @Test
     fun editingAssistantTurnOnlyChangesTextAndPreservesLaterTurns() {
         val store = populatedStore()
         val mutation = store.editAssistantText(2, "corrected answer")!!

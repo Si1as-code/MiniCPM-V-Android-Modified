@@ -1,9 +1,11 @@
 package com.example.minicpm_v_demo
 
 import android.content.Context
+import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
@@ -21,25 +23,49 @@ class LlamaCheckpointInstrumentedTest {
     @Test
     fun restoringCheckpointReproducesPositionHistoryAndNextToken() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
+        bringCheckpointHostToForeground(context)
+        runCheckpointPressureMatrix(context)
+    }
+
+    private fun bringCheckpointHostToForeground(context: Context) {
+        val component = "${context.packageName}/.CheckpointTestHostActivity"
+        val descriptor = InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommand("am start -W -n $component")
+        val result = ParcelFileDescriptor.AutoCloseInputStream(descriptor)
+            .bufferedReader()
+            .use { it.readText() }
+        check(result.contains("Status: ok")) { "Checkpoint host did not start: $result" }
+    }
+
+    private suspend fun runCheckpointPressureMatrix(context: Context) {
         val engine = readyEngine(context)
 
         engine.clearContext()
         engine.replayHistoryMessage(ModelHistoryRole.USER, "Remember that the office code is blue seven.")
         engine.replayHistoryMessage(ModelHistoryRole.ASSISTANT, "I will remember it.")
         val stable = engine.nativeContextDebugSnapshot()
+        assertEquals(0, stable.activeCheckpointCount)
 
         val saveTimesMs = mutableListOf<Double>()
         val restoreTimesMs = mutableListOf<Double>()
         var measuredSizeBytes = 0L
-        repeat(20) {
+        repeat(SUCCESSFUL_CHECKPOINT_ITERATIONS) {
             val saveStart = SystemClock.elapsedRealtimeNanos()
             val checkpoint = engine.beginEphemeralTurn()
+            assertEquals(1, engine.nativeContextDebugSnapshot().activeCheckpointCount)
             saveTimesMs += (SystemClock.elapsedRealtimeNanos() - saveStart) / 1_000_000.0
             measuredSizeBytes = checkpoint.sizeBytes
 
             val restoreStart = SystemClock.elapsedRealtimeNanos()
             engine.restoreEphemeralTurn(checkpoint)
+            assertEquals(0, engine.nativeContextDebugSnapshot().activeCheckpointCount)
             restoreTimesMs += (SystemClock.elapsedRealtimeNanos() - restoreStart) / 1_000_000.0
+        }
+        repeat(CANCELLED_CHECKPOINT_ITERATIONS) {
+            val checkpoint = engine.beginEphemeralTurn()
+            assertEquals(1, engine.nativeContextDebugSnapshot().activeCheckpointCount)
+            engine.releaseEphemeralTurn(checkpoint)
+            assertEquals(0, engine.nativeContextDebugSnapshot().activeCheckpointCount)
         }
         val saveP50 = percentile(saveTimesMs, 0.50)
         val saveP95 = percentile(saveTimesMs, 0.95)
@@ -86,9 +112,11 @@ class LlamaCheckpointInstrumentedTest {
         if (initializedState is LlamaState.Initialized) {
             val model = File(LlamaEngine.modelPath(context))
             check(model.isFile) { "Production model is not installed: ${model.absolutePath}" }
-            val mmproj = LlamaEngine.mmprojPath(context)?.let(::File)?.takeIf(File::isFile)
             withTimeout(180_000) {
-                engine.loadModel(model.absolutePath, mmproj?.absolutePath)
+                // This suite verifies text-context checkpoint ownership. Loading the
+                // multi-gigabyte vision projector adds several minutes of unrelated
+                // cold-start work; visual checkpoints have a dedicated test suite.
+                engine.loadModel(model.absolutePath, null)
             }
         }
         return engine
@@ -98,5 +126,10 @@ class LlamaCheckpointInstrumentedTest {
         val sorted = values.sorted()
         val index = (ceil(sorted.size * fraction).toInt() - 1).coerceIn(sorted.indices)
         return sorted[index]
+    }
+
+    private companion object {
+        const val SUCCESSFUL_CHECKPOINT_ITERATIONS = 100
+        const val CANCELLED_CHECKPOINT_ITERATIONS = 50
     }
 }

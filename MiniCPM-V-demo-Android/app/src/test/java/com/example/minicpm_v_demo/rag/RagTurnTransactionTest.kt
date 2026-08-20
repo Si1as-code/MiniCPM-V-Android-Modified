@@ -78,6 +78,25 @@ class RagTurnTransactionTest {
         assertEquals(emptyList<Pair<ModelHistoryRole, String>>(), engine.stableHistory)
     }
 
+    @Test
+    fun pressureMatrix_closesEverySuccessfulAndCancelledTransactionExactlyOnce() = runBlocking {
+        val engine = FakeEphemeralContextEngine()
+
+        repeat(100) { index ->
+            RagTurnTransaction(engine, engine.beginEphemeralTurn())
+                .commit("question $index", "answer $index")
+        }
+        repeat(50) { index ->
+            val transaction = RagTurnTransaction(engine, engine.beginEphemeralTurn())
+            transaction.rollback(keepUserInHistory = false, originalUserText = "cancelled $index")
+            transaction.rollback(keepUserInHistory = false, originalUserText = "ignored $index")
+        }
+
+        assertEquals(150, engine.restoreCalls)
+        assertEquals(0, engine.releaseCalls)
+        assertEquals(200, engine.stableHistory.size)
+    }
+
     private class FakeEphemeralContextEngine(
         private val failRestore: Boolean = false,
     ) : EphemeralContextEngine {

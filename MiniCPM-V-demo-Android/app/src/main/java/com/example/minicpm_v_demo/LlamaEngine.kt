@@ -56,6 +56,7 @@ data class NativeContextDebugSnapshot(
     val chatHistoryDigest: String,
     val imagePrefilled: Boolean,
     val visionMode: Boolean,
+    val activeCheckpointCount: Int,
 )
 
 class NativeCheckpoint internal constructor(
@@ -935,6 +936,7 @@ class LlamaEngine private constructor(
     private external fun restoreEphemeralTurnNative(handle: Long): Boolean
     private external fun releaseEphemeralTurnNative(handle: Long)
     private external fun checkpointSizeBytesNative(handle: Long): Long
+    private external fun currentActiveCheckpointCountNative(): Int
     private external fun currentContextPositionNative(): Int
     private external fun currentContextCapacityNative(): Int
     private external fun currentChatMessageCountNative(): Int
@@ -1348,6 +1350,7 @@ class LlamaEngine private constructor(
                 chatHistoryDigest = currentChatHistoryDigestNative(),
                 imagePrefilled = currentImagePrefilledNative(),
                 visionMode = currentVisionModeNative(),
+                activeCheckpointCount = currentActiveCheckpointCountNative(),
             )
         }
 
