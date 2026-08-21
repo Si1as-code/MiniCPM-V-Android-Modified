@@ -1175,9 +1175,9 @@
     "semantic_hash": "244e728c8ea612fd77ab0b8bd03085de"
   },
   "app/src/main/cpp/CMakeLists.txt": {
-    "mtime": 1785380621.5345075,
-    "ast_hash": "636fdd32a3dccd9752b02e22699ea2cb",
-    "semantic_hash": "636fdd32a3dccd9752b02e22699ea2cb"
+    "mtime": 1787276600.8382773,
+    "ast_hash": "f6cb38d89a66047db2b44c2b8098a89a",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/LazyAnswerabilityClassifier.kt": {
     "mtime": 1787102028.31775,
@@ -1392,6 +1392,61 @@
   "app/src/test/java/com/example/minicpm_v_demo/rag/index/HnswIndexMetadataTest.kt": {
     "mtime": 1787216998.6294215,
     "ast_hash": "08ba17451dcdf25f1b624cf57046e1eb",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexInstrumentedTest.kt": {
+    "mtime": 1787278441.3450236,
+    "ast_hash": "443b4213dba811aa29dd61d37a7b7e67",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/rag_hnsw_jni.cpp": {
+    "mtime": 1787278512.0046303,
+    "ast_hash": "4c2719f62765797ed01762b7a164912c",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/bruteforce.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "8e930267cec9354f50cdfe2b174e38e9",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/hnswalg.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "1034e29e2bd01c4611c8778f8c0088e3",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/hnswlib.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "bdba4b126b59787a6ab780c6d0a8d678",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/space_ip.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "33e2408c94082539f4899a5c7921b557",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/space_l2.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "7d37302b6611e56c91bdbdf0c41d9abb",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/stop_condition.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "33a8cb7c50123a93e6ba81c83018ecd0",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/hnswlib/visited_list_pool.h": {
+    "mtime": 1774737531.0,
+    "ast_hash": "e273c51ee9c307117ed904d3da9cc4e4",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndex.kt": {
+    "mtime": 1787278512.0036242,
+    "ast_hash": "94107936e8ce2385b627d29c5f3b18e3",
+    "semantic_hash": ""
+  },
+  "app/src/main/cpp/third_party/hnswlib/UPSTREAM.md": {
+    "mtime": 1787276600.830151,
+    "ast_hash": "d09badee8536d1708a5f10a58d48d5e0",
     "semantic_hash": ""
   }
 }
