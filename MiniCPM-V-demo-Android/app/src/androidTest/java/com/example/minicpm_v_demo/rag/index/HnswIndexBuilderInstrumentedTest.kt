@@ -62,6 +62,29 @@ class HnswIndexBuilderInstrumentedTest {
         }
     }
 
+    @Test
+    fun multiKnowledgeBaseCorpusBuildsOneSearchableGeneration() = runBlocking {
+        val fixture = fixture()
+        try {
+            val key = corpusKey(
+                count = 4,
+                updatedAt = 20,
+                knowledgeBaseIds = listOf("kb-a", "kb-b"),
+            )
+            val source = FakeSource(key, embeddings(4))
+
+            assertTrue(fixture.builder.build(key, source) is HnswIndexBuildOutcome.Published)
+            assertEquals(listOf("kb-a", "kb-b"), fixture.publisher.readMetadata(key).corpusKey.knowledgeBaseIds)
+            fixture.publisher.withVerifiedPlaintext(key) { plaintext ->
+                HnswIndex.load(fixture.root, plaintext, E5ModelSpec.PINNED.dimension, 4).use { index ->
+                    assertEquals(4L, index.search(unitVector(3), 1, 8).single().chunkId)
+                }
+            }
+        } finally {
+            fixture.root.deleteRecursively()
+        }
+    }
+
     private fun fixture(): Fixture {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val root = File(context.noBackupFilesDir, "rag/index-builder-${UUID.randomUUID()}").apply {
@@ -90,8 +113,12 @@ class HnswIndexBuilderInstrumentedTest {
         this[index] = 1f
     }
 
-    private fun corpusKey(count: Int, updatedAt: Long) = EmbeddingCorpusKey(
-        knowledgeBaseIds = listOf("kb-builder"),
+    private fun corpusKey(
+        count: Int,
+        updatedAt: Long,
+        knowledgeBaseIds: List<String> = listOf("kb-builder"),
+    ) = EmbeddingCorpusKey(
+        knowledgeBaseIds = knowledgeBaseIds,
         modelSha256 = "0".repeat(64),
         corpusVersion = 1,
         embeddingCount = count,

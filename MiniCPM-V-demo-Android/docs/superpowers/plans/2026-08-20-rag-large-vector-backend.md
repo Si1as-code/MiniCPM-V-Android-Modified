@@ -12,6 +12,8 @@
 
 > **Implementation status 2026-08-20:** Task 1 and the validation portion of Task 2 are complete. `RoomDenseEvidenceRetriever` now delegates ranking through `VectorSearchBackend`; `ExactVectorSearchBackend` preserves the 5,000-chunk cache and 1,000-row paged fallback. `HnswIndexMetadataCodec`, hashed managed paths, single-pass length/SHA-256 verification, strict UTF-8 decoding, corpus admission, and the 10% RSS gate are implemented and tested. No HNSW dependency or sidecar file has been added yet; authenticated atomic publication remains grouped with Task 4 so metadata and payload cannot diverge.
 
+> **Implementation status 2026-08-21:** Tasks 1-3 are complete. Task 4 Steps 1-3 are implemented: hnswlib 0.9.0 is pinned locally, frozen-corpus building publishes AES-GCM-authenticated sidecars, invalid sidecars fall back to exact search, and a corpus-keyed WorkManager rebuild is deduplicated and delayed 30 seconds to avoid the active-answer latency path. Same-corpus replacement retains an encrypted previous generation, verifies the new pair, restores after cancellation, and serializes publication/read access across publisher instances for one managed directory. The rebuild core is isolated in `HnswRebuildRunner` with typed stages, while `VectorIndexWorker` remains the WorkManager entry point. ARM64 locally carries the upstream-tracked misaligned-label fix from hnswlib issue #669 plus a lock-before-self-check deadlock guard. JVM tests (300/300), Debug APK, Android-test APK, installation-signature verification, and the complete 19-test HNSW device suite pass. Device evidence now includes persisted previous-generation recovery, cross-instance concurrent publish/read, native recall/handle safety, corrupt-sidecar exact fallback, and one authenticated/searchable generation built from two knowledge bases with 5,001 dense normalized vectors. The clean full HNSW run took 12.547 seconds when the vivo OEM freezer was prevented by keeping the test process foreground. Task 5's deterministic 1k/5k/20k benchmark and measured release gates remain open.
+
 ---
 
 ### Task 1: Extract a unified exact backend
@@ -74,7 +76,7 @@ Run the focused backend tests, all retrieval tests, and the full JVM suite.
 
 Cover magic, format version, dimension `384`, model SHA-256, sorted knowledge-base IDs, corpus version, embedding count, maximum update time, chunk-ID sum, plaintext index length, plaintext SHA-256, and build generation. Reject truncation, extra bytes, integer overflow, non-finite sizes, mismatched corpus keys, and paths outside `noBackupFilesDir/rag/index`.
 
-- [ ] **Step 2: Implement a bounded binary envelope.** [Validation complete] The bounded codec and strict reader are complete; authenticated `.part` publication is intentionally deferred to Task 4 so metadata and payload switch as one generation.
+- [x] **Step 2: Implement a bounded binary envelope.** The bounded codec and strict reader are complete. Task 4 adds authenticated publication, pair verification, and encrypted previous-generation recovery so an interrupted two-file switch cannot become the accepted generation.
 
 Use fixed-width big-endian integers and bounded UTF-8 fields. The metadata file and encrypted HNSW payload must be written to same-directory `.part` files, `fsync`ed, verified, then atomically renamed. Room vectors remain the source of truth.
 
@@ -95,19 +97,19 @@ Run metadata, path-boundary, truncation, hash, and budget tests.
 - Modify: `app/src/main/cpp/CMakeLists.txt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexInstrumentedTest.kt`
 
-- [ ] **Step 1: Vendor and verify hnswlib**
+- [x] **Step 1: Vendor and verify hnswlib**
 
 Pin hnswlib 0.9.0 to an audited upstream commit, retain LICENSE/NOTICE, and record the source archive SHA-256. Do not download or update it implicitly during Gradle builds.
 
-- [ ] **Step 2: Write native RED tests**
+- [x] **Step 2: Write native RED tests**
 
 Cover create/add/search/save/load/close, duplicate and negative labels, wrong dimension, NaN/Infinity, truncated files, closed handles, double close, concurrent search/close, and top-k deterministic tie handling.
 
-- [ ] **Step 3: Implement the JNI boundary**
+- [x] **Step 3: Implement the JNI boundary**
 
 Use cosine space with `M=16`, `efConstruction=100`, and `efSearch=48` as the first measured profile. Validate every handle, array length, finite float, label, top-k, and dedicated-directory canonical path. Catch every C++ exception and translate it to a stable Java exception; no exception may cross JNI.
 
-- [ ] **Step 4: Verify recall and memory safety**
+- [x] **Step 4: Verify recall and memory safety**
 
 Compare HNSW against exact top-k and require $\mathrm{Recall@10} \ge 0.95$. Run repeated open/search/close and corruption cases; no leaked handle or stale label is allowed.
 
@@ -120,21 +122,23 @@ Compare HNSW against exact top-k and require $\mathrm{Recall@10} \ge 0.95$. Run 
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/RoomDenseEvidenceRetriever.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/VectorIndexRecoveryInstrumentedTest.kt`
 
-- [ ] **Step 1: Build from a frozen corpus stamp**
+- [x] **Step 1: Build from a frozen corpus stamp**
 
 Read embeddings in chunk-ID pages, build a new sidecar generation, then re-read the stamp. If the stamp changed, discard the new files and retry later; never publish a mixed generation.
 
-- [ ] **Step 2: Publish atomically**
+- [x] **Step 2: Publish atomically**
 
 Encrypt and verify the new sidecar, atomically rename payload and metadata, then mark the document READY only after every embedding and the published index generation agree.
 
-- [ ] **Step 3: Fail safely during query**
+- [x] **Step 3: Fail safely during query**
 
 On missing, stale, corrupt, oversized, or memory-rejected HNSW, use paged exact search for that request and enqueue one uniquely named rebuild. Never return results from an old generation.
 
 - [ ] **Step 4: Run recovery matrix**
 
 Force-stop during build, encryption, rename, metadata publish, and finalization. Repeated enqueue must converge to one valid generation with no plaintext sidecar left behind.
+
+Current evidence covers normal publication, authentication failure, cancellation before and after payload publication, persisted `.previous` recovery, cross-instance concurrent publish/read, frozen-stamp rejection, exact fallback, and a real 5,001-vector multi-knowledge-base rebuild/search. The remaining evidence before checking this step is force-stop at each distinct build/encryption/rename/metadata/finalization boundary and convergence after repeated enqueue.
 
 ### Task 5: Benchmark and close the phase
 

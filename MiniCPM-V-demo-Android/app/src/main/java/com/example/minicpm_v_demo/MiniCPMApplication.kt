@@ -29,6 +29,7 @@ import com.example.minicpm_v_demo.rag.retrieval.RoomLexicalEvidenceRetriever
 import com.example.minicpm_v_demo.rag.route.DefaultRagQueryRouter
 import com.example.minicpm_v_demo.rag.work.RagWorkRecovery
 import com.example.minicpm_v_demo.rag.work.WorkManagerRagWorkCoordinator
+import com.example.minicpm_v_demo.rag.work.WorkManagerHnswRebuildScheduler
 import androidx.work.WorkManager
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
@@ -48,23 +49,25 @@ class MiniCPMApplication : Application() {
     val ragDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagDatabaseFactory(this, ragKeyManager).open()
     }
-    private val hnswIndexDirectory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    internal val hnswIndexDirectory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         File(noBackupFilesDir, "rag/index").apply {
             check((isDirectory || mkdirs()) && isDirectory)
         }
     }
-    private val hnswIndexPublisher by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    internal val hnswIndexPublisher by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         HnswIndexPublisher(
             hnswIndexDirectory,
             EncryptedFileStore(ragKeyManager::getOrCreateMasterKey),
         )
     }
     private val vectorSearchBackend by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        val rebuildScheduler = WorkManagerHnswRebuildScheduler(WorkManager.getInstance(this))
         HnswVectorSearchBackend(
             indexDirectory = hnswIndexDirectory,
             publisher = hnswIndexPublisher,
             appMemoryBudgetBytes = { Runtime.getRuntime().maxMemory() },
             exactFallback = ExactVectorSearchBackend(),
+            onRebuildRequired = rebuildScheduler::enqueue,
         )
     }
     private val denseRagRetriever by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {

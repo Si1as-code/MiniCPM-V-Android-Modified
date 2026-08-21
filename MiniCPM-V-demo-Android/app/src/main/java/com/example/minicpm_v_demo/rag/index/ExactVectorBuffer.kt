@@ -3,6 +3,7 @@ package com.example.minicpm_v_demo.rag.index
 import com.example.minicpm_v_demo.rag.db.ChunkEmbeddingEntity
 import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
 import com.example.minicpm_v_demo.rag.retrieval.RankedChunkId
+import java.security.MessageDigest
 
 data class EmbeddingCorpusKey(
     val knowledgeBaseIds: List<String>,
@@ -17,6 +18,24 @@ data class EmbeddingCorpusKey(
         require(modelSha256.matches(Regex("[0-9a-f]{64}")))
         require(corpusVersion > 0 && embeddingCount >= 0 && maximumUpdatedAt >= 0 && chunkIdSum >= 0)
     }
+}
+
+fun EmbeddingCorpusKey.stableDigest(): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    fun update(bytes: ByteArray) {
+        digest.update((bytes.size ushr 24).toByte())
+        digest.update((bytes.size ushr 16).toByte())
+        digest.update((bytes.size ushr 8).toByte())
+        digest.update(bytes.size.toByte())
+        digest.update(bytes)
+    }
+    knowledgeBaseIds.forEach { update(it.toByteArray(Charsets.UTF_8)) }
+    update(modelSha256.toByteArray(Charsets.US_ASCII))
+    update(corpusVersion.toString().toByteArray(Charsets.US_ASCII))
+    update(embeddingCount.toString().toByteArray(Charsets.US_ASCII))
+    update(maximumUpdatedAt.toString().toByteArray(Charsets.US_ASCII))
+    update(chunkIdSum.toString().toByteArray(Charsets.US_ASCII))
+    return digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 }
 
 class ExactVectorBuffer private constructor(

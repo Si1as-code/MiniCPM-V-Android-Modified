@@ -1,6 +1,25 @@
 package com.example.minicpm_v_demo.rag.index
 
+import com.example.minicpm_v_demo.rag.retrieval.RankedChunkId
 import java.io.File
+
+enum class HnswFallbackReason {
+    BELOW_THRESHOLD,
+    MISSING_OR_CORRUPT,
+    CORPUS_MISMATCH,
+    RSS_BUDGET_EXCEEDED,
+}
+
+object HnswRebuildPolicy {
+    fun shouldSchedule(reason: HnswFallbackReason): Boolean = when (reason) {
+        HnswFallbackReason.MISSING_OR_CORRUPT,
+        HnswFallbackReason.CORPUS_MISMATCH,
+        -> true
+        HnswFallbackReason.BELOW_THRESHOLD,
+        HnswFallbackReason.RSS_BUDGET_EXCEEDED,
+        -> false
+    }
+}
 
 class HnswVectorSearchBackend(
     indexDirectory: File,
@@ -9,6 +28,7 @@ class HnswVectorSearchBackend(
     private val exactFallback: VectorSearchBackend = ExactVectorSearchBackend(),
     private val minimumEmbeddingCount: Int = 5_001,
     private val efSearch: Int = 48,
+    private val onRebuildRequired: (EmbeddingCorpusKey) -> Unit = {},
 ) : VectorSearchBackend {
     private val directory = indexDirectory.canonicalFile.also { root ->
         require(root.isDirectory) { "HNSW index directory is unavailable" }
@@ -23,13 +43,27 @@ class HnswVectorSearchBackend(
     override suspend fun search(
         request: VectorSearchRequest,
         source: VectorEmbeddingSource,
-    ) = if (request.corpusKey.embeddingCount < minimumEmbeddingCount) {
-        exactFallback.search(request, source)
-    } else {
-        runCatching {
-            val metadata = publisher.readMetadata(request.corpusKey)
-            val admission = manager.assess(request.corpusKey, metadata)
-            check(admission.allowed) { "HNSW sidecar was rejected: ${admission.rejection}" }
+    ): List<RankedChunkId> {
+        if (request.corpusKey.embeddingCount < minimumEmbeddingCount) {
+            return exactFallback.search(request, source)
+        }
+        val metadata = try {
+            publisher.readMetadata(request.corpusKey)
+        } catch (_: Exception) {
+            scheduleIfRequired(HnswFallbackReason.MISSING_OR_CORRUPT, request.corpusKey)
+            return exactFallback.search(request, source)
+        }
+        val admission = manager.assess(request.corpusKey, metadata)
+        if (!admission.allowed) {
+            val reason = when (admission.rejection) {
+                HnswIndexRejection.CORPUS_MISMATCH -> HnswFallbackReason.CORPUS_MISMATCH
+                HnswIndexRejection.RSS_BUDGET_EXCEEDED -> HnswFallbackReason.RSS_BUDGET_EXCEEDED
+                null -> HnswFallbackReason.MISSING_OR_CORRUPT
+            }
+            scheduleIfRequired(reason, request.corpusKey)
+            return exactFallback.search(request, source)
+        }
+        return try {
             publisher.withVerifiedPlaintext(request.corpusKey) { plaintext ->
                 HnswIndex.load(
                     indexDirectory = directory,
@@ -44,8 +78,13 @@ class HnswVectorSearchBackend(
                     )
                 }
             }
-        }.getOrElse {
+        } catch (_: Exception) {
+            scheduleIfRequired(HnswFallbackReason.MISSING_OR_CORRUPT, request.corpusKey)
             exactFallback.search(request, source)
         }
+    }
+
+    private fun scheduleIfRequired(reason: HnswFallbackReason, corpusKey: EmbeddingCorpusKey) {
+        if (HnswRebuildPolicy.shouldSchedule(reason)) runCatching { onRebuildRequired(corpusKey) }
     }
 }

@@ -5,15 +5,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.example.minicpm_v_demo.MiniCPMApplication
-import com.example.minicpm_v_demo.rag.crypto.EncryptedFileStore
 import com.example.minicpm_v_demo.rag.db.DocumentStatus
 import com.example.minicpm_v_demo.rag.embed.E5ModelSpec
-import com.example.minicpm_v_demo.rag.index.EmbeddingCorpusKey
-import com.example.minicpm_v_demo.rag.index.HnswCorpusSource
-import com.example.minicpm_v_demo.rag.index.HnswIndexBuilder
-import com.example.minicpm_v_demo.rag.index.HnswIndexPublisher
 import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
-import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -34,58 +28,40 @@ object RagWorkStagePlan {
 class VectorIndexWorker(appContext: Context, parameters: WorkerParameters) :
     CoroutineWorker(appContext, parameters) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val documentId = inputData.getString(RagWorkContract.KEY_DOCUMENT_ID)
-            ?: return@withContext Result.failure()
-        runCatching { RagWorkContract.requireValidDocumentId(documentId) }
-            .getOrElse { return@withContext Result.failure() }
         val app = applicationContext as? MiniCPMApplication ?: return@withContext Result.failure()
-        val document = app.ragDatabase.documentDao().findById(documentId)
-            ?: return@withContext Result.failure()
-        if (document.status != DocumentStatus.READY) return@withContext Result.failure()
-
-        val knowledgeBaseIds = listOf(document.knowledgeBaseId)
-        val modelSha = E5ModelSpec.PINNED.files.getValue("model.int8.onnx")
-        val corpusVersion = CurrentRetrievalCalibration.key.corpusVersion
-        val chunkDao = app.ragDatabase.chunkDao()
-        val source = object : HnswCorpusSource {
-            override suspend fun currentKey(): EmbeddingCorpusKey {
-                val stamp = chunkDao.findReadyEmbeddingStamp(
-                    knowledgeBaseIds,
-                    modelSha,
-                    corpusVersion,
+        val documentId = inputData.getString(RagWorkContract.KEY_DOCUMENT_ID)
+        val rebuildInput = if (documentId == null) {
+            runCatching {
+                HnswRebuildInput(
+                    knowledgeBaseIds = inputData
+                        .getStringArray(HnswRebuildContract.KEY_KNOWLEDGE_BASE_IDS)
+                        ?.toList()
+                        ?: error("Missing HNSW knowledge bases"),
+                    modelSha256 = inputData.getString(HnswRebuildContract.KEY_MODEL_SHA256)
+                        ?: error("Missing HNSW model hash"),
+                    corpusVersion = inputData.getInt(HnswRebuildContract.KEY_CORPUS_VERSION, 0),
                 )
-                return EmbeddingCorpusKey(
-                    knowledgeBaseIds = knowledgeBaseIds,
-                    modelSha256 = modelSha,
-                    corpusVersion = corpusVersion,
-                    embeddingCount = stamp.embeddingCount,
-                    maximumUpdatedAt = stamp.maximumUpdatedAt,
-                    chunkIdSum = stamp.chunkIdSum,
-                )
-            }
-
-            override suspend fun loadPage(offset: Int, pageSize: Int) =
-                chunkDao.findReadyEmbeddingsPage(
-                    knowledgeBaseIds = knowledgeBaseIds,
-                    modelSha256 = modelSha,
-                    corpusVersion = corpusVersion,
-                    pageSize = pageSize,
-                    offset = offset,
-                )
+            }.getOrElse { return@withContext Result.failure() }
+        } else {
+            runCatching { RagWorkContract.requireValidDocumentId(documentId) }
+                .getOrElse { return@withContext Result.failure() }
+            val document = app.ragDatabase.documentDao().findById(documentId)
+                ?: return@withContext Result.failure()
+            if (document.status != DocumentStatus.READY) return@withContext Result.failure()
+            HnswRebuildInput(
+                knowledgeBaseIds = listOf(document.knowledgeBaseId),
+                modelSha256 = E5ModelSpec.PINNED.files.getValue("model.int8.onnx"),
+                corpusVersion = CurrentRetrievalCalibration.key.corpusVersion,
+            )
         }
 
         try {
-            val expectedCorpus = source.currentKey()
-            val indexDirectory = File(applicationContext.noBackupFilesDir, "rag/index").apply {
-                check((isDirectory || mkdirs()) && isDirectory)
-            }
-            val publisher = HnswIndexPublisher(
-                indexDirectory,
-                EncryptedFileStore(app.ragKeyManager::getOrCreateMasterKey),
-            )
-            HnswIndexBuilder(indexDirectory, publisher).build(
-                expectedCorpus = expectedCorpus,
-                source = source,
+            HnswRebuildRunner(
+                chunkDao = app.ragDatabase.chunkDao(),
+                indexDirectory = app.hnswIndexDirectory,
+                publisher = app.hnswIndexPublisher,
+            ).rebuild(
+                input = rebuildInput,
                 shouldContinue = { !isStopped },
             )
             Result.success()

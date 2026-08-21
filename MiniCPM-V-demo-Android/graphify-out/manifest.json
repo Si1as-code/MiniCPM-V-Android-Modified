@@ -205,8 +205,8 @@
     "semantic_hash": "b082d81818f9c80d199fd33af5ea02c0"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt": {
-    "mtime": 1787281424.5827227,
-    "ast_hash": "dff34a3d19b76952f061a8ca01a7fdb9",
+    "mtime": 1787284412.7408645,
+    "ast_hash": "329ad373dcc8f9cbcc29ff9dba1e6713",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/ModelAdapter.kt": {
@@ -1210,8 +1210,8 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/ExactVectorBuffer.kt": {
-    "mtime": 1787113550.8790731,
-    "ast_hash": "5536d0511a40dffd7843922ced76aad9",
+    "mtime": 1787283545.505884,
+    "ast_hash": "3c9c22a36370b8c3baf4de0e9fec0cf2",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/prompt/RagContextBudgeter.kt": {
@@ -1375,8 +1375,8 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-08-20-rag-large-vector-backend.md": {
-    "mtime": 1787217259.0391946,
-    "ast_hash": "85dbae658bc3a06f1655e2715ee21f59",
+    "mtime": 1787295822.3302817,
+    "ast_hash": "4d868a0f7111b6d89952b5feb4536f7e",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexManager.kt": {
@@ -1385,8 +1385,8 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexMetadata.kt": {
-    "mtime": 1787217094.0315235,
-    "ast_hash": "7598fa97ab8ae81b7720263e5d818d28",
+    "mtime": 1787283548.114629,
+    "ast_hash": "e2df107bda254caad4318acf8ceb4968",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/index/HnswIndexMetadataTest.kt": {
@@ -1410,8 +1410,8 @@
     "semantic_hash": ""
   },
   "app/src/main/cpp/third_party/hnswlib/hnswlib/hnswalg.h": {
-    "mtime": 1774737531.0,
-    "ast_hash": "1034e29e2bd01c4611c8778f8c0088e3",
+    "mtime": 1787295162.3312228,
+    "ast_hash": "bd37f86e7e9e259fbab5e96164b42d05",
     "semantic_hash": ""
   },
   "app/src/main/cpp/third_party/hnswlib/hnswlib/hnswlib.h": {
@@ -1445,18 +1445,18 @@
     "semantic_hash": ""
   },
   "app/src/main/cpp/third_party/hnswlib/UPSTREAM.md": {
-    "mtime": 1787276600.830151,
-    "ast_hash": "d09badee8536d1708a5f10a58d48d5e0",
+    "mtime": 1787295164.6733458,
+    "ast_hash": "5c9fefe7eeed9ce871953efd4e3685c6",
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexBuilderInstrumentedTest.kt": {
-    "mtime": 1787280464.0623953,
-    "ast_hash": "3ce0a9ef7b4a280c35acca63326797d9",
+    "mtime": 1787290771.6297915,
+    "ast_hash": "c847b44faf279943c990b1539a4cf178",
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexPublicationInstrumentedTest.kt": {
-    "mtime": 1787281456.5785203,
-    "ast_hash": "b612b1a03db5c12d6efbe8315ced8138",
+    "mtime": 1787284457.8751135,
+    "ast_hash": "56c2dd76d43c211d70af89ba526026d2",
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswVectorSearchBackendInstrumentedTest.kt": {
@@ -1470,23 +1470,48 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexPublisher.kt": {
-    "mtime": 1787281673.0590174,
-    "ast_hash": "ba4bcf1eb5cd91132223b9cfb6299896",
+    "mtime": 1787284437.9305916,
+    "ast_hash": "e0d971c14df524a6e652776aafa741cf",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswVectorSearchBackend.kt": {
-    "mtime": 1787281194.7322326,
-    "ast_hash": "f58cebcd9a8180290ecc74f99b1d678a",
+    "mtime": 1787284067.6427615,
+    "ast_hash": "d78a348838bbdd1579b03701c3e730ff",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/work/VectorIndexWorker.kt": {
-    "mtime": 1787280937.0073986,
-    "ast_hash": "63d32dd37a6b60af6c41d17631d9de47",
+    "mtime": 1787293211.7009318,
+    "ast_hash": "a58e34246b2be7bdf6f3e76cb45684c1",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/work/RagWorkStagePlanTest.kt": {
     "mtime": 1787280937.0103996,
     "ast_hash": "bda61aef9cf40aab6b20199ed84d1f65",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/work/HnswRebuildContract.kt": {
+    "mtime": 1787284062.6668732,
+    "ast_hash": "3d7f2ebeb60664ebb315f0d1f82ab7f6",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/work/HnswRebuildScheduler.kt": {
+    "mtime": 1787284065.1342936,
+    "ast_hash": "f2ad24fe100859568c9cbadeb9464b8d",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/work/HnswRebuildContractTest.kt": {
+    "mtime": 1787284060.061332,
+    "ast_hash": "dbdb2e5bb128e091803fa80585d6138d",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/work/HnswRebuildRunnerInstrumentedTest.kt": {
+    "mtime": 1787295954.6651704,
+    "ast_hash": "edda343646817329a0afdf823eba26a8",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/work/HnswRebuildRunner.kt": {
+    "mtime": 1787293893.2359848,
+    "ast_hash": "a2f37b3159446af73b95709930905887",
     "semantic_hash": ""
   }
 }

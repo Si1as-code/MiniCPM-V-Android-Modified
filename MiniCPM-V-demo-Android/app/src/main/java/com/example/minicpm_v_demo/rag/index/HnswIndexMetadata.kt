@@ -194,24 +194,6 @@ class HnswIndexPathPolicy(indexDirectory: File) {
         return canonical
     }
 
-    private fun EmbeddingCorpusKey.stableDigest(): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        fun update(bytes: ByteArray) {
-            digest.update((bytes.size ushr 24).toByte())
-            digest.update((bytes.size ushr 16).toByte())
-            digest.update((bytes.size ushr 8).toByte())
-            digest.update(bytes.size.toByte())
-            digest.update(bytes)
-        }
-        knowledgeBaseIds.forEach { update(it.toByteArray(Charsets.UTF_8)) }
-        update(modelSha256.toByteArray(Charsets.US_ASCII))
-        update(corpusVersion.toString().toByteArray(Charsets.US_ASCII))
-        update(embeddingCount.toString().toByteArray(Charsets.US_ASCII))
-        update(maximumUpdatedAt.toString().toByteArray(Charsets.US_ASCII))
-        update(chunkIdSum.toString().toByteArray(Charsets.US_ASCII))
-        return digest.digest().toHex()
-    }
-
     private companion object {
         val MANAGED_NAME = Regex("[0-9a-f]{64}\\.hnsw\\.(enc|meta)")
     }
