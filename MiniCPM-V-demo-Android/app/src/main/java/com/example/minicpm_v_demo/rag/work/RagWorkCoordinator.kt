@@ -30,35 +30,20 @@ class WorkManagerRagWorkCoordinator(
 ) : RagWorkCoordinator {
     override fun enqueue(documentId: String): Operation {
         val input = RagWorkContract.inputValues(documentId)
-        val copyRequest = OneTimeWorkRequestBuilder<ImportCopyWorker>()
-            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
-            .addTag(RagWorkContract.uniqueWorkName(documentId))
-            .build()
-        val parseRequest = OneTimeWorkRequestBuilder<ParseWorker>()
-            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
-            .addTag(RagWorkContract.uniqueWorkName(documentId))
-            .build()
-        val ocrRequest = OneTimeWorkRequestBuilder<OcrWorker>()
-            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
-            .addTag(RagWorkContract.uniqueWorkName(documentId))
-            .build()
-        val chunkRequest = OneTimeWorkRequestBuilder<ChunkWorker>()
-            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
-            .addTag(RagWorkContract.uniqueWorkName(documentId))
-            .build()
-        val embedRequest = OneTimeWorkRequestBuilder<EmbedWorker>()
-            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
-            .addTag(RagWorkContract.uniqueWorkName(documentId))
-            .build()
-        val finalizeRequest = OneTimeWorkRequestBuilder<FinalizeIndexWorker>()
-            .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
-            .addTag(RagWorkContract.uniqueWorkName(documentId))
-            .build()
-        return workManager.beginUniqueWork(
-            RagWorkContract.uniqueWorkName(documentId),
+        val workName = RagWorkContract.uniqueWorkName(documentId)
+        val requests = RagWorkStagePlan.workerClasses.map { workerClass ->
+            androidx.work.OneTimeWorkRequest.Builder(workerClass)
+                .setInputData(Data.Builder().apply { input.forEach(::putString) }.build())
+                .addTag(workName)
+                .build()
+        }
+        var continuation = workManager.beginUniqueWork(
+            workName,
             ExistingWorkPolicy.KEEP,
-            copyRequest,
-        ).then(parseRequest).then(ocrRequest).then(chunkRequest).then(embedRequest).then(finalizeRequest).enqueue()
+            requests.first(),
+        )
+        requests.drop(1).forEach { request -> continuation = continuation.then(request) }
+        return continuation.enqueue()
     }
 
     override fun cancel(documentId: String): Operation {

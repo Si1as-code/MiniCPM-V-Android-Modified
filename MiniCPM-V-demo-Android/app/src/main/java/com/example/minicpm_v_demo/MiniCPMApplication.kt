@@ -17,6 +17,10 @@ import com.example.minicpm_v_demo.rag.prompt.RagContextBudgeter
 import com.example.minicpm_v_demo.rag.db.RagDatabaseFactory
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
 import com.example.minicpm_v_demo.rag.guard.RagGuardModelManager
+import com.example.minicpm_v_demo.rag.crypto.EncryptedFileStore
+import com.example.minicpm_v_demo.rag.index.ExactVectorSearchBackend
+import com.example.minicpm_v_demo.rag.index.HnswIndexPublisher
+import com.example.minicpm_v_demo.rag.index.HnswVectorSearchBackend
 import com.example.minicpm_v_demo.rag.retrieval.RoomDenseEvidenceRetriever
 import com.example.minicpm_v_demo.rag.retrieval.HybridRetriever
 import com.example.minicpm_v_demo.rag.retrieval.RagPromptAssembler
@@ -29,6 +33,7 @@ import androidx.work.WorkManager
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.Executors
 import java.util.UUID
+import java.io.File
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 class MiniCPMApplication : Application() {
@@ -43,8 +48,31 @@ class MiniCPMApplication : Application() {
     val ragDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagDatabaseFactory(this, ragKeyManager).open()
     }
+    private val hnswIndexDirectory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        File(noBackupFilesDir, "rag/index").apply {
+            check((isDirectory || mkdirs()) && isDirectory)
+        }
+    }
+    private val hnswIndexPublisher by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        HnswIndexPublisher(
+            hnswIndexDirectory,
+            EncryptedFileStore(ragKeyManager::getOrCreateMasterKey),
+        )
+    }
+    private val vectorSearchBackend by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        HnswVectorSearchBackend(
+            indexDirectory = hnswIndexDirectory,
+            publisher = hnswIndexPublisher,
+            appMemoryBudgetBytes = { Runtime.getRuntime().maxMemory() },
+            exactFallback = ExactVectorSearchBackend(),
+        )
+    }
     private val denseRagRetriever by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        RoomDenseEvidenceRetriever(ragDatabase, embeddingModelManager)
+        RoomDenseEvidenceRetriever(
+            ragDatabase,
+            embeddingModelManager,
+            vectorSearchBackend = vectorSearchBackend,
+        )
     }
     private val hybridRagRetriever by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         HybridRetriever(

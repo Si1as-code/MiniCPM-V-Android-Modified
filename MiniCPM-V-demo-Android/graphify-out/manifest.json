@@ -205,8 +205,8 @@
     "semantic_hash": "b082d81818f9c80d199fd33af5ea02c0"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt": {
-    "mtime": 1787117656.8078709,
-    "ast_hash": "12fee160c4ede6f4b75c73729e56b6b4",
+    "mtime": 1787281424.5827227,
+    "ast_hash": "dff34a3d19b76952f061a8ca01a7fdb9",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/ModelAdapter.kt": {
@@ -690,8 +690,8 @@
     "semantic_hash": "076371755e81658a5c7992ea1bd86845"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkCoordinator.kt": {
-    "mtime": 1787123700.8549535,
-    "ast_hash": "95f5e7b56c76dd4dd7f9b00ef40967b8",
+    "mtime": 1787280937.0093985,
+    "ast_hash": "e83b322f8a1d31b6023da76dd9935b82",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/work/RagWorkRecovery.kt": {
@@ -1447,6 +1447,46 @@
   "app/src/main/cpp/third_party/hnswlib/UPSTREAM.md": {
     "mtime": 1787276600.830151,
     "ast_hash": "d09badee8536d1708a5f10a58d48d5e0",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexBuilderInstrumentedTest.kt": {
+    "mtime": 1787280464.0623953,
+    "ast_hash": "3ce0a9ef7b4a280c35acca63326797d9",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexPublicationInstrumentedTest.kt": {
+    "mtime": 1787281456.5785203,
+    "ast_hash": "b612b1a03db5c12d6efbe8315ced8138",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswVectorSearchBackendInstrumentedTest.kt": {
+    "mtime": 1787281113.1901422,
+    "ast_hash": "806c455c764966fad71d4ef9bc78daac",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexBuilder.kt": {
+    "mtime": 1787280555.4041677,
+    "ast_hash": "7924edef49b2a84eb58dce7c577fc2b7",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexPublisher.kt": {
+    "mtime": 1787281673.0590174,
+    "ast_hash": "ba4bcf1eb5cd91132223b9cfb6299896",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswVectorSearchBackend.kt": {
+    "mtime": 1787281194.7322326,
+    "ast_hash": "f58cebcd9a8180290ecc74f99b1d678a",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/work/VectorIndexWorker.kt": {
+    "mtime": 1787280937.0073986,
+    "ast_hash": "63d32dd37a6b60af6c41d17631d9de47",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/work/RagWorkStagePlanTest.kt": {
+    "mtime": 1787280937.0103996,
+    "ast_hash": "bda61aef9cf40aab6b20199ed84d1f65",
     "semantic_hash": ""
   }
 }
