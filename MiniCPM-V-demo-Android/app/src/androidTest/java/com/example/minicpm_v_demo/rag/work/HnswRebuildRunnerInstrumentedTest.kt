@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.WorkManager
 import com.example.minicpm_v_demo.MiniCPMApplication
 import com.example.minicpm_v_demo.rag.crypto.EncryptedFileStore
 import com.example.minicpm_v_demo.rag.db.ChunkEntity
@@ -18,7 +19,9 @@ import com.example.minicpm_v_demo.rag.embed.FloatVectorCodec
 import com.example.minicpm_v_demo.rag.index.HnswIndex
 import com.example.minicpm_v_demo.rag.index.HnswIndexBuildOutcome
 import com.example.minicpm_v_demo.rag.index.HnswIndexPublisher
+import com.example.minicpm_v_demo.rag.index.EmbeddingCorpusKey
 import java.io.File
+import java.util.concurrent.TimeUnit
 import java.util.UUID
 import javax.crypto.KeyGenerator
 import kotlin.math.sqrt
@@ -31,6 +34,32 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class HnswRebuildRunnerInstrumentedTest {
+    @Test
+    fun repeatedEnqueueConvergesToOneCorpusGenerationWorkRequest() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val workManager = WorkManager.getInstance(context)
+        val corpusKey = EmbeddingCorpusKey(
+            knowledgeBaseIds = listOf("kb-enqueue-${UUID.randomUUID()}"),
+            modelSha256 = "0".repeat(64),
+            corpusVersion = 1,
+            embeddingCount = 5_001,
+            maximumUpdatedAt = 42,
+            chunkIdSum = 12_507_501,
+        )
+        val uniqueName = HnswRebuildContract.uniqueWorkName(corpusKey)
+        try {
+            val scheduler = WorkManagerHnswRebuildScheduler(workManager)
+            repeat(20) { scheduler.enqueue(corpusKey) }
+
+            val work = workManager.getWorkInfosForUniqueWork(uniqueName)
+                .get(10, TimeUnit.SECONDS)
+
+            assertEquals(1, work.size)
+        } finally {
+            workManager.cancelUniqueWork(uniqueName).result.get(10, TimeUnit.SECONDS)
+        }
+    }
+
     @Test
     fun legacyDeviceFixtureRowsAreRemovedWithoutTouchingUserKnowledgeBases() {
         val context = ApplicationProvider.getApplicationContext<Context>()

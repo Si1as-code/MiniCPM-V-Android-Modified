@@ -190,8 +190,8 @@
     "semantic_hash": "842a5ffe0e6516e3c43dbe86b6f8f479"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt": {
-    "mtime": 1787209403.376798,
-    "ast_hash": "f3a104bcb798497565cfde0f1730745b",
+    "mtime": 1787303706.3468852,
+    "ast_hash": "ce0bb508e5f12244e88c73f1abc8a5a5",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/MarkdownEscape.kt": {
@@ -205,8 +205,8 @@
     "semantic_hash": "b082d81818f9c80d199fd33af5ea02c0"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt": {
-    "mtime": 1787284412.7408645,
-    "ast_hash": "329ad373dcc8f9cbcc29ff9dba1e6713",
+    "mtime": 1787303703.9552095,
+    "ast_hash": "62b3ed09f07daba7d58381bdec7faeab",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/ModelAdapter.kt": {
@@ -280,14 +280,14 @@
     "semantic_hash": "e9483586c12e4223a4c1fbe292b6fa82"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/RagCoordinator.kt": {
-    "mtime": 1787208524.8048756,
-    "ast_hash": "59e6007835b569f7c718e204d6fa55bd",
+    "mtime": 1787303701.5694602,
+    "ast_hash": "b01353a266f858cc9311738426c5106d",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/RagTurnDeliveryPolicy.kt": {
-    "mtime": 1786956527.405721,
-    "ast_hash": "107dd1b16485a7413d82851712097ac6",
-    "semantic_hash": "107dd1b16485a7413d82851712097ac6"
+    "mtime": 1787297483.19449,
+    "ast_hash": "3831027f2432e2ba1485f181b2e27452",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/RagTurnTransaction.kt": {
     "mtime": 1786929694.725144,
@@ -325,9 +325,9 @@
     "semantic_hash": "ea2bcfb3879afae9ac9f14e85776916f"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/crypto/RagTempFileCleaner.kt": {
-    "mtime": 1786589701.4793036,
-    "ast_hash": "c41ba3da7d56f8ef29ed8abdbfbcbf92",
-    "semantic_hash": "c41ba3da7d56f8ef29ed8abdbfbcbf92"
+    "mtime": 1787298873.6884067,
+    "ast_hash": "d14f7256243397ad4c2a3db72c29c9e3",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/db/DocumentStatus.kt": {
     "mtime": 1786349931.621937,
@@ -360,9 +360,9 @@
     "semantic_hash": "4f64e1f28caaae936aeadca093d55c51"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/embed/E5Embedder.kt": {
-    "mtime": 1786674556.4405255,
-    "ast_hash": "8bd179108a09356aadba99cbbdb13fc9",
-    "semantic_hash": "8bd179108a09356aadba99cbbdb13fc9"
+    "mtime": 1787304256.87324,
+    "ast_hash": "e09a6a8496eb08a579cbca007aa0f62c",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/embed/E5ModelSpec.kt": {
     "mtime": 1786674556.441525,
@@ -385,9 +385,9 @@
     "semantic_hash": "4b88ec941796160e0117084fd5bee6f2"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/embed/EmbeddingModelManager.kt": {
-    "mtime": 1786674556.4492314,
-    "ast_hash": "1673d7154952734695bfa211ff0dd730",
-    "semantic_hash": "1673d7154952734695bfa211ff0dd730"
+    "mtime": 1787304259.375873,
+    "ast_hash": "7b7d847a1f61b8bd3566b8a21a5b9f71",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/embed/EmbeddingModelManifest.kt": {
     "mtime": 1786674556.450231,
@@ -765,14 +765,14 @@
     "semantic_hash": "fb070b0cdb4d847d3ddb590527aebba1"
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/RagCoordinatorTest.kt": {
-    "mtime": 1787208409.2866645,
-    "ast_hash": "d66b4b376c2e8606ff6154098edbd967",
+    "mtime": 1787303598.7763085,
+    "ast_hash": "c6aeabaa0c229a959e61d21bf26bb203",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/RagTurnDeliveryPolicyTest.kt": {
-    "mtime": 1786956430.1385963,
-    "ast_hash": "7a34b5815d1df589dc5c061658f28785",
-    "semantic_hash": "7a34b5815d1df589dc5c061658f28785"
+    "mtime": 1787297418.3468587,
+    "ast_hash": "b21468e94ec26a5ace80bee4f98c4971",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/RagTurnTransactionTest.kt": {
     "mtime": 1787211496.4706688,
@@ -800,9 +800,9 @@
     "semantic_hash": "d7b1abf74d0ad594add624bd565471d1"
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/crypto/RagTempFileCleanerTest.kt": {
-    "mtime": 1786419409.0819612,
-    "ast_hash": "b3b7ce8d0be2b9b60c1c4cf4b8401496",
-    "semantic_hash": "b3b7ce8d0be2b9b60c1c4cf4b8401496"
+    "mtime": 1787298664.199503,
+    "ast_hash": "349b1943b5e4ee60f8a06bff323cd11a",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/db/DocumentStatusTransitionPolicyTest.kt": {
     "mtime": 1786349811.6957831,
@@ -1100,8 +1100,8 @@
     "semantic_hash": "e319d508c87cf2d5a39b8a16e73c6524"
   },
   "README_MODIFIED_zh.md": {
-    "mtime": 1787118323.9124062,
-    "ast_hash": "bf0dd5d5fe5a84062a83f316f9871dcc",
+    "mtime": 1787537787.5297182,
+    "ast_hash": "c138568707d38dcc41d6e8e1fbe263b4",
     "semantic_hash": ""
   },
   "docs/architecture/ADR-001-local-rag-stack.md": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": "6112ddff6d42aba66988515d27814b46"
   },
   "docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md": {
-    "mtime": 1787217261.476011,
-    "ast_hash": "63d65f59f2a854c038db100c4f1b1044",
+    "mtime": 1787537893.410834,
+    "ast_hash": "b6b3570d06e2a904a7b9ef26e8422d89",
     "semantic_hash": ""
   },
   "tools/rag_guard/OFFICE_QUALITY_GATE.md": {
@@ -1205,7 +1205,7 @@
     "semantic_hash": "f173c24bacf92b8f62630fe3c4a04514"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagReviewedGenerator.kt": {
-    "mtime": 1787208524.8076105,
+    "mtime": 1787534480.8686953,
     "ast_hash": "075ec75d2476edae4924238812423b4f",
     "semantic_hash": ""
   },
@@ -1225,7 +1225,7 @@
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagReviewedGenerationTest.kt": {
-    "mtime": 1787208409.2890913,
+    "mtime": 1787534483.4328797,
     "ast_hash": "d389edb10075c32e666d04403327e60e",
     "semantic_hash": ""
   },
@@ -1375,8 +1375,8 @@
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-08-20-rag-large-vector-backend.md": {
-    "mtime": 1787295822.3302817,
-    "ast_hash": "4d868a0f7111b6d89952b5feb4536f7e",
+    "mtime": 1787537890.4055552,
+    "ast_hash": "c1940c19739aaf6e09ed3be7e625f263",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexManager.kt": {
@@ -1455,8 +1455,8 @@
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswIndexPublicationInstrumentedTest.kt": {
-    "mtime": 1787284457.8751135,
-    "ast_hash": "56c2dd76d43c211d70af89ba526026d2",
+    "mtime": 1787299397.7737455,
+    "ast_hash": "93edc93ceeea992d9bc3d0c4cb8f9c05",
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswVectorSearchBackendInstrumentedTest.kt": {
@@ -1465,18 +1465,18 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexBuilder.kt": {
-    "mtime": 1787280555.4041677,
-    "ast_hash": "7924edef49b2a84eb58dce7c577fc2b7",
+    "mtime": 1787537466.8879476,
+    "ast_hash": "32d854523cc724963ffdf879206b0b04",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswIndexPublisher.kt": {
-    "mtime": 1787284437.9305916,
-    "ast_hash": "e0d971c14df524a6e652776aafa741cf",
+    "mtime": 1787537453.4650226,
+    "ast_hash": "349b01bcf3e0f4bbdb22479e8e48aed5",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/HnswVectorSearchBackend.kt": {
-    "mtime": 1787284067.6427615,
-    "ast_hash": "d78a348838bbdd1579b03701c3e730ff",
+    "mtime": 1787301084.4614632,
+    "ast_hash": "b596f84bee6e588d359771bccf79df69",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/work/VectorIndexWorker.kt": {
@@ -1505,13 +1505,108 @@
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/work/HnswRebuildRunnerInstrumentedTest.kt": {
-    "mtime": 1787295954.6651704,
-    "ast_hash": "edda343646817329a0afdf823eba26a8",
+    "mtime": 1787299087.5501626,
+    "ast_hash": "10bf3edf88bbb3c1ef8760839a2cf8e7",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/work/HnswRebuildRunner.kt": {
     "mtime": 1787293893.2359848,
     "ast_hash": "a2f37b3159446af73b95709930905887",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/InstallationPersistenceInstrumentedTest.kt": {
+    "mtime": 1787535108.5677767,
+    "ast_hash": "ac13ae977b6ddf1fd9f13ef87bac21eb",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/RagAllQueriesFlowInstrumentedTest.kt": {
+    "mtime": 1787534908.5104346,
+    "ast_hash": "f79e80714f27dde8be9d49a0117946ea",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/RagEndToEndPerformanceInstrumentedTest.kt": {
+    "mtime": 1787536143.9432638,
+    "ast_hash": "f60a6dded68094f8e7c3fc6ffe8f5a24",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/embed/E5ExecutionProviderBenchmarkInstrumentedTest.kt": {
+    "mtime": 1787302976.0663218,
+    "ast_hash": "09bee30b4cd5e21c990c058e58a8210c",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/guard/GroundednessReleaseMatrixInstrumentedTest.kt": {
+    "mtime": 1787534549.6852913,
+    "ast_hash": "a589620073bbc063a9f3ef55d6ccc3a6",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswForceStopRecoveryInstrumentedTest.kt": {
+    "mtime": 1787536691.861139,
+    "ast_hash": "90293f113bc4caa90c5adeb2c27d413a",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/index/HnswScaleBenchmarkInstrumentedTest.kt": {
+    "mtime": 1787302133.9855063,
+    "ast_hash": "72cf17e1a10d0249022c70ef182257a2",
+    "semantic_hash": ""
+  },
+  "app/src/androidTest/java/com/example/minicpm_v_demo/rag/prompt/RagTokenBudgetInstrumentedTest.kt": {
+    "mtime": 1787303915.2483375,
+    "ast_hash": "5a6bd3e79edddc163d361728e0c1cf84",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/LowLatencyRagRuntimeGateTest.kt": {
+    "mtime": 1787303601.243655,
+    "ast_hash": "8693afae0abbd542a4a291c8a7e8dc03",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/embed/E5ExecutionProfileTest.kt": {
+    "mtime": 1787304191.7465854,
+    "ast_hash": "46c78426580e00d014a9b8aa10c18fd9",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/embed/EmbeddingSessionReleasePolicyTest.kt": {
+    "mtime": 1787303134.3918483,
+    "ast_hash": "6129c222719623983515d450ec4c5375",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/embed/InstalledEmbeddingModelVerifierTest.kt": {
+    "mtime": 1787303290.295425,
+    "ast_hash": "41160af051347b5409746df6304fbd7e",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/index/HnswSearchPolicyTest.kt": {
+    "mtime": 1787300896.7216134,
+    "ast_hash": "08bf369dbc52627ca1439d1500d23cba",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/e5-execution-provider-benchmark-20260821.md": {
+    "mtime": 1787304286.8974605,
+    "ast_hash": "d9887721e64c2c3e7519ba106b214ac6",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/groundedness-release-matrix-20260824.md": {
+    "mtime": 1787534552.178116,
+    "ast_hash": "fe6b7570624dd4ddd54063a6d5b6231e",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/hnsw-force-stop-recovery-20260824.md": {
+    "mtime": 1787538195.1775885,
+    "ast_hash": "0a5a2e011bee1af6c9cfb48ca94de758",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/hnsw-scale-benchmark-20260821.md": {
+    "mtime": 1787302401.1808176,
+    "ast_hash": "1b23ccbd7c3cc5e09c9ed6fdc8977f09",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/installation-persistence-20260824.md": {
+    "mtime": 1787538197.9961019,
+    "ast_hash": "1585000f36dfd04ca38ca2816ef8ec86",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/rag-end-to-end-performance-20260824.md": {
+    "mtime": 1787538200.423323,
+    "ast_hash": "65c6e41c2363b7deb63802f46ec9df68",
     "semantic_hash": ""
   }
 }

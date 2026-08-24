@@ -7,6 +7,53 @@ import org.junit.Test
 
 class RagTempFileCleanerTest {
     @Test
+    fun `HNSW cleanup removes only plaintext candidates left by an earlier process`() {
+        val indexDirectory = Files.createTempDirectory("rag-hnsw-cleanup-test").toFile()
+        try {
+            val processStartedAt = 10_000L
+            val staleBuild = indexDirectory.resolve("hnsw-build-123.hnsw").apply {
+                writeText("plaintext build")
+                setLastModified(1_000L)
+            }
+            val staleDecryption = indexDirectory.resolve("hnsw-456.plain").apply {
+                writeText("plaintext read")
+                setLastModified(1_000L)
+            }
+            val currentProcessBuild = indexDirectory.resolve("hnsw-build-789.hnsw").apply {
+                writeText("active build")
+                setLastModified(11_000L)
+            }
+            val encryptedIndex = indexDirectory.resolve("corpus.hnsw.enc").apply {
+                writeText("encrypted")
+                setLastModified(1_000L)
+            }
+            val previousGeneration = indexDirectory.resolve("corpus.hnsw.enc.previous").apply {
+                writeText("encrypted previous")
+                setLastModified(1_000L)
+            }
+            val unrelated = indexDirectory.resolve("notes.hnsw").apply {
+                writeText("unrelated")
+                setLastModified(1_000L)
+            }
+
+            val deleted = RagTempFileCleaner.cleanupHnswPlaintext(
+                indexDirectory,
+                createdBeforeOrAtMs = processStartedAt,
+            )
+
+            assertTrue(deleted)
+            assertFalse(staleBuild.exists())
+            assertFalse(staleDecryption.exists())
+            assertTrue(currentProcessBuild.exists())
+            assertTrue(encryptedIndex.exists())
+            assertTrue(previousGeneration.exists())
+            assertTrue(unrelated.exists())
+        } finally {
+            indexDirectory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `cleanup removes only stale part files inside staging directory`() {
         val staging = Files.createTempDirectory("rag-staging-test").toFile()
         try {

@@ -21,13 +21,17 @@ object HnswRebuildPolicy {
     }
 }
 
+object HnswSearchPolicy {
+    const val DEFAULT_EF_SEARCH = 256
+}
+
 class HnswVectorSearchBackend(
     indexDirectory: File,
     private val publisher: HnswIndexPublisher,
     appMemoryBudgetBytes: () -> Long,
     private val exactFallback: VectorSearchBackend = ExactVectorSearchBackend(),
     private val minimumEmbeddingCount: Int = 5_001,
-    private val efSearch: Int = 48,
+    private val efSearch: Int = HnswSearchPolicy.DEFAULT_EF_SEARCH,
     private val onRebuildRequired: (EmbeddingCorpusKey) -> Unit = {},
 ) : VectorSearchBackend {
     private val directory = indexDirectory.canonicalFile.also { root ->

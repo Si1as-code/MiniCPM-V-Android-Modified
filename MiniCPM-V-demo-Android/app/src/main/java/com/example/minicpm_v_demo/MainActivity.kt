@@ -1831,20 +1831,30 @@ class MainActivity : StatusBarVisibleActivity() {
                             traceResult = RagTraceResult.PASS_THROUGH
                             userMsg
                         } else {
-                            traceResult = RagTraceResult.AUGMENTED
-                            ragRunId = turnPlan.runId
-                            ragSources = turnPlan.citations.toList()
-                            latencyTrace.recordCandidateCount(ragSources.size)
-                            latencyTrace.recordEvidenceTokenCount(turnPlan.evidenceTokenCount)
                             latencyTrace.begin(RagPhase.PREFILL)
-                            try {
-                                val checkpoint = engine.beginEphemeralTurn()
-                                ragTransaction = RagTurnTransaction(engine, checkpoint)
-                                usesPreparedPrompt = true
+                            val checkpoint = try {
+                                engine.beginEphemeralTurn()
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                app.lowLatencyRagRuntimeGate.disable()
+                                null
                             } finally {
                                 latencyTrace.end(RagPhase.PREFILL)
                             }
-                            turnPlan.prompt
+                            if (checkpoint == null) {
+                                traceResult = RagTraceResult.PASS_THROUGH
+                                userMsg
+                            } else {
+                                traceResult = RagTraceResult.AUGMENTED
+                                ragRunId = turnPlan.runId
+                                ragSources = turnPlan.citations.toList()
+                                latencyTrace.recordCandidateCount(ragSources.size)
+                                latencyTrace.recordEvidenceTokenCount(turnPlan.evidenceTokenCount)
+                                ragTransaction = RagTurnTransaction(engine, checkpoint)
+                                usesPreparedPrompt = true
+                                turnPlan.prompt
+                            }
                         }
                     }
                     RagTurnPlan.NoSelection,

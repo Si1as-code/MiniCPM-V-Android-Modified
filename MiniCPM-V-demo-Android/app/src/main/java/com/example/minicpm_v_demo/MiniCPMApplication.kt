@@ -1,6 +1,9 @@
 package com.example.minicpm_v_demo
 
 import android.app.Application
+import android.app.Activity
+import android.os.Bundle
+import android.os.SystemClock
 import com.example.minicpm_v_demo.rag.crypto.RagKeyManager
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
 import com.example.minicpm_v_demo.rag.retrieval.CascadedEvidenceAcceptancePolicy
@@ -13,9 +16,11 @@ import com.example.minicpm_v_demo.rag.RagPromptBuilder
 import com.example.minicpm_v_demo.rag.RagRunIdFactory
 import com.example.minicpm_v_demo.rag.RagRetrievalMode
 import com.example.minicpm_v_demo.rag.RoomRagStateQueries
+import com.example.minicpm_v_demo.rag.LowLatencyRagRuntimeGate
 import com.example.minicpm_v_demo.rag.prompt.RagContextBudgeter
 import com.example.minicpm_v_demo.rag.db.RagDatabaseFactory
 import com.example.minicpm_v_demo.rag.embed.EmbeddingModelManager
+import com.example.minicpm_v_demo.rag.embed.EmbeddingSessionReleasePolicy
 import com.example.minicpm_v_demo.rag.guard.RagGuardModelManager
 import com.example.minicpm_v_demo.rag.crypto.EncryptedFileStore
 import com.example.minicpm_v_demo.rag.index.ExactVectorSearchBackend
@@ -38,6 +43,9 @@ import java.io.File
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 class MiniCPMApplication : Application() {
+    private val processStartedAtMs = System.currentTimeMillis()
+    @Volatile private var backgroundSinceElapsedMs: Long? = null
+    private var startedActivityCount: Int = 0
     val embeddingModelManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { EmbeddingModelManager(this) }
     val ragGuardModelManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagGuardModelManager(this, embeddingModelManager)
@@ -49,6 +57,7 @@ class MiniCPMApplication : Application() {
     val ragDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RagDatabaseFactory(this, ragKeyManager).open()
     }
+    val lowLatencyRagRuntimeGate = LowLatencyRagRuntimeGate()
     internal val hnswIndexDirectory by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         File(noBackupFilesDir, "rag/index").apply {
             check((isDirectory || mkdirs()) && isDirectory)
@@ -104,17 +113,43 @@ class MiniCPMApplication : Application() {
             promptBuilder = RagPromptBuilder(RagPromptAssembler::assemble),
             runIdFactory = RagRunIdFactory { UUID.randomUUID().toString() },
             retrievalMode = RagRetrievalMode.ALL_QUERIES,
+            runtimeEnabled = lowLatencyRagRuntimeGate::isEnabled,
         )
     }
 
     override fun onCreate() {
         super.onCreate()
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, state: Bundle?) = Unit
+
+            override fun onActivityStarted(activity: Activity) {
+                startedActivityCount++
+                backgroundSinceElapsedMs = null
+            }
+
+            override fun onActivityResumed(activity: Activity) = Unit
+            override fun onActivityPaused(activity: Activity) = Unit
+
+            override fun onActivityStopped(activity: Activity) {
+                startedActivityCount = (startedActivityCount - 1).coerceAtLeast(0)
+                if (startedActivityCount == 0) {
+                    backgroundSinceElapsedMs = SystemClock.elapsedRealtime()
+                }
+            }
+
+            override fun onActivitySaveInstanceState(activity: Activity, state: Bundle) = Unit
+            override fun onActivityDestroyed(activity: Activity) = Unit
+        })
         PDFBoxResourceLoader.init(this)
         LocaleManager.applyOnAppStart(this)
         ragMaintenanceExecutor.execute {
             RagTempFileCleaner.cleanup(RagTempFileCleaner.stagingDirectory(noBackupFilesDir))
+            RagTempFileCleaner.cleanupHnswPlaintext(
+                hnswIndexDirectory,
+                createdBeforeOrAtMs = processStartedAtMs,
+            )
             runBlocking {
-                val installedModel = embeddingModelManager.openInstalled()
+                val installedModel = embeddingModelManager.installedIdentity()
                 installedModel?.let { model ->
                     ragDatabase.knowledgeBaseDao().updateInstalledModelHash(
                         model.modelId, model.modelSha256, System.currentTimeMillis(),
@@ -125,6 +160,18 @@ class MiniCPMApplication : Application() {
                     WorkManagerRagWorkCoordinator(WorkManager.getInstance(this@MiniCPMApplication)),
                 ).rescheduleInterruptedImports(retryModelBindingFailures = installedModel != null)
             }
+        }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (EmbeddingSessionReleasePolicy.shouldRelease(
+                backgroundSinceMs = backgroundSinceElapsedMs,
+                nowMs = SystemClock.elapsedRealtime(),
+                trimLevel = level,
+            )
+        ) {
+            embeddingModelManager.close()
         }
     }
 

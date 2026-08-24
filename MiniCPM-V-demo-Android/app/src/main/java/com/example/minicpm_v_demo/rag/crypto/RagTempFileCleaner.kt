@@ -6,6 +6,27 @@ import java.nio.file.Files
 object RagTempFileCleaner {
     const val DEFAULT_STALE_AFTER_MS = 24L * 60 * 60 * 1_000
 
+    fun cleanupHnswPlaintext(
+        indexDirectory: File,
+        createdBeforeOrAtMs: Long,
+    ): Boolean {
+        require(createdBeforeOrAtMs >= 0) { "createdBeforeOrAtMs must be non-negative" }
+        if (!indexDirectory.isDirectory || Files.isSymbolicLink(indexDirectory.toPath())) return false
+        val canonicalDirectory = runCatching { indexDirectory.canonicalFile }.getOrElse { return false }
+        var deletedAny = false
+        indexDirectory.listFiles().orEmpty().forEach { candidate ->
+            val isManagedPlaintext = runCatching {
+                candidate.isFile &&
+                    !Files.isSymbolicLink(candidate.toPath()) &&
+                    candidate.canonicalFile.parentFile == canonicalDirectory &&
+                    HNSW_PLAINTEXT_NAME.matches(candidate.name) &&
+                    candidate.lastModified() <= createdBeforeOrAtMs
+            }.getOrDefault(false)
+            if (isManagedPlaintext && candidate.delete()) deletedAny = true
+        }
+        return deletedAny
+    }
+
     /** Returns true when at least one stale plaintext staging file was removed. */
     fun cleanup(
         stagingDirectory: File,
@@ -36,4 +57,7 @@ object RagTempFileCleaner {
 
     private const val PART_SUFFIX = ".part"
     private val SAFE_DOCUMENT_ID = Regex("[A-Za-z0-9_-]{1,128}")
+    private val HNSW_PLAINTEXT_NAME = Regex(
+        "(?:hnsw-build-[A-Za-z0-9_-]+\\.hnsw|hnsw-[A-Za-z0-9_-]+\\.plain)",
+    )
 }

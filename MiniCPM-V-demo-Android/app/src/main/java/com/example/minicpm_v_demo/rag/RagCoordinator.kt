@@ -6,6 +6,7 @@ import com.example.minicpm_v_demo.rag.route.RagQueryRoute
 import com.example.minicpm_v_demo.rag.route.RagQueryRouter
 import com.example.minicpm_v_demo.rag.route.RagRouteInput
 import kotlinx.coroutines.CancellationException
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class RagRouteState(
     val enabled: Boolean,
@@ -206,6 +207,16 @@ enum class RagRetrievalMode {
     ALL_QUERIES,
 }
 
+class LowLatencyRagRuntimeGate {
+    private val enabled = AtomicBoolean(true)
+
+    fun isEnabled(): Boolean = enabled.get()
+
+    fun disable() {
+        enabled.set(false)
+    }
+}
+
 enum class RagPlanningStage {
     RETRIEVING,
     ORGANIZING,
@@ -221,6 +232,7 @@ class RagCoordinator(
     private val promptBuilder: RagPromptBuilder,
     private val runIdFactory: RagRunIdFactory,
     private val retrievalMode: RagRetrievalMode = RagRetrievalMode.ADAPTIVE,
+    private val runtimeEnabled: () -> Boolean = { true },
 ) {
     suspend fun plan(
         conversationId: Long,
@@ -230,6 +242,7 @@ class RagCoordinator(
         onStage: suspend (RagPlanningStage) -> Unit = {},
     ): RagTurnPlan {
         require(conversationId > 0 && question.isNotBlank() && limit in 1..20)
+        if (!runtimeEnabled()) return RagTurnPlan.Disabled
         val boundedQuestion = question.takeCodePoints(MAX_QUERY_CODE_POINTS)
         val routeState = try {
             stateSource.routeState(conversationId)

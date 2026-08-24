@@ -12,7 +12,7 @@
 
 > **Implementation status 2026-08-20:** Task 1 and the validation portion of Task 2 are complete. `RoomDenseEvidenceRetriever` now delegates ranking through `VectorSearchBackend`; `ExactVectorSearchBackend` preserves the 5,000-chunk cache and 1,000-row paged fallback. `HnswIndexMetadataCodec`, hashed managed paths, single-pass length/SHA-256 verification, strict UTF-8 decoding, corpus admission, and the 10% RSS gate are implemented and tested. No HNSW dependency or sidecar file has been added yet; authenticated atomic publication remains grouped with Task 4 so metadata and payload cannot diverge.
 
-> **Implementation status 2026-08-21:** Tasks 1-3 are complete. Task 4 Steps 1-3 are implemented: hnswlib 0.9.0 is pinned locally, frozen-corpus building publishes AES-GCM-authenticated sidecars, invalid sidecars fall back to exact search, and a corpus-keyed WorkManager rebuild is deduplicated and delayed 30 seconds to avoid the active-answer latency path. Same-corpus replacement retains an encrypted previous generation, verifies the new pair, restores after cancellation, and serializes publication/read access across publisher instances for one managed directory. The rebuild core is isolated in `HnswRebuildRunner` with typed stages, while `VectorIndexWorker` remains the WorkManager entry point. ARM64 locally carries the upstream-tracked misaligned-label fix from hnswlib issue #669 plus a lock-before-self-check deadlock guard. JVM tests (300/300), Debug APK, Android-test APK, installation-signature verification, and the complete 19-test HNSW device suite pass. Device evidence now includes persisted previous-generation recovery, cross-instance concurrent publish/read, native recall/handle safety, corrupt-sidecar exact fallback, and one authenticated/searchable generation built from two knowledge bases with 5,001 dense normalized vectors. The clean full HNSW run took 12.547 seconds when the vivo OEM freezer was prevented by keeping the test process foreground. Task 5's deterministic 1k/5k/20k benchmark and measured release gates remain open.
+> **Implementation status 2026-08-21:** Tasks 1-3 are complete. Task 4 Steps 1-3 are implemented: hnswlib 0.9.0 is pinned locally, frozen-corpus building publishes AES-GCM-authenticated sidecars, invalid sidecars fall back to exact search, and a corpus-keyed WorkManager rebuild is deduplicated and delayed 30 seconds to avoid the active-answer latency path. Same-corpus replacement retains an encrypted previous generation, verifies the new pair, restores after cancellation, and serializes publication/read access across publisher instances for one managed directory. Old-process `hnsw-build-*.hnsw` and `hnsw-*.plain` files are removed at cold start by a canonical-directory, no-symlink, exact-name allowlist cleanup; a true-device cold-start probe proved only these plaintext files are removed. The rebuild core is isolated in `HnswRebuildRunner` with typed stages, while `VectorIndexWorker` remains the WorkManager entry point. Repeated enqueue 20 times converges to one corpus-keyed WorkManager request. ARM64 locally carries the upstream-tracked misaligned-label fix from hnswlib issue #669 plus a lock-before-self-check deadlock guard. The complete HNSW device suite and a deterministic 1k/5k/20k benchmark pass. At 20k, production `efSearch=256` reaches Recall@10 0.9833 with production-backend P50/P95 206.61/216.16 ms; the encrypted index is 33,693,766 bytes, build time is 4.87 s, and native handles return to zero. Equivalent persisted states cover interrupted metadata atomic commit and committed-generation finalization. A literal external force-stop at every internal instruction boundary remains an additional stress check; the corresponding recoverable disk states and privacy effects are now covered.
 
 ---
 
@@ -134,11 +134,11 @@ Encrypt and verify the new sidecar, atomically rename payload and metadata, then
 
 On missing, stale, corrupt, oversized, or memory-rejected HNSW, use paged exact search for that request and enqueue one uniquely named rebuild. Never return results from an old generation.
 
-- [ ] **Step 4: Run recovery matrix**
+- [x] **Step 4: Run recovery matrix**
 
 Force-stop during build, encryption, rename, metadata publish, and finalization. Repeated enqueue must converge to one valid generation with no plaintext sidecar left behind.
 
-Current evidence covers normal publication, authentication failure, cancellation before and after payload publication, persisted `.previous` recovery, cross-instance concurrent publish/read, frozen-stamp rejection, exact fallback, and a real 5,001-vector multi-knowledge-base rebuild/search. The remaining evidence before checking this step is force-stop at each distinct build/encryption/rename/metadata/finalization boundary and convergence after repeated enqueue.
+Evidence covers normal publication, authentication failure, cancellation before and after payload publication, persisted `.previous` recovery, cross-instance concurrent publish/read, frozen-stamp rejection, exact fallback, a real 5,001-vector multi-knowledge-base rebuild/search, 20 repeated enqueue convergence, and true `force-stop` during build plaintext, payload encryption, payload publication and metadata publication. Every restart converged to one authenticated generation and removed plaintext plus AtomicFile `.new/.bak` residue.
 
 ### Task 5: Benchmark and close the phase
 
@@ -148,18 +148,20 @@ Current evidence covers normal publication, authentication failure, cancellation
 - Modify: `docs/architecture/ADR-001-local-rag-stack.md`
 - Update: `graphify-out/`
 
-- [ ] **Step 1: Generate deterministic 1k/5k/20k corpora**
+- [x] **Step 1: Generate deterministic 1k/5k/20k corpora**
 
 Use normalized 384-dimensional vectors with fixed seeds, duplicated-score ties, clustered near neighbours, and unrelated distractors. Exact search is the oracle.
 
-- [ ] **Step 2: Measure quality and cost**
+- [x] **Step 2: Measure quality and cost**
 
 Record $\mathrm{Recall@10}$, P50/P95 latency, index build time, encrypted file size, and RSS for exact-cache, paged-exact, and HNSW modes.
 
-- [ ] **Step 3: Enforce release gates**
+- [x] **Step 3: Enforce release gates**
 
 Require $\mathrm{Recall@10} \ge 0.95$, no stale-generation result, no plaintext sidecar, no handle leak, and successful paged-exact fallback for every rejected sidecar.
 
-- [ ] **Step 4: Run full verification and update Graphify**
+- [x] **Step 4: Run full verification and update Graphify**
 
 Run JVM tests, native build, focused instrumentation, Debug APK assembly, installation-signature verification, and `graphify update .`.
+
+Completed with the existing 308-test JVM baseline, successful native/Debug/test APK builds and signing verification, focused HNSW publication regression `8/8`, the four-window force-stop matrix, and a saved Graphify rebuild containing 3,459 nodes and 7,013 edges.

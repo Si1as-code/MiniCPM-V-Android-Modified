@@ -10,6 +10,13 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
+enum class HnswPublicationStage {
+    PREVIOUS_GENERATION_BACKED_UP,
+    PAYLOAD_PUBLISHED,
+    METADATA_PUBLISHED,
+    GENERATION_VERIFIED,
+}
+
 class HnswIndexPublisher(
     indexDirectory: File,
     private val encryptedFileStore: EncryptedFileStore,
@@ -26,6 +33,7 @@ class HnswIndexPublisher(
     fun publish(
         metadata: HnswIndexMetadata,
         plaintextIndex: File,
+        onStage: (HnswPublicationStage) -> Unit = {},
         shouldContinue: () -> Boolean = { true },
     ): HnswIndexPaths = synchronized(publicationLock) {
         val candidate = plaintextIndex.canonicalFile
@@ -38,20 +46,25 @@ class HnswIndexPublisher(
         val paths = manager.pathsFor(metadata.corpusKey)
         val previous = previousPaths(paths)
         val hasPrevious = backupCurrentIfValid(paths, previous, metadata.corpusKey)
+        onStage(HnswPublicationStage.PREVIOUS_GENERATION_BACKED_UP)
         try {
             candidate.inputStream().buffered().use { input ->
                 encryptedFileStore.encrypt(input, paths.encryptedIndex, shouldContinue)
             }
+            onStage(HnswPublicationStage.PAYLOAD_PUBLISHED)
             if (!shouldContinue()) throw IOException("HNSW publication cancelled")
             encryptedFileStore.encrypt(
                 ByteArrayInputStream(HnswIndexMetadataCodec.encode(metadata)),
                 paths.metadata,
                 shouldContinue,
             )
+            onStage(HnswPublicationStage.METADATA_PUBLISHED)
             check(isValidPair(paths, metadata.corpusKey)) {
                 "Published HNSW generation failed verification"
             }
+            onStage(HnswPublicationStage.GENERATION_VERIFIED)
             deletePrevious(previous)
+            deleteAtomicResidue(paths)
             return paths
         } catch (error: Exception) {
             if (hasPrevious) restorePrevious(paths, previous, metadata.corpusKey)
@@ -95,11 +108,14 @@ class HnswIndexPublisher(
         val plaintext = synchronized(publicationLock) {
             var metadata = readMetadata(corpusKey)
             try {
-                decryptVerified(paths, metadata)
+                decryptVerified(paths, metadata).also {
+                    deletePrevious(previousPaths(paths))
+                    deleteAtomicResidue(paths)
+                }
             } catch (error: Exception) {
                 if (!restorePrevious(paths, previousPaths(paths), corpusKey)) throw error
                 metadata = readMetadataFile(paths.metadata)
-                decryptVerified(paths, metadata)
+                decryptVerified(paths, metadata).also { deleteAtomicResidue(paths) }
             }
         }
         try {
@@ -155,6 +171,7 @@ class HnswIndexPublisher(
             copyAtomically(previous.metadata, paths.metadata)
             if (!isValidPair(paths, corpusKey)) return false
             deletePrevious(previous)
+            deleteAtomicResidue(paths)
             true
         } catch (_: Exception) {
             false
@@ -199,6 +216,13 @@ class HnswIndexPublisher(
     private fun deletePrevious(previous: HnswIndexPaths) {
         previous.encryptedIndex.delete()
         previous.metadata.delete()
+    }
+
+    private fun deleteAtomicResidue(paths: HnswIndexPaths) {
+        listOf(paths.encryptedIndex, paths.metadata).forEach { target ->
+            File(directory, "${target.name}.new").delete()
+            File(directory, "${target.name}.bak").delete()
+        }
     }
 
     private fun deletePlaintext(plaintext: File) {

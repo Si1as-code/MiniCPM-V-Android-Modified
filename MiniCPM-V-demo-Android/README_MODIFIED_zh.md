@@ -125,14 +125,14 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 
 ## 本地 RAG（开发中）
 
-项目正在按端侧离线 RAG 方案分阶段开发。当前已经跑通“手机导入文档 -> 加密保存 -> 解析/OCR -> 切块 -> E5 向量化 -> 会话选择知识库 -> 混合检索 -> 临时证据注入 -> 输出依据性审查 -> 回答与引用归档”的基础闭环。真实办公分布最终资格、大库近似索引和完整压力验收仍未完成，因此继续标记为开发中。
+项目正在按端侧离线 RAG 方案分阶段开发。当前已经跑通“手机导入文档 -> 加密保存 -> 解析/OCR -> 切块 -> E5 向量化 -> 会话选择知识库 -> 混合检索 -> 临时证据注入 -> 输出依据性审查 -> 回答与引用归档”的基础闭环。大库 HNSW、1k/5k/20k 基准、四窗口真实 force-stop、真实 token 预算、0/10/30 轮 TTFT 和固定签名覆盖安装均已完成；Guard 对错误金额/日期仍存在漏判，因此继续标记为开发中，等待最终模型重训。
 
 - 架构决策：[docs/architecture/ADR-001-local-rag-stack.md](docs/architecture/ADR-001-local-rag-stack.md)
 - 威胁模型：[docs/architecture/rag-threat-model.md](docs/architecture/rag-threat-model.md)
 - 唯一活动计划：[docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md](docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md)
 - 历史总体设计：[docs/superpowers/plans/2026-08-10-android-local-rag.md](docs/superpowers/plans/2026-08-10-android-local-rag.md)
 
-当前工程估算：RAG 基础闭环约完成 `90%`，完整办公发布目标约完成 `72%`。详细口径、验证证据和后续唯一执行顺序以统一活动计划为准。
+当前工程估算：RAG 基础闭环约完成 `95%`，完整办公发布目标约完成 `80%`。详细口径、验证证据和后续唯一执行顺序以统一活动计划为准。
 
 当前已经完成：
 
@@ -147,6 +147,7 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 - 只有审核通过的 RAG 回答才显示“根据数据库中内容”标识，普通回答不冒充知识库回答；
 - 中文/英文句子、条款和表格行窗口缩减，MiniCPM 原生 tokenizer 证据预算，以及 XML 数据边界转义；
 - 小库连续向量缓存（最多 5000 chunks）和语料校验戳失效；
+- 大库 HNSW 加密索引、后台重建、上一代恢复、损坏精确检索回退和 5001 向量真机闭环；
 - 引用白名单、引用快照、会话归档 v2，以及 AI 气泡来源 chip/归档摘录详情；
 - Answerability/Groundedness 双头 INT8 模型、Android runtime、CPU 真机性能和独立质量门槛工具。
 
@@ -156,10 +157,10 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 
 - 脱敏真实办公校准/测试集和生产 Answerability profile；
 - 新 Guard 模型最终 INT8 导出、固定哈希、阈值 profile 和真机模型包替换；
-- 大库 HNSW/分区后端和损坏恢复；
-- ADAPTIVE 正式路由、15 秒 watchdog、完整编辑/前后台状态矩阵；
-- 来源原文精确定位和“来源已删除”状态查询；
-- 功能、安全、压力、性能、内存、温升和固定签名覆盖安装验收。
+- HNSW 各发布边界强制中断恢复矩阵，以及 1k/5k/20k Recall@10、P50/P95、RSS 和索引体积基准；
+- `ALL_QUERIES` 已固定为正式模式，E5 固定使用真机更快的 ORT CPU，编辑/前后台和端到端性能矩阵已闭环；
+- Groundedness 真机确认错误金额/日期会漏判，该项只记录为最终模型重训输入，不用应用层规则掩盖；
+- Guard 重训后的错误金额、错误日期、伪引用与最终安全矩阵。
 
 环境要求：
 
@@ -196,13 +197,15 @@ adb install app\build\outputs\apk\debug\app-debug.apk
 
 | 检查项 | 结果 |
 |---|---|
-| 单元测试 | 82/82 通过（含固定依赖、解析限额、文档状态机、文件类型识别，以及原有会话、图片和安全回归） |
+| JVM 回归 | 308/308 通过（含固定依赖、解析限额、文档状态机、会话编辑、图片、安全、RAG、HNSW 和低延迟降级） |
 | Android Lint | 通过，0 errors（上游资源仍有 warnings） |
 | Android 测试代码编译 | 通过 |
 | Debug APK 组装 | 通过 |
 | APK 签名校验 | APK Signature Scheme v2 验证通过 |
 | arm64 原生库 | `libminicpm_v_demo.so`、`libggml-cpu-v86.so` 均已打包 |
 | 真机安装与启动 | vivo V2359A / Android 16 覆盖安装、启动通过 |
+| 固定签名覆盖安装 | `adb install -r` 前后会话、知识库、文档状态、E5/Guard 与 HNSW 聚合指纹一致；测试探针已清理 |
+| RAG TTFT | 0/10/30 轮历史下普通提示 P95 为 210/182/217 ms，RAG 注入提示 P95 为 1836/1914/2360 ms |
 | 状态栏与内容避让 | 状态栏常驻，模型管理页标题从状态栏下方开始 |
 | 下载中后台恢复 | 模型下载期间后台返回主界面，无重复缺失模型弹窗 |
 | 统一设置入口 | 左上角入口、三个设置项、切片滑块与清空二次确认均通过真机复验 |

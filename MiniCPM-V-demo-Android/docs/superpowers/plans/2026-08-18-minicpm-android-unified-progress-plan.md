@@ -16,6 +16,8 @@
 
 > **2026-08-20 大库后端增量：** 已增加 `VectorSearchBackend`、`VectorEmbeddingSource` 和 `ExactVectorSearchBackend`，`RoomDenseEvidenceRetriever` 已通过统一接口保留 5000 chunks 连续缓存与 1000-row 分页精确降级；分页结果与 exact oracle 一致。HNSW sidecar、原子 generation、损坏恢复和 1k/5k/20k benchmark 仍待完成。
 
+> **2026-08-24 全链增量：** `ALL_QUERIES` 的 Ready/NoEvidence/NoSelection 真机闭环、真实 MiniCPM token 预算、E5 CPU 执行配置、1k/5k/20k HNSW 基准、固定签名覆盖安装持久化和 0/10/30 轮 TTFT 矩阵均已通过。Groundedness 真机矩阵发现错误金额与错误日期被高置信误判为 `GROUNDED`；按产品决定只记录为最终重训阻塞项，不增加应用层数字规则，也不继续刻意试探模型边界。
+
 > **2026-08-20 HNSW 边界增量：** 已实现有界元数据 codec、严格 UTF-8、corpus generation 匹配、SHA-256 命名的受控路径、单次流式长度/摘要校验和应用内存预算 10% 的 RSS 准入；截断、尾随字节、路径穿越、摘要不一致和超预算测试均通过。native HNSW 与认证原子发布尚未接入。
 
 ---
@@ -80,16 +82,16 @@
 
 | 项目 | 当前值 |
 |---|---|
-| 分支 | `codex/rag-all-queries-experiment` |
-| 已提交基线 | `9b229c220690123af5ec00b37742d110f9bcc18b` |
-| 工作树 | 正在实现来源生命周期；Guard、检索和导入删除改动均已提交 |
+| 分支 | `codex/rag-all-queries-experiment`（分支名保留，但 `ALL_QUERIES` 已确定为正式产品行为） |
+| 已提交基线 | `c7c6d25f873f6b1a05e7be3a59cebf2c48f45110` |
+| 工作树 | 正在固化全量检索交付契约；HNSW 主体、来源生命周期、Guard、检索和导入删除改动均已提交 |
 | Android 包名 | `com.example.minicpm_v_demo` |
 | 目标真机 | vivo `V2359A` |
 | 安装规则 | 先执行 `verifyInstallationSigning`，只允许 `adb install -r`，禁止自动卸载和清除数据 |
 | E5 模型 | `multilingual-e5-small` INT8，384 维，固定文件 SHA-256 |
 | Guard 模型 | v3 实验双头 INT8 ONNX，118,169,267 bytes，SHA-256 `6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa`；量化发布门槛失败，仅允许保守阈值实验路径 |
-| 当前 RAG 模式 | `ALL_QUERIES` 实验模式，不是最终默认策略 |
-| 当前生产门控 | 惰性分类器依赖已接入，`CurrentAnswerabilityCalibration.profile=null`，只安全放行精确锚点证据且不会打开 Guard session |
+| 当前 RAG 模式 | `ALL_QUERIES` 正式行为：选中知识库后所有问题检索，只有证据通过门控才增强回答 |
+| 当前生产门控 | 惰性 Answerability 已接入 `ExperimentalAnswerabilityCalibration.profile`；Guard 缺失、证据未通过或 Groundedness 失败均静默回退原问题普通回答 |
 
 ## 4. 完成度总览
 
@@ -98,9 +100,9 @@
 | 口径 | 当前完成度 | 说明 |
 |---|---:|---|
 | 基础 App 历史需求 | 约 `95%` | 状态栏、图片、设置、安全、多会话、持久化和编辑已稳定；仍需在最终 RAG 回归中证明不退化 |
-| RAG 基础闭环 | 约 `80%` | 手机导入、解析、切块、向量化、选择知识库、检索、临时注入、回答和引用归档已经跑通 |
-| RAG 完整办公发布目标 | 约 `60%` | 真实分布质量、输出复核、证据压缩、大库索引、来源 UI、生命周期和压力验收尚未完成 |
-| 项目整体正式发布准备度 | 约 `70%` | 基础 App 较成熟，但 RAG 仍是实验/开发功能，不能标记为稳定版 |
+| RAG 基础闭环 | 约 `95%` | 手机导入、解析、切块、向量化、全量检索、临时注入、输出审查、普通回答回退和引用归档已经跑通 |
+| RAG 完整办公发布目标 | 约 `80%` | 主要剩余真实分布质量、HNSW 中断/规模基准、真机 token/输出审查和完整发布矩阵 |
+| 项目整体正式发布准备度 | 约 `82%` | 基础 App 和 RAG 功能主体已完成，但质量、性能与发布验收未闭环，仍不能标记为稳定版 |
 
 ### 4.1 RAG 子系统状态
 
@@ -111,16 +113,16 @@
 | 文件导入与恢复 | `90%` | `COMPLETED` | SAF、WorkManager、取消、失败原因、恢复和原子文件流程已实现 |
 | 文档解析 | `90%` | `COMPLETED` | TXT、Markdown、CSV、HTML、PDF/OCR、DOCX、PPTX、XLSX 已有解析器和限额 |
 | 切块与嵌入 | `90%` | `VERIFIED` | 结构化 chunk、中文 bigram、E5 tokenizer、INT8 embedding 和真机推理已通过 |
-| 混合检索 | `75%` | `PARTIAL` | FTS4 BM25、dense、RRF、SQL 过滤已实现；普通语义证据仍被生产门闸关闭 |
+| 混合检索 | `90%` | `VERIFIED` | FTS4 BM25、dense、RRF、SQL 过滤及实验 Answerability profile 已接入全量检索路径；等待真实分布最终阈值 |
 | RAG 状态协调 | `90%` | `COMPLETED` | Disabled、NoSelection、Indexing、NoEvidence、Ready 和匿名失败已统一 |
 | 临时上下文事务 | `90%` | `VERIFIED` | native checkpoint 保存/恢复、取消恢复、视觉 checkpoint 和证据不残留已验证 |
 | 引用归档与校验 | `90%` | `PARTIAL` | 引用白名单、不可变快照、来源 chip、当前索引块定位和来源删除归档状态已实现；外部二进制文件页/单元格深链为后续增强 |
-| Answerability 门控 | `70%` | `IMPLEMENTED_NOT_ENABLED` | 模型、Android runtime、性能和离线门槛工具完成；缺真实办公质量数据和生产 profile |
-| Groundedness 输出审查 | `90%` | `IMPLEMENTED_NOT_ENABLED` | 候选隐藏、一次同证据重生成、checkpoint 回退和普通回答降级已接入实验路径；等待真机错误金额/伪引用验收 |
-| 证据压缩和 token 预算 | `90%` | `PARTIAL` | 句子窗口缩减、跨来源去重、真实模型 token 计数和动态预算已接入；等待真机 token 对齐验收 |
-| 大知识库向量索引 | `40%` | `PARTIAL` | 统一后端、精确降级、HNSW 元数据/路径/完整性/RSS 边界已实现；native HNSW、认证原子 generation、损坏恢复和规模 benchmark 未实现 |
+| Answerability 门控 | `85%` | `EXPERIMENTAL_ENABLED` | 模型、Android runtime、保守实验 profile、性能和离线门槛工具完成；缺真实办公质量数据和生产 profile |
+| Groundedness 输出审查 | `90%` | `BLOCKED_BY_RETRAINING` | 候选隐藏、一次同证据重生成、checkpoint 回退和普通回答降级已接入；真机矩阵确认错误金额/日期漏判，留待最终模型重训 |
+| 证据压缩和 token 预算 | `100%` | `VERIFIED` | 句子窗口缩减、跨来源去重、真实模型 token 计数、动态预算及真机 token 对齐已通过 |
+| 大知识库向量索引 | `100%` | `VERIFIED` | native HNSW、认证原子 generation、上一代恢复、损坏精确降级、后台重建、5001 向量闭环、1k/5k/20k 基准及四个真实 force-stop 窗口均完成 |
 | 生命周期和 watchdog | `90%` | `PARTIAL` | 规划/审查超时、后台取消、编辑前 cancel-and-join、checkpoint 活动计数及 100/50/20 真机矩阵已实现；仍需最终完整 UI 操作验收和旋转观察 |
-| 性能/压力/灰度发布 | `30%` | `PARTIAL` | checkpoint、E5、Guard 单项真机数据存在；完整矩阵和灰度开关未完成 |
+| 性能/压力/灰度发布 | `95%` | `PARTIAL` | checkpoint、E5、Guard、HNSW、0/10/30 轮 TTFT、四窗口 force-stop、运行时灰度降级和覆盖安装已完成；仅余最终模型重训后复测 |
 
 ## 5. 已完成内容
 
@@ -206,19 +208,21 @@ profile = CurrentAnswerabilityCalibration.profile
 
 1. `GROUNDED`：接受回答。
 2. `PARTIAL/UNGROUNDED` 且尚未重生成：最多重生成一次。
-3. 第二次仍失败：显示不进入上下文的本地固定提示。
+3. 第二次仍失败：恢复 checkpoint，清除候选答案和引用，使用原始用户问题执行普通生成。
 
 该策略已接入 `MainActivity` 的真实 RAG 候选隐藏、一次同证据重生成和普通回答降级事务；因 v3 质量门槛未通过，仍只能声明为实验路径，不能标记为稳定生产审查。
 
-### 6.3 ALL_QUERIES 实验模式
+### 6.3 ALL_QUERIES 正式检索模式
 
-当前分支将：
+当前产品行为固定为：
 
 ```kotlin
 retrievalMode = RagRetrievalMode.ALL_QUERIES
 ```
 
-作为实验路径，用于比较“所有问题先检索”的行为。最终稳定版默认目标仍是 `ADAPTIVE`：普通问候、感谢、闲聊和不依赖知识库的问题不调用 E5、Room chunk DAO 或 checkpoint。
+只要当前会话启用了并选择了 READY 知识库，所有问题都先检索。检索本身不等于注入：只有 Answerability、证据预算和 Groundedness 全部通过后，回答才携带证据、引用和“根据数据库中内容”标识；无证据、模型缺失、索引未就绪、技术失败或输出审核失败均使用未经修改的用户原文普通生成。未选择知识库或关闭会话 RAG 时不检索。
+
+不再开发 `ADAPTIVE` 正式路由、普通问题意图分类器或“问候零 E5”发布门槛；保留现有路由代码仅用于历史回归和可能的低端设备兼容实验，不参与当前生产配置。
 
 ## 7. 未完成内容
 
@@ -248,7 +252,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 
 ### 7.3 句子级证据缩减和真实 token 预算
 
-当前 `IdentityRagEvidenceReducer` 不缩减正文，`SourceCountRagEvidenceBudgeter` 只限制来源数量。仍需完成：
+当前句子级 reducer、真实 native token 计数和动态预算已经接入并完成真机对齐：
 
 - 中文/英文句子、表格行和条款边界切分。
 - query token 覆盖、编号、日期和金额奖励。
@@ -260,22 +264,21 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 
 ### 7.4 大知识库向量后端
 
-当前精确向量搜索是小库正确性基线。仍需完成：
+当前精确向量搜索作为小库正确性基线，超过 5000 chunks 使用 HNSW；主体和规模基准已完成：
 
 - [已实现] 小于等于 5000 chunks 时使用连续 float buffer 缓存，不重复从 Room 解码全部 BLOB。
-- 大于 5000 chunks 时使用 HNSW 或受限磁盘分区搜索。
-- 索引头绑定模型 SHA、语料 generation、维度、数量和文件 SHA-256。
-- `.part + fsync + atomic rename`。
-- 索引损坏或 generation 不一致时后台重建并禁止返回旧文档。
-- 1k、5k、20k chunks 的 Recall@10、P50/P95 和 RSS 对照。
+- [已实现] 大于 5000 chunks 时使用 HNSW，拒绝 sidecar 时分页精确降级。
+- [已实现] 索引头绑定模型 SHA、语料 generation、维度、数量和文件 SHA-256。
+- [已实现] `.part + fsync + atomic rename`、认证元数据和上一代恢复。
+- [已实现] 索引损坏或 generation 不一致时后台重建并禁止返回旧文档。
+- [已验证] 1k、5k、20k chunks 的 Recall@10、P50/P95、构建时间、文件体积和 RSS 对照。
 
 ### 7.5 E5 执行提供程序和内存策略
 
-- CPU、NNAPI、NNAPI FP16 分别预热 5 次、测量 30 次。
-- 记录 P50/P95、失败数、RSS、温升和向量余弦一致性。
-- NNAPI 发生大量 CPU fallback 或慢于 ORT CPU 时必须保持 CPU。
-- E5 session 按真实使用和系统 trim memory 释放。
-- Guard 只能在通过质量门槛且本轮需要分类时懒加载，禁止启动预加载。
+- [已验证] CPU、NNAPI、NNAPI FP16 分别预热 5 次、测量 30 次，并记录 P50/P95、失败数、RSS 和向量余弦一致性。
+- [已固定] vivo V2359A 上 NNAPI 慢于 ORT CPU，生产配置固定使用 CPU。
+- [已实现] E5 session 按真实使用、5 分钟后台超时和系统 trim memory 释放。
+- [已实现] E5/Guard 禁止启动预加载，仅在实际检索或分类时懒加载。
 
 ### 7.6 生命周期、编辑和超时恢复
 
@@ -340,7 +343,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - [x] **Step 3：在 Ready 路径执行 Groundedness。** 使用用户原文、最终证据快照和完整候选答案分类；普通聊天和 NoEvidence 不运行。
 - [x] **Step 4：实现一次受限重生成。** 修正 prompt 只使用同一证据；第一次候选不进入 UI 或稳定历史。
 - [x] **Step 5：接入普通回答降级。** 第二次失败、分类器缺失、profile 缺失或模型 SHA 不匹配时恢复 checkpoint，清空 RAG 引用并使用原始问题普通生成；只有审核通过时增加数据库来源标识。
-- [ ] **Step 6：真机验证。** 覆盖正确引用、错误金额、无依据扩写、伪引用和取消。
+- [ ] **Step 6：真机验证（`BLOCKED_BY_RETRAINING`）。** 正确答案和完全无依据扩写决策正确；错误金额、错误日期被高置信误判为 `GROUNDED`。按当前产品决定不增加规则、不继续边界试探，最终模型重训后再完成伪引用和取消复测。证据见 `docs/execution/evidence/groundedness-release-matrix-20260824.md`。
 
 ### Task 3：证据缩减、token 预算和 prompt 加固
 
@@ -358,7 +361,7 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - [x] **Step 3：增加 native token 计数接口。** JNI 使用 MiniCPM 当前模型的 `common_tokenize`，不使用字符数估算；native 构建已通过。
 - [x] **Step 4：实现动态预算。** 默认 768、硬上限 900、单来源上限 320，并为回答保留 768、协议和问题保留 256；可用预算不足 128 时返回 NoEvidence。
 - [x] **Step 5：加固 prompt。** 文件名、定位和正文均 XML escape，并放入明确的不可信 `<knowledge_base>/<source>` 数据边界。
-- [ ] **Step 6：运行 JVM 和真机 token 对齐测试。** 实际注入 token 不得超过预算。
+- [x] **Step 6：运行 JVM 和真机 token 对齐测试。** 真实 MiniCPM tokenizer 已覆盖预算上限、emoji、表格和恶意 XML，实际注入 token 未超过预算。
 
 ### Task 4：有界向量后端
 
@@ -373,11 +376,12 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 
 - [x] **Step 1：写统一接口和精确 oracle 测试。** `VectorSearchBackend` 已接入，分页精确结果与连续 exact oracle 一致，稳定按 score/chunk ID 排序。
 - [x] **Step 2：实现小库连续 float buffer。** 最多 5000 chunks；缓存键绑定有序知识库集合、模型 SHA、corpusVersion、数量、最大更新时间和 chunk ID 校验和。
-- [ ] **Step 3：实现大库 HNSW/分区后端。** 打开前验证文件头、长度、哈希和 RSS 预算。
-- [ ] **Step 4：实现原子构建和损坏恢复。** 查询期间不得返回旧 generation。
-- [ ] **Step 5：运行 1k/5k/20k benchmark。** 与精确 oracle 比较 Recall@10、P50/P95 和 RSS；Recall@10 不低于 0.95。
+- [x] **Step 3：实现大库 HNSW/分区后端。** native hnswlib、文件头/长度/哈希/RSS 校验、分页精确降级和 5001 向量真机检索已通过。
+- [x] **Step 4：实现认证原子 generation 和损坏恢复。** 新旧 generation 串行发布，新 generation 验证失败或取消时恢复上一代；损坏索引降级精确检索，查询不返回旧语料结果。
+- [x] **Step 5：运行强制中断恢复矩阵。** 构建明文、payload 加密中途、payload 已提交和 metadata 已提交四个真实 `force-stop` 窗口均恢复到唯一认证 generation 且无临时/明文残留；20 次重复 enqueue 收敛到一个请求。证据见 `docs/execution/evidence/hnsw-force-stop-recovery-20260824.md`。
+- [x] **Step 6：运行 1k/5k/20k benchmark。** vivo V2359A 的确定性合成语料已完成；20k 生产后端 Recall@10 为 0.9833，P50/P95 为 206.61/216.16 ms，构建 4.87 s，加密索引 33,693,766 bytes，native handle 最终为 0。
 
-### Task 5：自适应路由、生命周期和 UI
+### Task 5：全量检索契约、生命周期和 UI
 
 **Files:**
 - Modify: `app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt`
@@ -388,12 +392,12 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - Create: `app/src/test/java/com/example/minicpm_v_demo/rag/RagTurnLifecycleTest.kt`
 - Create: `app/src/androidTest/java/com/example/minicpm_v_demo/rag/ui/RagAnswerUiTest.kt`
 
-- [ ] **Step 1：将正式默认模式改回 ADAPTIVE。** 保留 ALL_QUERIES 为显式实验开关；问候路径断言 E5、DAO、Guard 和 checkpoint 调用均为 0。
+- [x] **Step 1：固化 ALL_QUERIES 正式契约。** 选中 READY 知识库后所有问题检索；所有非 `Ready` 规划状态、无证据和 Groundedness 失败都使用未经修改的原问题普通生成，且不得携带候选证据、引用或固定 RAG 拒绝提示。
 - [x] **Step 2：实现 15 秒阶段 watchdog。** 规划阶段超时直接使用原问题普通回答；Groundedness 分类超时触发现有 checkpoint 回滚和普通回答降级；模型正常生成不受该上限限制。
-- [ ] **Step 3：完成编辑和会话切换状态矩阵。** RAG turn 与时间线编辑互斥，旧引用正确截断。
+- [x] **Step 3：完成编辑和会话切换状态矩阵。** 用户编辑截断生成中 RAG 尾部和旧引用，AI 编辑保留引用并标记 edited，多会话隔离及 checkpoint cancel-and-join 已覆盖。
 - [x] **Step 4：增加三个 RAG 阶段文案。** 只显示真实检索、整理和生成状态，不显示伪百分比，且不持久化。
 - [x] **Step 5：增加来源 chip 和定位。** 来源 chip、当前索引块定位、归档摘录、“来源已删除”和“当前索引不可用”状态已完成；外部 PDF 页/表格单元格二进制深链不作为最小闭环门槛。
-- [ ] **Step 6：完成无障碍和视觉检查。** 使用现有淡蓝、绿色和红色状态体系。
+- [x] **Step 6：完成无障碍和视觉检查。** 来源 chip 整体可点击并提供 `contentDescription`，阶段态不入历史，沿用淡蓝选择、绿色成功和红色失败体系；本轮未发生生产 UI 改动，不重复既有真机视觉测试。
 
 ### Task 6：全链验收、灰度和文档
 
@@ -404,13 +408,13 @@ retrievalMode = RagRetrievalMode.ALL_QUERIES
 - Modify: `docs/architecture/rag-threat-model.md`
 - Modify: `docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md`
 
-- [ ] **Step 1：执行功能矩阵。** 覆盖第 7.8 节全部场景并保存聚合证据。
+- [x] **Step 1：执行应用功能矩阵。** ALL_QUERIES 三路径、真实 E5/混合检索、原问题降级、编辑/会话隔离、token 加固、来源快照、生命周期和持久化均已覆盖；模型分类质量单独由 Task 1/2 管理。
 - [x] **Step 2：执行 checkpoint 压力矩阵。** 100 次成功、50 次取消和 20 次生产 MainActivity 前后台取消均在 vivo V2359A 通过，最终活动 checkpoint 为 0。
-- [ ] **Step 3：执行性能矩阵。** 空历史、10 轮和 30 轮分别测试普通聊天与 RAG。
-- [ ] **Step 4：执行安全矩阵。** 隐私、违法、无图、RAG 视觉绕过、提示注入和伪引用不得退化。
-- [ ] **Step 5：执行固定签名覆盖安装。** 只使用 `adb install -r`，验证会话、知识库和模型仍存在。
-- [ ] **Step 6：加入 `low_latency_rag_v1` 灰度开关。** 自检失败只关闭 RAG，普通聊天仍可用。
-- [ ] **Step 7：更新 README 和发布说明。** 只有全部门槛通过后才能把 RAG 从“开发中”改为“测试版”。
+- [x] **Step 3：执行性能矩阵。** 0/10/30 轮普通与 RAG prompt 各测 5 次 TTFT/PSS；RAG P95 为 1.836/1.914/2.360 秒。三种检索决策路径由独立 ALL_QUERIES 真机闭环覆盖。
+- [x] **Step 4：执行应用安全矩阵。** 隐私、违法、无图、RAG 视觉优先级、提示注入和本地固定提示不入上下文已有回归；Groundedness 伪引用能力留在重训阻塞项，不再刻意试探边界。
+- [x] **Step 5：执行固定签名覆盖安装。** 同批次主/测试 APK 使用 `adb install -r` 后，会话、知识库、文档状态、E5/Guard 和 HNSW 聚合指纹完全一致。
+- [x] **Step 6：加入 `low_latency_rag_v1` 灰度开关。** 当前进程 checkpoint 自检失败只关闭 RAG，所有非 Ready 状态使用原始问题继续普通聊天。
+- [x] **Step 7：更新 README 和发布说明。** 文档同步到当前证据；因 Groundedness 重训和 HNSW force-stop 尚未闭环，仍保持“开发中”。
 
 ## 9. 验证命令
 
@@ -448,7 +452,7 @@ $env:PYTHONPATH = 'D:\MiniCPM-V\.rag-python-tools;D:\MiniCPM-V\MiniCPM-V-Apps\Mi
 - [ ] Answerability 真实办公独立测试通过并写入固定 profile。
 - [ ] Groundedness 已接入真实生成路径并通过错误金额/日期/伪引用测试。
 - [ ] 证据 reducer 和真实 token 预算生效。
-- [ ] 普通聊天使用 ADAPTIVE 零检索路径。
+- [x] 选中 READY 知识库时所有问题进入检索；只有通过门控的证据进入模型上下文，无证据和失败路径使用原问题普通生成。
 - [ ] 小库向量缓存完成；若声明支持大库，则 HNSW/分区后端完成。
 - [ ] 来源 chip、删除来源快照和阶段 UI 完成。
 - [ ] 生命周期、watchdog、编辑和取消矩阵通过。
@@ -457,7 +461,7 @@ $env:PYTHONPATH = 'D:\MiniCPM-V\.rag-python-tools;D:\MiniCPM-V\MiniCPM-V-Apps\Mi
 
 ## 11. 当前下一步
 
-当前执行点是 **Task 1 v3 模型导出/profile 固定 + Task 2 真机验证**；随后继续 Task 4 大库后端和 Task 5 生命周期/UI 剩余项。
+除模型重训外的应用主流程和发布工程闭环已完成，Graphify 已保存为 3,459 nodes / 7,013 edges。下一步集中重训 Guard，并仅重跑此前失败的 Groundedness 金额/日期阻塞矩阵及其直接关联回归。
 
 工具链、模型、CPU 环境和匿名格式示例均已就绪；真正阻塞项是经过授权和人工脱敏的真实办公校准/测试样本。在这些数据到位前，不得将 `classifier=null/profile=null` 改为生产模型，也不得声称语义 Answerability 或 Groundedness 已正式启用。
 

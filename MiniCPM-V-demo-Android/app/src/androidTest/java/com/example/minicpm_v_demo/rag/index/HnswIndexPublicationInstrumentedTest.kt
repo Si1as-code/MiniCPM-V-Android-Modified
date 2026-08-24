@@ -145,6 +145,79 @@ class HnswIndexPublicationInstrumentedTest {
     }
 
     @Test
+    fun verifiedReadFinalizesCommittedGenerationAfterProcessDeathWindow() {
+        val root = testRoot()
+        try {
+            val key = generatedKey()
+            val publisher = HnswIndexPublisher(root, EncryptedFileStore { key })
+            val firstPlaintext = File(root, "finalize-first.hnsw").apply {
+                writeBytes("finalize-generation-one".toByteArray())
+            }
+            val firstPaths = publisher.publish(metadata(firstPlaintext, generation = 41), firstPlaintext)
+            val previousPayload = firstPaths.encryptedIndex.readBytes()
+            val previousMetadata = firstPaths.metadata.readBytes()
+
+            val replacement = File(root, "finalize-replacement.hnsw").apply {
+                writeBytes("finalize-generation-two".toByteArray())
+            }
+            val second = metadata(replacement, generation = 42)
+            val currentPaths = publisher.publish(second, replacement)
+            val persistedPreviousIndex = File(root, "${currentPaths.encryptedIndex.name}.previous")
+                .apply { writeBytes(previousPayload) }
+            val persistedPreviousMetadata = File(root, "${currentPaths.metadata.name}.previous")
+                .apply { writeBytes(previousMetadata) }
+
+            assertArrayEquals(
+                "finalize-generation-two".toByteArray(),
+                publisher.withVerifiedPlaintext(second.corpusKey) { file -> file.readBytes() },
+            )
+            assertFalse(persistedPreviousIndex.exists())
+            assertFalse(persistedPreviousMetadata.exists())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun readRecoversPreviousWhenMetadataAtomicCommitIsInterrupted() {
+        val root = testRoot()
+        try {
+            val key = generatedKey()
+            val store = EncryptedFileStore { key }
+            val publisher = HnswIndexPublisher(root, store)
+            val stablePlaintext = File(root, "metadata-interruption-stable.hnsw").apply {
+                writeBytes("metadata-interruption-stable".toByteArray())
+            }
+            val stable = metadata(stablePlaintext, generation = 51)
+            val paths = publisher.publish(stable, stablePlaintext)
+            paths.encryptedIndex.copyTo(File(root, "${paths.encryptedIndex.name}.previous"))
+            paths.metadata.copyTo(File(root, "${paths.metadata.name}.previous"))
+
+            store.encrypt(
+                "uncommitted-payload".byteInputStream(),
+                paths.encryptedIndex,
+            )
+            val metadataBackup = File(root, "${paths.metadata.name}.bak")
+            assertTrue(paths.metadata.renameTo(metadataBackup))
+            val incompleteMetadata = File(root, "${paths.metadata.name}.new").apply {
+                writeBytes("incomplete metadata".toByteArray())
+            }
+
+            val restartedPublisher = HnswIndexPublisher(root, EncryptedFileStore { key })
+            assertArrayEquals(
+                "metadata-interruption-stable".toByteArray(),
+                restartedPublisher.withVerifiedPlaintext(stable.corpusKey) { file -> file.readBytes() },
+            )
+            assertFalse(metadataBackup.exists())
+            assertFalse(incompleteMetadata.exists())
+            assertFalse(File(root, "${paths.encryptedIndex.name}.previous").exists())
+            assertFalse(File(root, "${paths.metadata.name}.previous").exists())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun concurrentReadWaitsForReplacementPublicationToCommit() {
         val root = testRoot()
         val executor = Executors.newFixedThreadPool(2)

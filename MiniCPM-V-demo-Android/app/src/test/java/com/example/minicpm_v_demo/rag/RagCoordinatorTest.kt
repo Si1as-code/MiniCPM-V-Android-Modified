@@ -69,6 +69,16 @@ class RagCoordinatorTest {
     }
 
     @Test
+    fun runtimeGateFailureDisablesRagBeforeDatabaseRouting() = runBlocking {
+        val fixture = Fixture(runtimeEnabled = false)
+
+        val result = fixture.coordinator.plan(CONVERSATION_ID, "policy")
+
+        assertEquals(RagTurnPlan.Disabled, result)
+        assertTrue(fixture.calls.isEmpty())
+    }
+
+    @Test
     fun noRetrievalReturnsBeforeSelectionEmbeddingChunksOrPromptBuild() = runBlocking {
         val fixture = Fixture(enabled = true, route = RagQueryRoute.NO_RETRIEVAL)
 
@@ -280,6 +290,7 @@ class RagCoordinatorTest {
         private val throwAt: String? = null,
         private val cancellationAt: String? = null,
         private val retrievalMode: RagRetrievalMode = RagRetrievalMode.ADAPTIVE,
+        private val runtimeEnabled: Boolean = true,
     ) {
         val calls = mutableListOf<String>()
         var retrievalRequest: RagRetrievalRequest? = null
@@ -345,6 +356,7 @@ class RagCoordinatorTest {
                 "run-1"
             },
             retrievalMode = retrievalMode,
+            runtimeEnabled = { runtimeEnabled },
         )
 
         private fun failIfRequested(stage: String) {

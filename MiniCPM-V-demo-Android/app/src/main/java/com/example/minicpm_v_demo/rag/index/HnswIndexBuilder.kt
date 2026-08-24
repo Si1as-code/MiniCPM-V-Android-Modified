@@ -105,7 +105,11 @@ class HnswIndexBuilder(
                 plaintextSha256 = HnswIndexIntegrity.sha256(candidate),
                 builtAt = now,
             )
-            val paths = publisher.publish(metadata, candidate, shouldContinue)
+            val paths = publisher.publish(
+                metadata = metadata,
+                plaintextIndex = candidate,
+                shouldContinue = shouldContinue,
+            )
             return HnswIndexBuildOutcome.Published(metadata, paths)
         } finally {
             if (candidate.exists() && !candidate.delete()) {

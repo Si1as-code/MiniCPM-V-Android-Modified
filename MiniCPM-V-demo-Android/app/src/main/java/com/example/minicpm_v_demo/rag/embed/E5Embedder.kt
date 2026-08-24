@@ -4,10 +4,22 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import ai.onnxruntime.extensions.OrtxPackage
+import ai.onnxruntime.providers.NNAPIFlags
 import java.io.File
+import java.util.EnumSet
 import kotlin.math.min
 
 enum class E5InputKind(val prefix: String) { QUERY("query: "), PASSAGE("passage: ") }
+
+enum class E5ExecutionProfile(val nnapiFlags: Set<NNAPIFlags>) {
+    CPU(emptySet()),
+    NNAPI(setOf(NNAPIFlags.CPU_DISABLED)),
+    NNAPI_FP16(setOf(NNAPIFlags.CPU_DISABLED, NNAPIFlags.USE_FP16)),
+}
+
+object E5ExecutionSelection {
+    val SELECTED = E5ExecutionProfile.CPU
+}
 
 class E5Embedder private constructor(
     private val environment: OrtEnvironment,
@@ -82,14 +94,23 @@ class E5Embedder private constructor(
     private data class Encoded(val ids: LongArray, val offsets: IntArray)
 
     companion object {
-        fun open(directory: File, spec: EmbeddingModelManifest): E5Embedder {
+        fun open(
+            directory: File,
+            spec: EmbeddingModelManifest,
+            executionProfile: E5ExecutionProfile = E5ExecutionProfile.CPU,
+        ): E5Embedder {
             val root = EmbeddingModelPackageVerifier.verify(directory, spec)
             val environment = OrtEnvironment.getEnvironment("minicpm-rag-e5")
             val tokenizerOptions = OrtSession.SessionOptions().apply {
                 registerCustomOpLibrary(OrtxPackage.getLibraryPath())
                 setIntraOpNumThreads(1)
             }
-            val modelOptions = OrtSession.SessionOptions().apply { setIntraOpNumThreads(2) }
+            val modelOptions = OrtSession.SessionOptions().apply {
+                setIntraOpNumThreads(2)
+                if (executionProfile.nnapiFlags.isNotEmpty()) {
+                    addNnapi(EnumSet.copyOf(executionProfile.nnapiFlags))
+                }
+            }
             try {
                 val tokenizer = environment.createSession(root.resolve("tokenizer.onnx").absolutePath, tokenizerOptions)
                 val model = environment.createSession(root.resolve("model.int8.onnx").absolutePath, modelOptions)

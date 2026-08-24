@@ -16,15 +16,33 @@ class RagTurnDeliveryPolicyTest {
     }
 
     @Test
-    fun actionableAndTechnicalStatesDoNotSilentlyFallBack() {
+    fun everyNonReadyRagStateFallsBackToTheUnmodifiedPlainModelPrompt() {
         val originalUserText = "问题"
 
-        assertNull(RagTurnPlan.NoSelection.plainModelPromptOrNull(originalUserText))
-        assertNull(RagTurnPlan.Indexing.plainModelPromptOrNull(originalUserText))
-        assertNull(RagTurnPlan.ModelRequired.plainModelPromptOrNull(originalUserText))
-        assertNull(
-            RagTurnPlan.Failed(RagTurnFailure.RETRIEVAL_UNAVAILABLE)
-                .plainModelPromptOrNull(originalUserText),
+        val nonReadyStates = listOf(
+            RagTurnPlan.Disabled,
+            RagTurnPlan.NoRetrieval,
+            RagTurnPlan.NoSelection,
+            RagTurnPlan.Indexing,
+            RagTurnPlan.ModelRequired,
+            RagTurnPlan.NoEvidence,
+            RagTurnPlan.Failed(RagTurnFailure.RETRIEVAL_UNAVAILABLE),
         )
+
+        nonReadyStates.forEach { state ->
+            assertEquals(originalUserText, state.plainModelPromptOrNull(originalUserText))
+        }
+    }
+
+    @Test
+    fun readyRagStateCannotBeDeliveredAsAnUnaugmentedPrompt() {
+        val ready = RagTurnPlan.Ready(
+            runId = "run-1",
+            prompt = "prepared prompt",
+            citations = emptyList(),
+            evidenceTokenCount = 0,
+        )
+
+        assertNull(ready.plainModelPromptOrNull("问题"))
     }
 }
