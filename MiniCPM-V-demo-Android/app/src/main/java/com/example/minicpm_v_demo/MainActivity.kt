@@ -9,6 +9,7 @@ import android.text.InputFilter
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -20,7 +21,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.updatePadding
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -71,6 +74,11 @@ private sealed interface PendingPrivacyAction {
     data class RevealResponse(val response: String) : PendingPrivacyAction
 }
 
+private data class ChatViewportAnchor(
+    val adapterPosition: Int,
+    val distanceFromContentBottomToItemTop: Int,
+)
+
 class MainActivity : StatusBarVisibleActivity() {
 
     private val pendingImageViewModel: PendingImageViewModel by viewModels()
@@ -92,6 +100,13 @@ class MainActivity : StatusBarVisibleActivity() {
     private lateinit var tvPendingImageStatus: TextView
     private lateinit var tvPendingImageInfo: TextView
     private lateinit var btnRemovePendingImage: ImageButton
+    private var lastImeBottomInset = 0
+    private var pendingImeDismissTap = false
+    private var imeDismissDownX = 0f
+    private var imeDismissDownY = 0f
+    private var imeDismissDownTime = 0L
+    private val imeDismissTouchSlop by lazy { ViewConfiguration.get(this).scaledTouchSlop }
+    private var pendingImeViewportAnchor: ChatViewportAnchor? = null
 
     private lateinit var engine: LlamaEngine
     private var generationJob: Job? = null
@@ -157,14 +172,43 @@ class MainActivity : StatusBarVisibleActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(rootContent) { v, insets ->
             val sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            lastImeBottomInset = ime.bottom
             v.updatePadding(
                 left = sysBars.left,
                 top = sysBars.top,
                 right = sysBars.right,
                 bottom = maxOf(sysBars.bottom, ime.bottom)
             )
+            if (ime.bottom > 0 && ::recyclerChat.isInitialized &&
+                pendingImeViewportAnchor != null
+            ) {
+                v.doOnLayout { restoreImeViewportAnchor() }
+            } else if (ime.bottom == 0) {
+                pendingImeViewportAnchor = null
+            }
             insets
         }
+        ViewCompat.setWindowInsetsAnimationCallback(
+            rootContent,
+            object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                override fun onProgress(
+                    insets: WindowInsetsCompat,
+                    runningAnimations: MutableList<WindowInsetsAnimationCompat>,
+                ): WindowInsetsCompat = insets
+
+                override fun onEnd(animation: WindowInsetsAnimationCompat) {
+                    if (animation.typeMask and WindowInsetsCompat.Type.ime() != 0 &&
+                        lastImeBottomInset > 0 && ::recyclerChat.isInitialized &&
+                        pendingImeViewportAnchor != null
+                    ) {
+                        rootContent.doOnLayout {
+                            restoreImeViewportAnchor()
+                            pendingImeViewportAnchor = null
+                        }
+                    }
+                }
+            },
+        )
 
         LlamaEngine.migrateLegacyLayoutIfNeeded(applicationContext)
 
@@ -211,15 +255,12 @@ class MainActivity : StatusBarVisibleActivity() {
 
         recyclerChat.layoutManager = LinearLayoutManager(this)
         recyclerChat.adapter = chatAdapter
-
-        cardInputBar.viewTreeObserver.addOnGlobalLayoutListener {
-            recyclerChat.setPadding(
-                recyclerChat.paddingLeft,
-                recyclerChat.paddingTop,
-                recyclerChat.paddingRight,
-                cardInputBar.height
-            )
-        }
+        recyclerChat.setPadding(
+            recyclerChat.paddingLeft,
+            recyclerChat.paddingTop,
+            recyclerChat.paddingRight,
+            resources.getDimensionPixelSize(R.dimen.chat_message_spacing),
+        )
 
         val selectedModel = LlamaEngine.getSelectedModel(applicationContext)
         if (messages.isEmpty()) messages.add(createWelcomeMessage(selectedModel))
@@ -447,8 +488,8 @@ class MainActivity : StatusBarVisibleActivity() {
 
         etInput.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
+                captureImeViewportAnchor()
                 collapseAppBar()
-                scrollToBottom()
             }
         }
         etInput.doAfterTextChanged { refreshInputControls() }
@@ -491,6 +532,29 @@ class MainActivity : StatusBarVisibleActivity() {
                 recyclerChat.scrollToPosition(adapterCount - 1)
             }
         }
+    }
+
+    private fun captureImeViewportAnchor() {
+        val layoutManager = recyclerChat.layoutManager as? LinearLayoutManager ?: return
+        val adapterPosition = layoutManager.findLastVisibleItemPosition()
+        if (adapterPosition == RecyclerView.NO_POSITION) return
+        val anchorView = layoutManager.findViewByPosition(adapterPosition) ?: return
+        val contentBottom = recyclerChat.height - recyclerChat.paddingBottom
+        pendingImeViewportAnchor = ChatViewportAnchor(
+            adapterPosition = adapterPosition,
+            distanceFromContentBottomToItemTop = contentBottom - anchorView.top,
+        )
+    }
+
+    private fun restoreImeViewportAnchor() {
+        val anchor = pendingImeViewportAnchor ?: return
+        if (anchor.adapterPosition !in 0 until chatAdapter.itemCount) return
+        val layoutManager = recyclerChat.layoutManager as? LinearLayoutManager ?: return
+        val contentBottom = recyclerChat.height - recyclerChat.paddingBottom
+        layoutManager.scrollToPositionWithOffset(
+            anchor.adapterPosition,
+            contentBottom - anchor.distanceFromContentBottomToItemTop,
+        )
     }
 
     private fun showClearChatDialog() {
@@ -2179,17 +2243,43 @@ class MainActivity : StatusBarVisibleActivity() {
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (ev.action == MotionEvent.ACTION_DOWN) {
-            val v = currentFocus
-            if (v is TextInputEditText) {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                val focusedView = currentFocus
                 val barRect = android.graphics.Rect()
                 cardInputBar.getGlobalVisibleRect(barRect)
-                if (!barRect.contains(ev.rawX.toInt(), ev.rawY.toInt())) {
-                    v.clearFocus()
-                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-                    imm.hideSoftInputFromWindow(v.windowToken, 0)
+                if (focusedView is TextInputEditText && lastImeBottomInset == 0 &&
+                    barRect.contains(ev.rawX.toInt(), ev.rawY.toInt())
+                ) {
+                    captureImeViewportAnchor()
+                }
+                pendingImeDismissTap = focusedView is TextInputEditText &&
+                    !barRect.contains(ev.rawX.toInt(), ev.rawY.toInt())
+                imeDismissDownX = ev.rawX
+                imeDismissDownY = ev.rawY
+                imeDismissDownTime = ev.eventTime
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (pendingImeDismissTap) {
+                    val movedX = kotlin.math.abs(ev.rawX - imeDismissDownX)
+                    val movedY = kotlin.math.abs(ev.rawY - imeDismissDownY)
+                    if (movedX > imeDismissTouchSlop || movedY > imeDismissTouchSlop) {
+                        pendingImeDismissTap = false
+                    }
                 }
             }
+            MotionEvent.ACTION_UP -> {
+                val isShortTap = ev.eventTime - imeDismissDownTime <
+                    ViewConfiguration.getLongPressTimeout()
+                val focusedView = currentFocus
+                if (pendingImeDismissTap && isShortTap && focusedView is TextInputEditText) {
+                    focusedView.clearFocus()
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.hideSoftInputFromWindow(focusedView.windowToken, 0)
+                }
+                pendingImeDismissTap = false
+            }
+            MotionEvent.ACTION_CANCEL -> pendingImeDismissTap = false
         }
         return super.dispatchTouchEvent(ev)
     }

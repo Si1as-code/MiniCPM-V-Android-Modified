@@ -30,9 +30,9 @@
     "semantic_hash": "1cd6515d21d0b7c4febd28b8703b4b34"
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/MainActivityUiTest.kt": {
-    "mtime": 1785981065.8848972,
-    "ast_hash": "602d2e1d3c1bbe74fc09633568936476",
-    "semantic_hash": "602d2e1d3c1bbe74fc09633568936476"
+    "mtime": 1787541409.3178089,
+    "ast_hash": "08a8d070828f08e60e42847ddbc231c1",
+    "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/RagConversationContextInstrumentedTest.kt": {
     "mtime": 1786930060.7022748,
@@ -190,8 +190,8 @@
     "semantic_hash": "842a5ffe0e6516e3c43dbe86b6f8f479"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt": {
-    "mtime": 1787303706.3468852,
-    "ast_hash": "ce0bb508e5f12244e88c73f1abc8a5a5",
+    "mtime": 1787541544.865966,
+    "ast_hash": "d266ecebd7746b06e8da6acfe66195d9",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/MarkdownEscape.kt": {
@@ -1100,8 +1100,8 @@
     "semantic_hash": "e319d508c87cf2d5a39b8a16e73c6524"
   },
   "README_MODIFIED_zh.md": {
-    "mtime": 1787537787.5297182,
-    "ast_hash": "c138568707d38dcc41d6e8e1fbe263b4",
+    "mtime": 1787541797.0009644,
+    "ast_hash": "6c3919f1312bcf490ce8b01c983b71b3",
     "semantic_hash": ""
   },
   "docs/architecture/ADR-001-local-rag-stack.md": {
