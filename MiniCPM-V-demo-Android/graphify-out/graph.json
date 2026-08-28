@@ -1601,8 +1601,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "ragschemav2daotest.kt"
     },
     {
@@ -1614,8 +1614,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "ragschemav2daotest"
     },
     {
@@ -1626,8 +1626,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_createdatabase",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".createdatabase()"
     },
     {
@@ -1638,8 +1638,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_closedatabase",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".closedatabase()"
     },
     {
@@ -1650,8 +1650,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_insertingequivalentnameabortswithoutdeletingexistingdocuments",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".insertingequivalentnameabortswithoutdeletingexistingdocuments()"
     },
     {
@@ -1662,8 +1662,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_insertingdifferentnormalizednamessucceeds",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".insertingdifferentnormalizednamessucceeds()"
     },
     {
@@ -1674,8 +1674,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_selectedknowledgebasesrequireenabledconversationandenabledknowledgebase",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".selectedknowledgebasesrequireenabledconversationandenabledknowledgebase()"
     },
     {
@@ -1686,8 +1686,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_deletingconversationragstatealsodeletesbindings",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".deletingconversationragstatealsodeletesbindings()"
     },
     {
@@ -1698,8 +1698,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_knowledgebase",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".knowledgebase()"
     },
     {
@@ -1710,8 +1710,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_db_ragschemav2daotest_ragschemav2daotest_document",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".document()"
     },
     {
@@ -1721,8 +1721,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_embed_e5embedderinstrumentedtest",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 289,
+      "community_name": "E5EmbedderInstrumentedTest.kt",
       "norm_label": "e5embedderinstrumentedtest.kt"
     },
     {
@@ -1734,8 +1734,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_embed_e5embedderinstrumentedtest_e5embedderinstrumentedtest",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 289,
+      "community_name": "E5EmbedderInstrumentedTest.kt",
       "norm_label": "e5embedderinstrumentedtest"
     },
     {
@@ -1746,8 +1746,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_embed_e5embedderinstrumentedtest_e5embedderinstrumentedtest_tokenizerandint8modelmatchgoldensemantics",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 289,
+      "community_name": "E5EmbedderInstrumentedTest.kt",
       "norm_label": ".tokenizerandint8modelmatchgoldensemantics()"
     },
     {
@@ -3277,8 +3277,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackendinstrumentedtest_countingsource_loadall",
-      "community": 123,
-      "community_name": ".fixture",
+      "community": 38,
+      "community_name": "ChunkEmbeddingEntity",
       "norm_label": ".loadall()"
     },
     {
@@ -3289,8 +3289,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackendinstrumentedtest_countingsource_loadpage",
-      "community": 123,
-      "community_name": ".fixture",
+      "community": 38,
+      "community_name": "ChunkEmbeddingEntity",
       "norm_label": ".loadpage()"
     },
     {
@@ -3887,8 +3887,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": "syntheticofficecalibrationcorpus.kt"
     },
     {
@@ -4001,8 +4001,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticcalibrationcase",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": "syntheticcalibrationcase"
     },
     {
@@ -4014,8 +4014,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticcalibrationdocument",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": "syntheticcalibrationdocument"
     },
     {
@@ -4027,8 +4027,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticcalibrationcorpus",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": "syntheticcalibrationcorpus"
     },
     {
@@ -4040,8 +4040,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticofficecalibrationcorpus",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": "syntheticofficecalibrationcorpus"
     },
     {
@@ -4052,8 +4052,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticofficecalibrationcorpus_build",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".build()"
     },
     {
@@ -4064,8 +4064,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticofficecalibrationcorpus_document",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".document()"
     },
     {
@@ -4076,8 +4076,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_androidtest_java_com_example_minicpm_v_demo_rag_retrieval_syntheticofficecalibrationcorpus_syntheticofficecalibrationcorpus_casesfor",
-      "community": 153,
-      "community_name": "CalibrationCategory",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".casesfor()"
     },
     {
@@ -13343,8 +13343,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_pendingprivacyaction",
-      "community": 222,
-      "community_name": "MainActivity",
+      "community": 0,
+      "community_name": ".refreshInputControls",
       "norm_label": "pendingprivacyaction"
     },
     {
@@ -13369,8 +13369,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_revealresponse",
-      "community": 222,
-      "community_name": "MainActivity",
+      "community": 0,
+      "community_name": ".refreshInputControls",
       "norm_label": "revealresponse"
     },
     {
@@ -13428,8 +13428,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "imagebutton",
-      "community": 222,
-      "community_name": "MainActivity",
+      "community": 154,
+      "community_name": "OriginalImageViewerActivity.kt",
       "norm_label": "imagebutton"
     },
     {
@@ -13600,8 +13600,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_setuprecyclerview",
-      "community": 0,
-      "community_name": ".refreshInputControls",
+      "community": 286,
+      "community_name": ".createWelcomeMessage",
       "norm_label": ".setuprecyclerview()"
     },
     {
@@ -13648,8 +13648,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_restorependingprivacyinput",
-      "community": 0,
-      "community_name": ".refreshInputControls",
+      "community": 286,
+      "community_name": ".createWelcomeMessage",
       "norm_label": ".restorependingprivacyinput()"
     },
     {
@@ -13839,8 +13839,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_showconversationmanagementdialog",
-      "community": 0,
-      "community_name": ".refreshInputControls",
+      "community": 286,
+      "community_name": ".createWelcomeMessage",
       "norm_label": ".showconversationmanagementdialog()"
     },
     {
@@ -13851,8 +13851,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_confirmdeletecurrentconversation",
-      "community": 0,
-      "community_name": ".refreshInputControls",
+      "community": 286,
+      "community_name": ".createWelcomeMessage",
       "norm_label": ".confirmdeletecurrentconversation()"
     },
     {
@@ -13935,8 +13935,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_createwelcomemessage",
-      "community": 0,
-      "community_name": ".refreshInputControls",
+      "community": 286,
+      "community_name": ".createWelcomeMessage",
       "norm_label": ".createwelcomemessage()"
     },
     {
@@ -13959,8 +13959,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_showmessageactions",
-      "community": 71,
-      "community_name": "ChatMessage",
+      "community": 222,
+      "community_name": "MainActivity",
       "norm_label": ".showmessageactions()"
     },
     {
@@ -13971,8 +13971,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_showeditmessagedialog",
-      "community": 71,
-      "community_name": "ChatMessage",
+      "community": 222,
+      "community_name": "MainActivity",
       "norm_label": ".showeditmessagedialog()"
     },
     {
@@ -14343,8 +14343,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_mainactivity_mainactivity_handleprivacyoutputconfirmation",
-      "community": 222,
-      "community_name": "MainActivity",
+      "community": 0,
+      "community_name": ".refreshInputControls",
       "norm_label": ".handleprivacyoutputconfirmation()"
     },
     {
@@ -16807,8 +16807,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_oncreate",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": ".oncreate()"
     },
     {
@@ -16818,8 +16818,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_kt_bundle",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": "bundle"
     },
     {
@@ -16830,8 +16830,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_initviews",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": ".initviews()"
     },
     {
@@ -16854,8 +16854,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_initengine",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": ".initengine()"
     },
     {
@@ -16866,8 +16866,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_loadttsmodels",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": ".loadttsmodels()"
     },
     {
@@ -16878,8 +16878,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_promptdownloadmodels",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": ".promptdownloadmodels()"
     },
     {
@@ -16890,8 +16890,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_observeenginestate",
-      "community": 225,
-      "community_name": ".initEngine",
+      "community": 24,
+      "community_name": "TtsActivity",
       "norm_label": ".observeenginestate()"
     },
     {
@@ -16902,8 +16902,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_startrecording",
-      "community": 24,
-      "community_name": "TtsActivity",
+      "community": 290,
+      "community_name": ".onRequestPermissionsResult",
       "norm_label": ".startrecording()"
     },
     {
@@ -17046,8 +17046,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_ttsactivity_onrequestpermissionsresult",
-      "community": 24,
-      "community_name": "TtsActivity",
+      "community": 290,
+      "community_name": ".onRequestPermissionsResult",
       "norm_label": ".onrequestpermissionsresult()"
     },
     {
@@ -17057,8 +17057,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_ttsactivity_kt_intarray",
-      "community": 24,
-      "community_name": "TtsActivity",
+      "community": 290,
+      "community_name": ".onRequestPermissionsResult",
       "norm_label": "intarray"
     },
     {
@@ -18409,8 +18409,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_ragcoordinator_ragevidencebudget",
-      "community": 32,
-      "community_name": "Fixture",
+      "community": 209,
+      "community_name": "RagContextBudgeter",
       "norm_label": "ragevidencebudget"
     },
     {
@@ -19878,8 +19878,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "conversationragdao"
     },
     {
@@ -19890,8 +19890,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_upsertstate",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".upsertstate()"
     },
     {
@@ -19902,8 +19902,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_insertbindings",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".insertbindings()"
     },
     {
@@ -19914,8 +19914,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_findstate",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".findstate()"
     },
     {
@@ -19926,8 +19926,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_findselectedenabledknowledgebaseids",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".findselectedenabledknowledgebaseids()"
     },
     {
@@ -19938,8 +19938,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_findboundknowledgebaseids",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".findboundknowledgebaseids()"
     },
     {
@@ -19950,8 +19950,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_findbounddocumentnames",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".findbounddocumentnames()"
     },
     {
@@ -19962,8 +19962,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_countreadydocuments",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".countreadydocuments()"
     },
     {
@@ -19974,8 +19974,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_countindexingdocuments",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".countindexingdocuments()"
     },
     {
@@ -19986,8 +19986,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_deletebindings",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".deletebindings()"
     },
     {
@@ -19998,8 +19998,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_deletestate",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".deletestate()"
     },
     {
@@ -20010,8 +20010,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_replaceselection",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".replaceselection()"
     },
     {
@@ -20022,8 +20022,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_setenabled",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".setenabled()"
     },
     {
@@ -20034,8 +20034,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_conversationragdao_deleteconversation",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".deleteconversation()"
     },
     {
@@ -20192,8 +20192,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_insertall",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".insertall()"
     },
     {
@@ -20204,8 +20204,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_deletebydocument",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".deletebydocument()"
     },
     {
@@ -20216,8 +20216,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_replacefordocument",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".replacefordocument()"
     },
     {
@@ -20228,8 +20228,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_replacefordocumentbatched",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".replacefordocumentbatched()"
     },
     {
@@ -20240,8 +20240,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_findbydocument",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".findbydocument()"
     },
     {
@@ -20300,8 +20300,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_findchunksneedingembedding",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".findchunksneedingembedding()"
     },
     {
@@ -20348,8 +20348,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_findbyids",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".findbyids()"
     },
     {
@@ -20372,8 +20372,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdaos_chunkdao_searchreadychunks",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": ".searchreadychunks()"
     },
     {
@@ -20467,8 +20467,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragdatabase_ragdatabase_conversationragdao",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": ".conversationragdao()"
     },
     {
@@ -20563,8 +20563,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragentities",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "ragentities.kt"
     },
     {
@@ -20602,8 +20602,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragentities_chunkentity",
-      "community": 38,
-      "community_name": "ChunkEmbeddingEntity",
+      "community": 56,
+      "community_name": "ChunkEntity",
       "norm_label": "chunkentity"
     },
     {
@@ -20628,8 +20628,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragentities_chunkftsentity",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "chunkftsentity"
     },
     {
@@ -20641,8 +20641,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragentities_conversationknowledgebasecrossref",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "conversationknowledgebasecrossref"
     },
     {
@@ -20654,8 +20654,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragentities_conversationragstateentity",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "conversationragstateentity"
     },
     {
@@ -20667,8 +20667,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_db_ragentities_citationentity",
-      "community": 56,
-      "community_name": "ConversationRagDao",
+      "community": 26,
+      "community_name": "KnowledgeBaseEntity",
       "norm_label": "citationentity"
     },
     {
@@ -21344,8 +21344,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_embed_embeddingmodelmanager_embeddingsessionreleasepolicy",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 207,
+      "community_name": "EmbeddingModelManager",
       "norm_label": "embeddingsessionreleasepolicy"
     },
     {
@@ -21356,8 +21356,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_embed_embeddingmodelmanager_embeddingsessionreleasepolicy_shouldrelease",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 207,
+      "community_name": "EmbeddingModelManager",
       "norm_label": ".shouldrelease()"
     },
     {
@@ -23382,8 +23382,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_exactvectorbuffer_partitionedexactvectorranker",
-      "community": 121,
-      "community_name": "RankedChunkId",
+      "community": 226,
+      "community_name": "EmbeddingCorpusKey",
       "norm_label": "partitionedexactvectorranker"
     },
     {
@@ -23394,8 +23394,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_exactvectorbuffer_partitionedexactvectorranker_merge",
-      "community": 121,
-      "community_name": "RankedChunkId",
+      "community": 226,
+      "community_name": "EmbeddingCorpusKey",
       "norm_label": ".merge()"
     },
     {
@@ -24517,7 +24517,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "hnswvectorsearchbackend.kt"
     },
     {
@@ -24530,7 +24530,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswfallbackreason",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "hnswfallbackreason"
     },
     {
@@ -24541,7 +24541,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswfallbackreason_below_threshold",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "below_threshold"
     },
     {
@@ -24552,7 +24552,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswfallbackreason_missing_or_corrupt",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "missing_or_corrupt"
     },
     {
@@ -24563,7 +24563,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswfallbackreason_corpus_mismatch",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "corpus_mismatch"
     },
     {
@@ -24574,7 +24574,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswfallbackreason_rss_budget_exceeded",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "rss_budget_exceeded"
     },
     {
@@ -24587,7 +24587,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswrebuildpolicy",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "hnswrebuildpolicy"
     },
     {
@@ -24599,7 +24599,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswrebuildpolicy_shouldschedule",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": ".shouldschedule()"
     },
     {
@@ -24612,7 +24612,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswsearchpolicy",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "hnswsearchpolicy"
     },
     {
@@ -24624,8 +24624,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswvectorsearchbackend",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 30,
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "hnswvectorsearchbackend"
     },
     {
@@ -24637,7 +24637,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswvectorsearchbackend_search",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": ".search()"
     },
     {
@@ -24648,7 +24648,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_kt_vectorembeddingsource",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "vectorembeddingsource"
     },
     {
@@ -24660,7 +24660,7 @@
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_index_hnswvectorsearchbackend_hnswvectorsearchbackend_scheduleifrequired",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": ".scheduleifrequired()"
     },
     {
@@ -27820,8 +27820,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_retrieval_roomdenseevidenceretriever_roomdenseevidenceretriever",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 255,
+      "community_name": "RagRetrievalRequest",
       "norm_label": "roomdenseevidenceretriever"
     },
     {
@@ -29874,8 +29874,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_work_ragimportcancelreceiver",
-      "community": 25,
-      "community_name": "WorkManagerRagWorkCoordinator",
+      "community": 283,
+      "community_name": "RagImportCancelReceiver.kt",
       "norm_label": "ragimportcancelreceiver.kt"
     },
     {
@@ -29887,8 +29887,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_work_ragimportcancelreceiver_ragimportcancelreceiver",
-      "community": 25,
-      "community_name": "WorkManagerRagWorkCoordinator",
+      "community": 283,
+      "community_name": "RagImportCancelReceiver.kt",
       "norm_label": "ragimportcancelreceiver"
     },
     {
@@ -29898,8 +29898,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "broadcastreceiver",
-      "community": 25,
-      "community_name": "WorkManagerRagWorkCoordinator",
+      "community": 283,
+      "community_name": "RagImportCancelReceiver.kt",
       "norm_label": "broadcastreceiver"
     },
     {
@@ -29910,8 +29910,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_work_ragimportcancelreceiver_ragimportcancelreceiver_onreceive",
-      "community": 25,
-      "community_name": "WorkManagerRagWorkCoordinator",
+      "community": 283,
+      "community_name": "RagImportCancelReceiver.kt",
       "norm_label": ".onreceive()"
     },
     {
@@ -29921,8 +29921,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_work_ragimportcancelreceiver_kt_context",
-      "community": 25,
-      "community_name": "WorkManagerRagWorkCoordinator",
+      "community": 283,
+      "community_name": "RagImportCancelReceiver.kt",
       "norm_label": "context"
     },
     {
@@ -29932,8 +29932,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "app_src_main_java_com_example_minicpm_v_demo_rag_work_ragimportcancelreceiver_kt_intent",
-      "community": 25,
-      "community_name": "WorkManagerRagWorkCoordinator",
+      "community": 283,
+      "community_name": "RagImportCancelReceiver.kt",
       "norm_label": "intent"
     },
     {
@@ -31758,8 +31758,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_lowlatencyragruntimegatetest",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 291,
+      "community_name": "LowLatencyRagRuntimeGateTest",
       "norm_label": "lowlatencyragruntimegatetest.kt"
     },
     {
@@ -31771,8 +31771,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_lowlatencyragruntimegatetest_lowlatencyragruntimegatetest",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 291,
+      "community_name": "LowLatencyRagRuntimeGateTest",
       "norm_label": "lowlatencyragruntimegatetest"
     },
     {
@@ -31783,8 +31783,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_lowlatencyragruntimegatetest_lowlatencyragruntimegatetest_checkpoint_failure_disables_only_the_current_process_until_restart",
-      "community": 279,
-      "community_name": "MiniCPMApplication",
+      "community": 291,
+      "community_name": "LowLatencyRagRuntimeGateTest",
       "norm_label": ".`checkpoint failure disables only the current process until restart`()"
     },
     {
@@ -33117,8 +33117,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_embed_installedembeddingmodelverifiertest",
-      "community": 207,
-      "community_name": "EmbeddingModelManager",
+      "community": 174,
+      "community_name": "EmbeddingModelManifest",
       "norm_label": "installedembeddingmodelverifiertest.kt"
     },
     {
@@ -33130,8 +33130,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_embed_installedembeddingmodelverifiertest_installedembeddingmodelverifiertest",
-      "community": 207,
-      "community_name": "EmbeddingModelManager",
+      "community": 174,
+      "community_name": "EmbeddingModelManifest",
       "norm_label": "installedembeddingmodelverifiertest"
     },
     {
@@ -33142,8 +33142,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_embed_installedembeddingmodelverifiertest_installedembeddingmodelverifiertest_package_identity_is_verified_without_opening_an_inference_session",
-      "community": 207,
-      "community_name": "EmbeddingModelManager",
+      "community": 174,
+      "community_name": "EmbeddingModelManifest",
       "norm_label": ".`package identity is verified without opening an inference session`()"
     },
     {
@@ -34161,8 +34161,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_index_exactvectorbuffertest_exactvectorbuffertest_partition_merge_preserves_global_top_k_with_stable_ties",
-      "community": 228,
-      "community_name": "ExactVectorBufferTest",
+      "community": 121,
+      "community_name": "RankedChunkId",
       "norm_label": ".`partition merge preserves global top k with stable ties`()"
     },
     {
@@ -37207,7 +37207,7 @@
       "_origin": "ast",
       "id": "app_src_test_java_com_example_minicpm_v_demo_rag_work_hnswrebuildcontracttest",
       "community": 30,
-      "community_name": "HnswFallbackReason",
+      "community_name": "HnswVectorSearchBackend",
       "norm_label": "hnswrebuildcontracttest.kt"
     },
     {
@@ -37716,6 +37716,721 @@
       "norm_label": "die()"
     },
     {
+      "label": "manifest.json",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "manifest.json"
+    },
+    {
+      "label": "architecture",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L2",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_architecture",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "architecture"
+    },
+    {
+      "label": "deployment",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_deployment",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "deployment"
+    },
+    {
+      "label": "channel",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_deployment_channel",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "channel"
+    },
+    {
+      "label": "selection_basis",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_deployment_selection_basis",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "selection_basis"
+    },
+    {
+      "label": "evaluated_splits",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_evaluated_splits",
+      "community": 292,
+      "community_name": "evaluated_splits",
+      "norm_label": "evaluated_splits"
+    },
+    {
+      "label": "calibration",
+      "file_type": "concept",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "ref_calibration",
+      "community": 292,
+      "community_name": "evaluated_splits",
+      "norm_label": "calibration"
+    },
+    {
+      "label": "external_tokenizer_sha256",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_external_tokenizer_sha256",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "external_tokenizer_sha256"
+    },
+    {
+      "label": "files",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_files",
+      "community": 287,
+      "community_name": "model.int8.onnx",
+      "norm_label": "files"
+    },
+    {
+      "label": "model.int8.onnx",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_files_model_int8_onnx",
+      "community": 287,
+      "community_name": "model.int8.onnx",
+      "norm_label": "model.int8.onnx"
+    },
+    {
+      "label": "bytes",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L13",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_model_int8_onnx_bytes",
+      "community": 287,
+      "community_name": "model.int8.onnx",
+      "norm_label": "bytes"
+    },
+    {
+      "label": "sha256",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L14",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_model_int8_onnx_sha256",
+      "community": 287,
+      "community_name": "model.int8.onnx",
+      "norm_label": "sha256"
+    },
+    {
+      "label": "inputs",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_inputs",
+      "community": 288,
+      "community_name": "inputs",
+      "norm_label": "inputs"
+    },
+    {
+      "label": "attention_mask",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_inputs_attention_mask",
+      "community": 288,
+      "community_name": "inputs",
+      "norm_label": "attention_mask"
+    },
+    {
+      "label": "input_ids",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_inputs_input_ids",
+      "community": 288,
+      "community_name": "inputs",
+      "norm_label": "input_ids"
+    },
+    {
+      "label": "task_ids",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_inputs_task_ids",
+      "community": 288,
+      "community_name": "inputs",
+      "norm_label": "task_ids"
+    },
+    {
+      "label": "labels_by_task",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_labels_by_task",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "labels_by_task"
+    },
+    {
+      "label": "answerability",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_labels_by_task_answerability",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "answerability"
+    },
+    {
+      "label": "SUPPORTED",
+      "file_type": "concept",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "ref_supported",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "supported"
+    },
+    {
+      "label": "PARTIAL",
+      "file_type": "concept",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "ref_partial",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "partial"
+    },
+    {
+      "label": "UNSUPPORTED",
+      "file_type": "concept",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "_origin": "ast",
+      "id": "ref_unsupported",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "unsupported"
+    },
+    {
+      "label": "groundedness",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_labels_by_task_groundedness",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "groundedness"
+    },
+    {
+      "label": "GROUNDED",
+      "file_type": "concept",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "ref_grounded",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "grounded"
+    },
+    {
+      "label": "CONTRADICTED",
+      "file_type": "concept",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "ref_contradicted",
+      "community": 282,
+      "community_name": "groundedness",
+      "norm_label": "contradicted"
+    },
+    {
+      "label": "max_tokens",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_max_tokens",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "max_tokens"
+    },
+    {
+      "label": "output",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_output",
+      "community": 293,
+      "community_name": "output",
+      "norm_label": "output"
+    },
+    {
+      "label": "answerability_padding_logit",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_output_answerability_padding_logit",
+      "community": 293,
+      "community_name": "output",
+      "norm_label": "answerability_padding_logit"
+    },
+    {
+      "label": "logits",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_output_logits",
+      "community": 293,
+      "community_name": "output",
+      "norm_label": "logits"
+    },
+    {
+      "label": "quality",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "quality"
+    },
+    {
+      "label": "compression_ratio",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L41",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_compression_ratio",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "compression_ratio"
+    },
+    {
+      "label": "evaluated_splits",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L42",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_evaluated_splits",
+      "community": 292,
+      "community_name": "evaluated_splits",
+      "norm_label": "evaluated_splits"
+    },
+    {
+      "label": "fp32_bytes",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_fp32_bytes",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "fp32_bytes"
+    },
+    {
+      "label": "fp32_pytorch_max_abs",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L46",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_fp32_pytorch_max_abs",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "fp32_pytorch_max_abs"
+    },
+    {
+      "label": "int8_bytes",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L47",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_int8_bytes",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "int8_bytes"
+    },
+    {
+      "label": "int8_fp32_label_agreement",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L48",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_int8_fp32_label_agreement",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "int8_fp32_label_agreement"
+    },
+    {
+      "label": "int8_fp32_max_abs_logit_delta",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L49",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_int8_fp32_max_abs_logit_delta",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "int8_fp32_max_abs_logit_delta"
+    },
+    {
+      "label": "int8_fp32_mean_abs_logit_delta",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L50",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_int8_fp32_mean_abs_logit_delta",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "int8_fp32_mean_abs_logit_delta"
+    },
+    {
+      "label": "largest_macro_f1_drop",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_largest_macro_f1_drop",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "largest_macro_f1_drop"
+    },
+    {
+      "label": "splits",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_splits",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "splits"
+    },
+    {
+      "label": "calibration",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_splits_calibration",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "calibration"
+    },
+    {
+      "label": "fp32",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L54",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_calibration_fp32",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "fp32"
+    },
+    {
+      "label": "answerability",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L55",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_fp32_answerability",
+      "community": 284,
+      "community_name": "answerability",
+      "norm_label": "answerability"
+    },
+    {
+      "label": "accuracy",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_answerability_accuracy",
+      "community": 284,
+      "community_name": "answerability",
+      "norm_label": "accuracy"
+    },
+    {
+      "label": "count",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L57",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_answerability_count",
+      "community": 284,
+      "community_name": "answerability",
+      "norm_label": "count"
+    },
+    {
+      "label": "ece",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L58",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_answerability_ece",
+      "community": 284,
+      "community_name": "answerability",
+      "norm_label": "ece"
+    },
+    {
+      "label": "macro_f1",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L59",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_answerability_macro_f1",
+      "community": 284,
+      "community_name": "answerability",
+      "norm_label": "macro_f1"
+    },
+    {
+      "label": "groundedness",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L61",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_fp32_groundedness",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "groundedness"
+    },
+    {
+      "label": "accuracy",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L62",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_groundedness_accuracy",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "accuracy"
+    },
+    {
+      "label": "count",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_groundedness_count",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "count"
+    },
+    {
+      "label": "ece",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_groundedness_ece",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "ece"
+    },
+    {
+      "label": "macro_f1",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L65",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_groundedness_macro_f1",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "macro_f1"
+    },
+    {
+      "label": "int8",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_calibration_int8",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "int8"
+    },
+    {
+      "label": "answerability",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L69",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_int8_answerability",
+      "community": 284,
+      "community_name": "answerability",
+      "norm_label": "answerability"
+    },
+    {
+      "label": "groundedness",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L75",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_int8_groundedness",
+      "community": 281,
+      "community_name": "groundedness",
+      "norm_label": "groundedness"
+    },
+    {
+      "label": "test",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L84",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_test",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "test"
+    },
+    {
+      "label": "test_evaluated",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L85",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_test_evaluated",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "test_evaluated"
+    },
+    {
+      "label": "versions",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L86",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_quality_versions",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "versions"
+    },
+    {
+      "label": "onnxruntime",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L87",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_versions_onnxruntime",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "onnxruntime"
+    },
+    {
+      "label": "torch",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L88",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_versions_torch",
+      "community": 225,
+      "community_name": "quality",
+      "norm_label": "torch"
+    },
+    {
+      "label": "schema_version",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L91",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_schema_version",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "schema_version"
+    },
+    {
+      "label": "task_ids",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L92",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_task_ids",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "task_ids"
+    },
+    {
+      "label": "answerability",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L93",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_task_ids_answerability",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "answerability"
+    },
+    {
+      "label": "groundedness",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_task_ids_groundedness",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "groundedness"
+    },
+    {
+      "label": "test",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L96",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_test",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "test"
+    },
+    {
+      "label": "test_evaluated",
+      "file_type": "code",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L97",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_manifest_test_evaluated",
+      "community": 227,
+      "community_name": "manifest.json",
+      "norm_label": "test_evaluated"
+    },
+    {
       "label": "run-device-instrumentation.ps1",
       "file_type": "code",
       "source_file": "scripts/run-device-instrumentation.ps1",
@@ -37803,8 +38518,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_audit_dataset_v4_audit_rows",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "audit_rows()"
     },
     {
@@ -37827,8 +38542,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_audit_dataset_v4_audit_release_correctness",
-      "community": 54,
-      "community_name": "dataset_correctness_v4.py",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "audit_release_correctness()"
     },
     {
@@ -37839,8 +38554,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_audit_dataset_v4_read_jsonl_files",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "_read_jsonl_files()"
     },
     {
@@ -37850,8 +38565,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tools_rag_guard_audit_dataset_v4_py_path",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "path"
     },
     {
@@ -38300,8 +39015,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_build_full_corpus_v4_usable_answer",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": "_usable_answer()"
     },
     {
@@ -38384,8 +39099,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_build_full_corpus_v4_build_qa_corpus",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": "build_qa_corpus()"
     },
     {
@@ -38430,8 +39145,8 @@
       "source_location": "L282",
       "_origin": "ast",
       "id": "tools_rag_guard_build_full_corpus_v4_rationale_282",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": "reject punctuation-only extractive answers that cannot be grounded."
     },
     {
@@ -39479,8 +40194,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_dataset_schema_v2_validate_v2_row",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "validate_v2_row()"
     },
     {
@@ -39798,8 +40513,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_evaluate_slices_per_class_metrics",
-      "community": 10,
-      "community_name": "eligible_checkpoint",
+      "community": 264,
+      "community_name": "checkpoint_audit_v4.py",
       "norm_label": "per_class_metrics()"
     },
     {
@@ -40070,8 +40785,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_export_onnx_softmax",
-      "community": 43,
-      "community_name": "export_onnx.py",
+      "community": 68,
+      "community_name": "training_data.py",
       "norm_label": "_softmax()"
     },
     {
@@ -40082,8 +40797,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_export_onnx_task_metrics",
-      "community": 43,
-      "community_name": "export_onnx.py",
+      "community": 68,
+      "community_name": "training_data.py",
       "norm_label": "_task_metrics()"
     },
     {
@@ -40208,7 +40923,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "model.py"
     },
     {
@@ -40221,7 +40936,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model_dualheadragguard",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "dualheadragguard"
     },
     {
@@ -40233,7 +40948,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model_dualheadragguard_init",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".__init__()"
     },
     {
@@ -40244,7 +40959,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model_py_module",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "module"
     },
     {
@@ -40256,7 +40971,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model_dualheadragguard_forward",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".forward()"
     },
     {
@@ -40267,7 +40982,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model_py_tensor",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "tensor"
     },
     {
@@ -40278,7 +40993,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_model_rationale_1",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "shared multilingual encoder with padded 3-class and native 4-class heads."
     },
     {
@@ -40368,8 +41083,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_mutations_entity_scope",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 75,
+      "community_name": "test_build_groundedness_v4.py",
       "norm_label": "entity_scope.py"
     },
     {
@@ -40403,8 +41118,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_mutations_entity_scope_rationale_1",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 75,
+      "community_name": "test_build_groundedness_v4.py",
       "norm_label": "literal entity, polarity, and scope mutation helpers."
     },
     {
@@ -40863,7 +41578,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "qa_repairs_v4_2.py"
     },
     {
@@ -40875,7 +41590,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_validated",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "_validated()"
     },
     {
@@ -40887,7 +41602,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_answer_type",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "_answer_type()"
     },
     {
@@ -40899,7 +41614,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_classify_numeric_hard_type",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "classify_numeric_hard_type()"
     },
     {
@@ -40911,7 +41626,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_choose_type_matched_distractor",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "choose_type_matched_distractor()"
     },
     {
@@ -40923,7 +41638,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_flat_integer_ids",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "_flat_integer_ids()"
     },
     {
@@ -40935,7 +41650,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_build_visible_evidence_window",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "build_visible_evidence_window()"
     },
     {
@@ -40946,7 +41661,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_rationale_1",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "deterministic qa repair helpers for the independently versioned v4.2 corpus."
     },
     {
@@ -40957,7 +41672,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_rationale_49",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "separate temporal numeric mutations from amounts without source-specific..."
     },
     {
@@ -40968,7 +41683,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_rationale_60",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "choose the first distinct candidate with the same coarse semantic type."
     },
     {
@@ -40979,7 +41694,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_qa_repairs_v4_2_rationale_87",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "return an exact-token window that keeps all decisive evidence spans visible."
     },
     {
@@ -41509,8 +42224,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "source_loaders_v4.py"
     },
     {
@@ -41547,8 +42262,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_validate_archive",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "_validate_archive()"
     },
     {
@@ -41558,8 +42273,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_py_zipfile",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "zipfile"
     },
     {
@@ -41570,8 +42285,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_required_string",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "_required_string()"
     },
     {
@@ -41582,8 +42297,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_load_contract_nli_zip",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "load_contract_nli_zip()"
     },
     {
@@ -41593,8 +42308,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_py_path",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "path"
     },
     {
@@ -41606,8 +42321,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_hoverevidencestore",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "hoverevidencestore"
     },
     {
@@ -41618,8 +42333,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_hoverevidencestore_init",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".__init__()"
     },
     {
@@ -41630,8 +42345,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_hoverevidencestore_enter",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".__enter__()"
     },
     {
@@ -41642,8 +42357,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_hoverevidencestore_exit",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".__exit__()"
     },
     {
@@ -41654,8 +42369,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_hoverevidencestore_get",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".get()"
     },
     {
@@ -41666,8 +42381,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_load_hover_json",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "load_hover_json()"
     },
     {
@@ -41677,8 +42392,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_source_loaders_v4_rationale_1",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "safe, read-only loaders for licensed rag guard v4 source corpora."
     },
     {
@@ -41930,8 +42645,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_build_full_corpus_v4_buildfullcorpusv4test_test_qa_builder_keeps_impossible_and_builds_four_class_answer_family",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_qa_builder_keeps_impossible_and_builds_four_class_answer_family()"
     },
     {
@@ -41942,8 +42657,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_build_full_corpus_v4_buildfullcorpusv4test_test_qa_family_generates_diverse_contradiction_types",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_qa_family_generates_diverse_contradiction_types()"
     },
     {
@@ -41954,8 +42669,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_build_full_corpus_v4_buildfullcorpusv4test_test_qa_builder_skips_punctuation_only_answers",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_qa_builder_skips_punctuation_only_answers()"
     },
     {
@@ -41990,8 +42705,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_build_full_corpus_v4_buildfullcorpusv4test_test_qa_naked_year_is_labeled_as_wrong_date",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_qa_naked_year_is_labeled_as_wrong_date()"
     },
     {
@@ -42002,8 +42717,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_build_full_corpus_v4_buildfullcorpusv4test_test_cmrc_uses_natural_cross_document_negative_questions",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_cmrc_uses_natural_cross_document_negative_questions()"
     },
     {
@@ -42014,8 +42729,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_build_full_corpus_v4_buildfullcorpusv4test_test_qa_source_without_impossible_questions_still_builds_three_answerability_labels",
-      "community": 44,
-      "community_name": "build_full_corpus_v4.py",
+      "community": 65,
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_qa_source_without_impossible_questions_still_builds_three_answerability_labels()"
     },
     {
@@ -42445,8 +43160,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "test_dataset_audit_v4.py"
     },
     {
@@ -42458,8 +43173,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "datasetauditv4test"
     },
     {
@@ -42470,8 +43185,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_frozen_test_is_preserved_and_related_new_rows_are_excluded",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_frozen_test_is_preserved_and_related_new_rows_are_excluded()"
     },
     {
@@ -42482,8 +43197,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_release_audit_enforces_groundedness_slice_balance",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_release_audit_enforces_groundedness_slice_balance()"
     },
     {
@@ -42494,8 +43209,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_mutation_family_and_near_duplicates_stay_in_one_split",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_mutation_family_and_near_duplicates_stay_in_one_split()"
     },
     {
@@ -42506,8 +43221,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_audit_rejects_a_family_crossing_splits",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_audit_rejects_a_family_crossing_splits()"
     },
     {
@@ -42518,8 +43233,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_audit_rejects_sensitive_phone_number",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_audit_rejects_sensitive_phone_number()"
     },
     {
@@ -42530,8 +43245,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_audit_does_not_treat_generated_identifiers_as_phone_content",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_audit_does_not_treat_generated_identifiers_as_phone_content()"
     },
     {
@@ -42554,8 +43269,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_split_cli_accepts_input_directory_and_writes_task_files",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_split_cli_accepts_input_directory_and_writes_task_files()"
     },
     {
@@ -42566,8 +43281,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_audit_v4_datasetauditv4test_test_audit_reader_can_select_only_all_split_files",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_audit_reader_can_select_only_all_split_files()"
     },
     {
@@ -42578,7 +43293,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": "test_dataset_balance_v4.py"
     },
     {
@@ -42590,7 +43305,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_balanced_rows",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": "balanced_rows()"
     },
     {
@@ -42603,7 +43318,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": "datasetbalancev4test"
     },
     {
@@ -42615,7 +43330,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_setup",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".setup()"
     },
     {
@@ -42627,7 +43342,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_validate",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".validate()"
     },
     {
@@ -42639,7 +43354,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_test_balanced_contrast_families_pass",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".test_balanced_contrast_families_pass()"
     },
     {
@@ -42651,7 +43366,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_test_release_gate_rejects_excessive_negation_share",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".test_release_gate_rejects_excessive_negation_share()"
     },
     {
@@ -42663,7 +43378,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_test_release_gate_rejects_single_source_dominance",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".test_release_gate_rejects_single_source_dominance()"
     },
     {
@@ -42675,7 +43390,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_test_release_gate_rejects_low_chinese_coverage",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".test_release_gate_rejects_low_chinese_coverage()"
     },
     {
@@ -42687,7 +43402,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_balance_v4_datasetbalancev4test_test_release_gate_rejects_unpaired_contradictions",
       "community": 79,
-      "community_name": "validate_v2_row",
+      "community_name": "balanced_rows",
       "norm_label": ".test_release_gate_rejects_unpaired_contradictions()"
     },
     {
@@ -42829,8 +43544,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "test_dataset_schema_v2.py"
     },
     {
@@ -42841,8 +43556,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_groundedness_row",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "groundedness_row()"
     },
     {
@@ -42854,8 +43569,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": "datasetschemav2test"
     },
     {
@@ -42866,8 +43581,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test_test_valid_groundedness_row_is_accepted",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_valid_groundedness_row_is_accepted()"
     },
     {
@@ -42878,8 +43593,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test_test_groundedness_rejects_legacy_ungrounded_label",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_groundedness_rejects_legacy_ungrounded_label()"
     },
     {
@@ -42890,8 +43605,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test_test_groundedness_requires_atomic_claims",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_groundedness_requires_atomic_claims()"
     },
     {
@@ -42902,8 +43617,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test_test_unapproved_license_is_rejected",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_unapproved_license_is_rejected()"
     },
     {
@@ -42914,8 +43629,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test_test_duplicate_source_ids_are_rejected",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_duplicate_source_ids_are_rejected()"
     },
     {
@@ -42926,8 +43641,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_dataset_schema_v2_datasetschemav2test_test_provenance_hashes_are_required",
-      "community": 79,
-      "community_name": "validate_v2_row",
+      "community": 34,
+      "community_name": "ValueError",
       "norm_label": ".test_provenance_hashes_are_required()"
     },
     {
@@ -43238,7 +43953,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_model",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "test_model.py"
     },
     {
@@ -43249,7 +43964,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_model_py_skipif",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "skipif"
     },
     {
@@ -43262,7 +43977,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_model_dualheadragguardtest",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "dualheadragguardtest"
     },
     {
@@ -43274,7 +43989,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_model_dualheadragguardtest_test_mixed_task_batch_routes_gradients_to_both_heads",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".test_mixed_task_batch_routes_gradients_to_both_heads()"
     },
     {
@@ -43440,7 +44155,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "test_qa_repairs_v4_2.py"
     },
     {
@@ -43453,7 +44168,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_fakeoffsettokenizer",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "fakeoffsettokenizer"
     },
     {
@@ -43465,7 +44180,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_fakeoffsettokenizer_tokens",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "._tokens()"
     },
     {
@@ -43477,7 +44192,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_fakeoffsettokenizer_call",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": ".__call__()"
     },
     {
@@ -43490,7 +44205,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_qarepairsv42test",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": "qarepairsv42test"
     },
     {
@@ -43502,7 +44217,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_qarepairsv42test_test_classifies_english_and_chinese_temporal_answers",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_classifies_english_and_chinese_temporal_answers()"
     },
     {
@@ -43514,7 +44229,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_qarepairsv42test_test_selects_only_a_distinct_type_compatible_distractor",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_selects_only_a_distinct_type_compatible_distractor()"
     },
     {
@@ -43526,7 +44241,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_qarepairsv42test_test_rejects_invalid_language_and_oversized_values",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_rejects_invalid_language_and_oversized_values()"
     },
     {
@@ -43538,7 +44253,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_qarepairsv42test_test_builds_a_bounded_window_containing_all_required_spans",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_builds_a_bounded_window_containing_all_required_spans()"
     },
     {
@@ -43550,7 +44265,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_qa_repairs_v4_2_qarepairsv42test_test_rejects_required_spans_that_cannot_share_the_token_budget",
       "community": 65,
-      "community_name": "build_visible_evidence_window",
+      "community_name": "build_qa_corpus",
       "norm_label": ".test_rejects_required_spans_that_cannot_share_the_token_budget()"
     },
     {
@@ -43896,8 +44611,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_test_source_loaders_v4",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "test_source_loaders_v4.py"
     },
     {
@@ -43909,8 +44624,8 @@
       "_callable_class": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_source_loaders_v4_sourceloadersv4test",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": "sourceloadersv4test"
     },
     {
@@ -43921,8 +44636,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_source_loaders_v4_sourceloadersv4test_test_contract_loader_preserves_choice_and_evidence_spans",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".test_contract_loader_preserves_choice_and_evidence_spans()"
     },
     {
@@ -43933,8 +44648,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_source_loaders_v4_sourceloadersv4test_test_contract_loader_rejects_path_traversal",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".test_contract_loader_rejects_path_traversal()"
     },
     {
@@ -43945,8 +44660,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_source_loaders_v4_sourceloadersv4test_test_hover_store_matches_unicode_normalized_titles",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".test_hover_store_matches_unicode_normalized_titles()"
     },
     {
@@ -43957,8 +44672,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_test_source_loaders_v4_sourceloadersv4test_test_hover_loader_validates_unique_uids_and_labels",
-      "community": 227,
-      "community_name": "HoVerEvidenceStore",
+      "community": 44,
+      "community_name": "build_full_corpus_v4.py",
       "norm_label": ".test_hover_loader_validates_unique_uids_and_labels()"
     },
     {
@@ -44137,7 +44852,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "test_training_pipeline.py"
     },
     {
@@ -44148,7 +44863,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_py_skipif",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "skipif"
     },
     {
@@ -44161,7 +44876,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_trainingpipelinetest",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "trainingpipelinetest"
     },
     {
@@ -44173,7 +44888,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_trainingpipelinetest_test_evaluate_records_text_free_training_dynamics",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".test_evaluate_records_text_free_training_dynamics()"
     },
     {
@@ -44185,7 +44900,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_trainingpipelinetest_test_default_loss_preserves_the_frozen_baseline_weights",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".test_default_loss_preserves_the_frozen_baseline_weights()"
     },
     {
@@ -44197,7 +44912,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_trainingpipelinetest_test_dual_head_emits_padded_four_logits",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".test_dual_head_emits_padded_four_logits()"
     },
     {
@@ -44209,7 +44924,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_trainingpipelinetest_test_checkpoint_tie_is_broken_by_lower_calibration_error",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".test_checkpoint_tie_is_broken_by_lower_calibration_error()"
     },
     {
@@ -44221,7 +44936,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_pipeline_trainingpipelinetest_test_one_epoch_updates_the_shared_model_with_finite_loss",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".test_one_epoch_updates_the_shared_model_with_finite_loss()"
     },
     {
@@ -44232,7 +44947,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_protocol",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": "test_training_protocol.py"
     },
     {
@@ -44245,7 +44960,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_protocol_trainingprotocoltest",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": "trainingprotocoltest"
     },
     {
@@ -44257,7 +44972,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_test_training_protocol_trainingprotocoltest_test_frozen_test_split_requires_explicit_opt_in",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": ".test_frozen_test_split_requires_explicit_opt_in()"
     },
     {
@@ -44339,7 +45054,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_train",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "train.py"
     },
@@ -44352,7 +45067,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_train_is_better_checkpoint",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "is_better_checkpoint()"
     },
     {
@@ -44376,8 +45091,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_encodedrows_init",
-      "community": 264,
-      "community_name": "checkpoint_audit_v4.py",
+      "community": 68,
+      "community_name": "training_data.py",
       "norm_label": ".__init__()"
     },
     {
@@ -44473,8 +45188,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_make_collator",
-      "community": 264,
-      "community_name": "checkpoint_audit_v4.py",
+      "community": 218,
+      "community_name": "train.py",
       "norm_label": "make_collator()"
     },
     {
@@ -44486,7 +45201,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_train_joint_guard_loss",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "joint_guard_loss()"
     },
     {
@@ -44497,7 +45212,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_train_py_tensor",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "tensor"
     },
     {
@@ -44509,7 +45224,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_train_train_epoch",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "train_epoch()"
     },
     {
@@ -44520,7 +45235,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_train_py_module",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "module"
     },
     {
@@ -44531,7 +45246,7 @@
       "_origin": "ast",
       "id": "optimizer",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "optimizer"
     },
     {
@@ -44542,7 +45257,7 @@
       "_origin": "ast",
       "id": "device",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "device"
     },
     {
@@ -44553,7 +45268,7 @@
       "_origin": "ast",
       "id": "no_grad",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "no_grad"
     },
     {
@@ -44565,7 +45280,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_train_evaluate",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "evaluate()"
     },
     {
@@ -44576,7 +45291,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_load_split",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "_load_split()"
     },
@@ -44587,7 +45302,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tools_rag_guard_train_py_path",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "path"
     },
@@ -44599,7 +45314,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_write_json",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "_write_json()"
     },
@@ -44611,7 +45326,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_write_jsonl",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "_write_jsonl()"
     },
@@ -44623,7 +45338,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_state_dict_on_cpu",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "_state_dict_on_cpu()"
     },
@@ -44635,7 +45350,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_run_training",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "run_training()"
     },
@@ -44646,7 +45361,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tools_rag_guard_train_py_namespace",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "namespace"
     },
@@ -44658,7 +45373,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_train_parse_args",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "parse_args()"
     },
@@ -44669,7 +45384,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_train_rationale_1",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "train a shared multilingual encoder with answerability and groundedness heads."
     },
@@ -44703,8 +45418,8 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_training_data_format_model_input",
-      "community": 33,
-      "community_name": "quality_gate.py",
+      "community": 68,
+      "community_name": "training_data.py",
       "norm_label": "format_model_input()"
     },
     {
@@ -44853,7 +45568,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "training_dynamics_v4.py"
     },
@@ -44867,7 +45582,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_trainingdynamicsrecorder",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": "trainingdynamicsrecorder"
     },
     {
@@ -44879,7 +45594,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_trainingdynamicsrecorder_init",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".__init__()"
     },
     {
@@ -44891,7 +45606,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_trainingdynamicsrecorder_record",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".record()"
     },
     {
@@ -44903,7 +45618,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_trainingdynamicsrecorder_summarize",
       "community": 218,
-      "community_name": "DualHeadRagGuard",
+      "community_name": "train.py",
       "norm_label": ".summarize()"
     },
     {
@@ -44914,7 +45629,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_number",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "_number()"
     },
@@ -44926,7 +45641,7 @@
       "_callable": true,
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_select_review_rows",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "select_review_rows()"
     },
@@ -44937,7 +45652,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tools_rag_guard_training_dynamics_v4_rationale_1",
-      "community": 219,
+      "community": 218,
       "community_name": "train.py",
       "norm_label": "text-free per-row training dynamics for ambiguity and label-review triage."
     },
@@ -44949,7 +45664,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_protocol",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": "training_protocol.py"
     },
     {
@@ -44961,7 +45676,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_protocol_evaluation_split_names",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": "evaluation_split_names()"
     },
     {
@@ -44972,7 +45687,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_protocol_rationale_1",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": "release protocol helpers that keep the frozen test split opt-in only."
     },
     {
@@ -44983,7 +45698,7 @@
       "_origin": "ast",
       "id": "tools_rag_guard_training_protocol_rationale_7",
       "community": 219,
-      "community_name": "train.py",
+      "community_name": "evaluation_split_names",
       "norm_label": "return evaluation splits without exposing test data during model selection."
     },
     {
@@ -46899,6 +47614,72 @@
       "community": 270,
       "community_name": "RAG Guard v4.2 E5 Export and Android APK Integration Implementation Plan",
       "norm_label": "self-review"
+    },
+    {
+      "label": "README.md",
+      "file_type": "document",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_readme",
+      "community": 285,
+      "community_name": "RAG Guard v4.2 E5 INT8",
+      "norm_label": "readme.md"
+    },
+    {
+      "label": "RAG Guard v4.2 E5 INT8",
+      "file_type": "document",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_readme_rag_guard_v4_2_e5_int8",
+      "community": 285,
+      "community_name": "RAG Guard v4.2 E5 INT8",
+      "norm_label": "rag guard v4.2 e5 int8"
+    },
+    {
+      "label": "Artifact identity",
+      "file_type": "document",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_readme_artifact_identity",
+      "community": 285,
+      "community_name": "RAG Guard v4.2 E5 INT8",
+      "norm_label": "artifact identity"
+    },
+    {
+      "label": "Provenance and license",
+      "file_type": "document",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_readme_provenance_and_license",
+      "community": 285,
+      "community_name": "RAG Guard v4.2 E5 INT8",
+      "norm_label": "provenance and license"
+    },
+    {
+      "label": "Recorded calibration results",
+      "file_type": "document",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_readme_recorded_calibration_results",
+      "community": 285,
+      "community_name": "RAG Guard v4.2 E5 INT8",
+      "norm_label": "recorded calibration results"
+    },
+    {
+      "label": "Checkout and build",
+      "file_type": "document",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L44",
+      "_origin": "ast",
+      "id": "models_rag_guard_v4_2_e5_readme_checkout_and_build",
+      "community": 285,
+      "community_name": "RAG Guard v4.2 E5 INT8",
+      "norm_label": "checkout and build"
     },
     {
       "label": "DATASET_CARD_V4.md",
@@ -124686,6 +125467,840 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_architecture",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_deployment",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_evaluated_splits",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_external_tokenizer_sha256",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_files",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_inputs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_labels_by_task",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L35",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_max_tokens",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_output",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L40",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L91",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_schema_version",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_task_ids",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L96",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_test",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L97",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest",
+      "target": "models_rag_guard_v4_2_e5_manifest_test_evaluated",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_deployment",
+      "target": "models_rag_guard_v4_2_e5_manifest_deployment_channel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_deployment",
+      "target": "models_rag_guard_v4_2_e5_manifest_deployment_selection_basis",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L7",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_evaluated_splits",
+      "target": "ref_calibration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L42",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality_evaluated_splits",
+      "target": "ref_calibration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L12",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_files",
+      "target": "models_rag_guard_v4_2_e5_manifest_files_model_int8_onnx",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L13",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_files_model_int8_onnx",
+      "target": "models_rag_guard_v4_2_e5_manifest_model_int8_onnx_bytes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L14",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_files_model_int8_onnx",
+      "target": "models_rag_guard_v4_2_e5_manifest_model_int8_onnx_sha256",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L18",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_inputs",
+      "target": "models_rag_guard_v4_2_e5_manifest_inputs_attention_mask",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_inputs",
+      "target": "models_rag_guard_v4_2_e5_manifest_inputs_input_ids",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_inputs",
+      "target": "models_rag_guard_v4_2_e5_manifest_inputs_task_ids",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task",
+      "target": "models_rag_guard_v4_2_e5_manifest_labels_by_task_answerability",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task",
+      "target": "models_rag_guard_v4_2_e5_manifest_labels_by_task_groundedness",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_answerability",
+      "target": "ref_partial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_answerability",
+      "target": "ref_supported",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L23",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_answerability",
+      "target": "ref_unsupported",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_groundedness",
+      "target": "ref_partial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_groundedness",
+      "target": "ref_unsupported",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_groundedness",
+      "target": "ref_contradicted",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L28",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_labels_by_task_groundedness",
+      "target": "ref_grounded",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_output",
+      "target": "models_rag_guard_v4_2_e5_manifest_output_answerability_padding_logit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_output",
+      "target": "models_rag_guard_v4_2_e5_manifest_output_logits",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_compression_ratio",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L42",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_evaluated_splits",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L45",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_fp32_bytes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L46",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_fp32_pytorch_max_abs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L47",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_int8_bytes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L48",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_int8_fp32_label_agreement",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L49",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_int8_fp32_max_abs_logit_delta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L50",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_int8_fp32_mean_abs_logit_delta",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L51",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_largest_macro_f1_drop",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_splits",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L84",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_test",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L85",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_test_evaluated",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L86",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality",
+      "target": "models_rag_guard_v4_2_e5_manifest_quality_versions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L53",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality_splits",
+      "target": "models_rag_guard_v4_2_e5_manifest_splits_calibration",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L54",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_splits_calibration",
+      "target": "models_rag_guard_v4_2_e5_manifest_calibration_fp32",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_splits_calibration",
+      "target": "models_rag_guard_v4_2_e5_manifest_calibration_int8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_calibration_fp32",
+      "target": "models_rag_guard_v4_2_e5_manifest_fp32_answerability",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L61",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_calibration_fp32",
+      "target": "models_rag_guard_v4_2_e5_manifest_fp32_groundedness",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_accuracy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_count",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L58",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_ece",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L59",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_macro_f1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L70",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_accuracy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_count",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L72",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_ece",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L73",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_answerability",
+      "target": "models_rag_guard_v4_2_e5_manifest_answerability_macro_f1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L62",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_accuracy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L63",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_count",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L64",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_ece",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L65",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_fp32_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_macro_f1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L76",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_accuracy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L77",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_count",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L78",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_ece",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L79",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_int8_groundedness",
+      "target": "models_rag_guard_v4_2_e5_manifest_groundedness_macro_f1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L69",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_calibration_int8",
+      "target": "models_rag_guard_v4_2_e5_manifest_int8_answerability",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L75",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_calibration_int8",
+      "target": "models_rag_guard_v4_2_e5_manifest_int8_groundedness",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L87",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality_versions",
+      "target": "models_rag_guard_v4_2_e5_manifest_versions_onnxruntime",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L88",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_quality_versions",
+      "target": "models_rag_guard_v4_2_e5_manifest_versions_torch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L93",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_task_ids",
+      "target": "models_rag_guard_v4_2_e5_manifest_task_ids_answerability",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/manifest.json",
+      "source_location": "L94",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_manifest_task_ids",
+      "target": "models_rag_guard_v4_2_e5_manifest_task_ids_groundedness",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "tools/rag_guard/audit_dataset_v4.py",
       "source_location": "L96",
       "weight": 1.0,
@@ -144366,6 +145981,61 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_readme",
+      "target": "models_rag_guard_v4_2_e5_readme_rag_guard_v4_2_e5_int8",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_readme_rag_guard_v4_2_e5_int8",
+      "target": "models_rag_guard_v4_2_e5_readme_artifact_identity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L44",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_readme_rag_guard_v4_2_e5_int8",
+      "target": "models_rag_guard_v4_2_e5_readme_checkout_and_build",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_readme_rag_guard_v4_2_e5_int8",
+      "target": "models_rag_guard_v4_2_e5_readme_provenance_and_license",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "models/rag-guard-v4-2-e5/README.md",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "models_rag_guard_v4_2_e5_readme_rag_guard_v4_2_e5_int8",
+      "target": "models_rag_guard_v4_2_e5_readme_recorded_calibration_results",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "tools/rag_guard/DATASET_CARD_V4.md",
       "source_location": "L1",
       "weight": 1.0,
@@ -145582,5 +147252,5 @@
       "source_file": "docs/superpowers/plans/2026-08-14-android-rag-low-latency-refactor.md"
     }
   ],
-  "built_at_commit": "244cdedb1095f252f893e5e02ec809c72965a73d"
+  "built_at_commit": "deafcfd0d62293ceb72cee49a639c41f541f0e63"
 }

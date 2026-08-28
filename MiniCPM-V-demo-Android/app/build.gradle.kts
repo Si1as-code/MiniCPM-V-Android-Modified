@@ -39,7 +39,7 @@ val ragGuardArtifactDir = providers.gradleProperty("RAG_GUARD_ARTIFACT_DIR").orN
     ?: providers.environmentVariable("RAG_GUARD_ARTIFACT_DIR").orNull
         ?.takeIf { it.isNotBlank() }
         ?.let(::file)
-    ?: rootProject.file("../../artifacts/rag-guard-v4-2-e5")
+    ?: rootProject.file("models/rag-guard-v4-2-e5")
 val generatedRagGuardAssets = layout.buildDirectory.dir("generated/ragGuardAssets")
 
 android {

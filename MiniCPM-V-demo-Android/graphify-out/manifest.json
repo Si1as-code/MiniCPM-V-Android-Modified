@@ -1,7 +1,7 @@
 {
   "app/build.gradle.kts": {
-    "mtime": 1787886124.8894663,
-    "ast_hash": "0d7255540a9f3e297b3609344efe9386",
+    "mtime": 1787896782.9100533,
+    "ast_hash": "181010091d739221d5bb4efb0ea683c7",
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/CameraFileProviderTest.kt": {
@@ -1100,8 +1100,8 @@
     "semantic_hash": "e319d508c87cf2d5a39b8a16e73c6524"
   },
   "README_MODIFIED_zh.md": {
-    "mtime": 1787895964.111091,
-    "ast_hash": "a0fd27aed53fd2f0b445a8bd4058807c",
+    "mtime": 1787896788.7067747,
+    "ast_hash": "27a64ae5023df12130bcf81ef5a11ed6",
     "semantic_hash": ""
   },
   "docs/architecture/ADR-001-local-rag-stack.md": {
@@ -1877,6 +1877,16 @@
   "docs/superpowers/plans/2026-08-27-rag-guard-v4-2-e5-export-android-integration-plan.md": {
     "mtime": 1787895951.384988,
     "ast_hash": "499a5783997919dcf915473b6fd8b8df",
+    "semantic_hash": ""
+  },
+  "models/rag-guard-v4-2-e5/manifest.json": {
+    "mtime": 1787886101.576841,
+    "ast_hash": "a831d99d28795d03bea7b81b207694f8",
+    "semantic_hash": ""
+  },
+  "models/rag-guard-v4-2-e5/README.md": {
+    "mtime": 1787896795.3283794,
+    "ast_hash": "dbed1560ced6174c27faf2152ba0a890",
     "semantic_hash": ""
   }
 }

@@ -156,6 +156,8 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 
 当前正式 Guard 为 v4.2 E5 INT8，大小 `118,171,779` bytes，SHA-256 为 `d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2`。模型随 APK 以未压缩 asset 打包，首次使用时原子安装到应用私有目录并校验大小与哈希。Android 按训练期的 XLM-R 双序列格式组装输入；Answerability 使用 `SUPPORTED/PARTIAL/UNSUPPORTED`，Groundedness 使用 `GROUNDED/PARTIAL/UNSUPPORTED/CONTRADICTED`。
 
+正式模型通过 Git LFS 保存在 `models/rag-guard-v4-2-e5/model.int8.onnx`。完整克隆后请执行 `git lfs pull`；Gradle 默认从该版本化目录读取模型，也可用 `RAG_GUARD_ARTIFACT_DIR` 属性或环境变量覆盖。模型来源、许可、输入输出契约和量化记录见同目录 `README.md`、`manifest.json` 与 `quantization_metrics.json`。
+
 本次量化结果如实记录：PyTorch/FP32 最大绝对差 `0.0000088215`，INT8/FP32 标签一致率 `0.9693585127`，最大 calibration macro-F1 降幅 `0.0107869130`，INT8 体积为 FP32 的 `0.2512633907`。按当前产品决定，这些性能指标不再作为 APK 接入门槛；受控路径、模型大小、SHA-256、ONNX 输入输出契约和 APK 签名仍必须校验通过。v4.2 frozen test 未读取、未评估。
 
 输出策略为：`GROUNDED` 采用模型回答；`PARTIAL` 最多使用同一证据纠偏重生成一次，仍未通过则替换为带来源的知识库摘录；`CONTRADICTED` 直接替换为知识库摘录；`UNSUPPORTED` 不冒充知识库回答，恢复为普通聊天。模型缺失、哈希不符、超时等技术故障同样恢复 RAG checkpoint 并按普通模型回答。
