@@ -13,17 +13,31 @@ class RagOutputReviewPolicyTest {
     }
 
     @Test
-    fun `partial or ungrounded output regenerates only once`() {
-        listOf(GroundednessLabel.PARTIAL, GroundednessLabel.UNGROUNDED).forEach { label ->
-            assertEquals(
-                RagOutputReviewAction.REGENERATE,
-                RagOutputReviewPolicy.decide(label, regenerationCount = 0),
-            )
-            assertEquals(
-                RagOutputReviewAction.REJECT_WITH_LOCAL_REPLY,
-                RagOutputReviewPolicy.decide(label, regenerationCount = 1),
-            )
-        }
+    fun `partial output regenerates only once`() {
+        assertEquals(
+            RagOutputReviewAction.REGENERATE,
+            RagOutputReviewPolicy.decide(GroundednessLabel.PARTIAL, regenerationCount = 0),
+        )
+        assertEquals(
+            RagOutputReviewAction.REPLACE_WITH_KNOWLEDGE_BASE,
+            RagOutputReviewPolicy.decide(GroundednessLabel.PARTIAL, regenerationCount = 1),
+        )
+    }
+
+    @Test
+    fun `unsupported output falls back to normal chat`() {
+        assertEquals(
+            RagOutputReviewAction.FALLBACK_TO_NORMAL_GENERATION,
+            RagOutputReviewPolicy.decide(GroundednessLabel.UNSUPPORTED, regenerationCount = 0),
+        )
+    }
+
+    @Test
+    fun `contradicted output immediately uses knowledge base evidence`() {
+        assertEquals(
+            RagOutputReviewAction.REPLACE_WITH_KNOWLEDGE_BASE,
+            RagOutputReviewPolicy.decide(GroundednessLabel.CONTRADICTED, regenerationCount = 0),
+        )
     }
 
     @Test(expected = IllegalArgumentException::class)

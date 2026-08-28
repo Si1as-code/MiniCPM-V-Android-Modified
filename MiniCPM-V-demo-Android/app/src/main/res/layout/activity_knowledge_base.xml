@@ -46,6 +46,22 @@
         android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="14sp" />
 
+    <TextView
+        android:id="@+id/tv_knowledge_base_priority_notice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_rag_status"
+        android:drawableStart="@drawable/ic_lightbulb"
+        android:drawablePadding="10dp"
+        android:drawableTint="?attr/colorPrimary"
+        android:gravity="center_vertical"
+        android:lineSpacingExtra="2dp"
+        android:padding="12dp"
+        android:text="@string/rag_knowledge_base_priority_notice"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="13sp" />
+
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/switch_conversation_rag"
         android:layout_width="match_parent"

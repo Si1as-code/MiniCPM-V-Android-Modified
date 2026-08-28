@@ -2,38 +2,62 @@ package com.example.minicpm_v_demo.rag.guard
 
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 
-object RagGuardInput {
-    fun answerability(question: String, sources: List<RetrievedChunk>): String =
-        build(question, sources, answer = null)
+data class RagGuardTextPair(
+    val protectedText: String,
+    val evidenceText: String,
+)
 
-    fun groundedness(
+object RagGuardInput {
+    fun answerabilityPair(question: String, sources: List<RetrievedChunk>): RagGuardTextPair =
+        buildPair(question, sources, answer = null)
+
+    fun groundednessPair(
         question: String,
         sources: List<RetrievedChunk>,
         answer: String,
-    ): String = build(question, sources, answer)
+    ): RagGuardTextPair = buildPair(question, sources, answer)
 
-    fun truncatePreservingEndToken(ids: LongArray, maxTokens: Int): LongArray {
-        require(ids.isNotEmpty() && maxTokens > 1)
-        if (ids.size <= maxTokens) return ids.copyOf()
-        return ids.copyOf(maxTokens).also { truncated -> truncated[truncated.lastIndex] = ids.last() }
+    fun assembleXlmrPair(
+        protectedIds: LongArray,
+        evidenceIds: LongArray,
+        maxTokens: Int,
+    ): LongArray {
+        require(protectedIds.size >= 2 && evidenceIds.size >= 2)
+        require(protectedIds.first() == evidenceIds.first())
+        require(protectedIds.last() == evidenceIds.last())
+        require(maxTokens >= protectedIds.size + 2) { "protected input exceeds token budget" }
+        val availableEvidenceTail = maxTokens - protectedIds.size - 1
+        val evidenceTail = evidenceIds.copyOfRange(1, evidenceIds.size).let { tail ->
+            if (tail.size <= availableEvidenceTail) {
+                tail
+            } else {
+                tail.copyOf(availableEvidenceTail).also { it[it.lastIndex] = evidenceIds.last() }
+            }
+        }
+        return protectedIds + longArrayOf(protectedIds.last()) + evidenceTail
     }
 
-    private fun build(
+    private fun buildPair(
         question: String,
         sources: List<RetrievedChunk>,
         answer: String?,
-    ): String {
+    ): RagGuardTextPair {
         val cleanQuestion = question.trim()
         require(cleanQuestion.isNotEmpty())
         require(sources.size in 1..3)
-        val evidence = sources.joinToString("\n\n") { source -> source.text.trim() }
+        val evidence = sources.mapIndexed { index, source ->
+            "evidence [S${index + 1}]: ${source.text.trim()}"
+        }.joinToString("\n")
         require(evidence.isNotEmpty() && sources.all { it.text.isNotBlank() })
-        val parts = mutableListOf("query: $cleanQuestion", "evidence: $evidence")
+        val protectedParts = mutableListOf("query: $cleanQuestion")
         if (answer != null) {
             val cleanAnswer = answer.trim()
             require(cleanAnswer.isNotEmpty())
-            parts += "answer: $cleanAnswer"
+            protectedParts += "answer: $cleanAnswer"
         }
-        return parts.joinToString("\n")
+        return RagGuardTextPair(
+            protectedText = protectedParts.joinToString("\n"),
+            evidenceText = evidence,
+        )
     }
 }

@@ -29,14 +29,19 @@ data class RagGuardModelManifest(
     val externalTokenizerSha256: String,
     val answerabilityTaskId: Int,
     val groundednessTaskId: Int,
+    val answerabilityClassCount: Int,
+    val groundednessClassCount: Int,
+    val answerabilityPaddingLogit: Float,
     val model: RagGuardModelFile,
 ) {
     init {
         require(modelId.isNotBlank() && revision.isNotBlank())
-        require(architecture == "shared_encoder_dual_three_class_heads")
+        require(architecture == "shared_encoder_three_plus_four_heads")
         require(maxTokens in 1..256)
         require(SHA256.matches(externalTokenizerSha256))
         require(setOf(answerabilityTaskId, groundednessTaskId) == setOf(0, 1))
+        require(answerabilityClassCount == 3 && groundednessClassCount == 4)
+        require(answerabilityPaddingLogit == -10000f)
     }
 
     private companion object {
@@ -46,18 +51,21 @@ data class RagGuardModelManifest(
 
 object CurrentRagGuardModel {
     val PINNED = RagGuardModelManifest(
-        modelId = "local/minicpm-rag-guard-dual-head-v3-experimental",
-        revision = "272d66e948a8eee81dbc2656c699c37890a9d6e34bae3f999394ce0c21b19f98",
-        architecture = "shared_encoder_dual_three_class_heads",
+        modelId = "local/minicpm-rag-guard-v4.2-e5-experimental",
+        revision = "df1cca834ff8d37fb286221ed8a9cc67bc7c91ee30e0757913dccd766acf87850",
+        architecture = "shared_encoder_three_plus_four_heads",
         maxTokens = 256,
         externalTokenizerSha256 =
             "3396f311d68a8ee4351c0949ab2626543334c5566d7f8ea17b026952ac14d0fe",
         answerabilityTaskId = 0,
         groundednessTaskId = 1,
+        answerabilityClassCount = 3,
+        groundednessClassCount = 4,
+        answerabilityPaddingLogit = -10000f,
         model = RagGuardModelFile(
             name = "model.int8.onnx",
-            bytes = 118_169_267L,
-            sha256 = "6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa",
+            bytes = 118_171_779L,
+            sha256 = "d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2",
         ),
     )
 }

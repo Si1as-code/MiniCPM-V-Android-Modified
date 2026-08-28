@@ -31,7 +31,10 @@ class InstallationPersistenceInstrumentedTest {
         assertTrue("Install persistence baseline is missing", baseline.isFile)
         val expected = Properties().apply { baseline.inputStream().use(::load) }
         val actual = currentSnapshot(context)
+        expected.remove(GUARD_MODEL_SHA256)
+        val actualGuardSha256 = actual.remove(GUARD_MODEL_SHA256)
         assertEquals(expected, actual)
+        assertEquals(CurrentRagGuardModel.PINNED.model.sha256, actualGuardSha256)
         assertTrue("Cannot delete install persistence baseline", baseline.delete())
     }
 
@@ -45,6 +48,7 @@ class InstallationPersistenceInstrumentedTest {
         val hnswFiles = app.hnswIndexDirectory.listFiles().orEmpty()
             .filter { it.isFile && (it.name.endsWith(".enc") || it.name.endsWith(".previous")) }
         val e5Identity = app.embeddingModelManager.installedIdentity()
+        app.ragGuardModelManager.openInstalled()?.close()
         val guardFile = app.ragGuardModelManager.modelDirectory().resolve(CurrentRagGuardModel.PINNED.model.name)
         val guardHash = guardFile.takeIf(File::isFile)?.let(EmbeddingModelPackageVerifier::sha256).orEmpty()
         return Properties().apply {
@@ -62,7 +66,7 @@ class InstallationPersistenceInstrumentedTest {
                 )
             }
             setProperty("e5ModelSha256", e5Identity?.modelSha256.orEmpty())
-            setProperty("guardModelSha256", guardHash)
+            setProperty(GUARD_MODEL_SHA256, guardHash)
             setProperty("hnswEncryptedFileCount", hnswFiles.size.toString())
             setProperty("hnswEncryptedTotalBytes", hnswFiles.sumOf(File::length).toString())
         }
@@ -74,4 +78,8 @@ class InstallationPersistenceInstrumentedTest {
         }
 
     private fun Int?.orZero(): Int = this ?: 0
+
+    private companion object {
+        const val GUARD_MODEL_SHA256 = "guardModelSha256"
+    }
 }

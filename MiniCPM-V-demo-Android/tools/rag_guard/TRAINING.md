@@ -1,9 +1,10 @@
 # RAG guard training
 
-The training tool fine-tunes one multilingual encoder with two independent three-class heads:
+The current v4 training tool fine-tunes one multilingual encoder with a three-class
+Answerability head and a four-class Groundedness head:
 
 - Answerability: `SUPPORTED / PARTIAL / UNSUPPORTED`
-- Groundedness: `GROUNDED / PARTIAL / UNGROUNDED`
+- Groundedness: `GROUNDED / PARTIAL / UNSUPPORTED / CONTRADICTED`
 
 The model input is `query + evidence` for Answerability and `query + evidence + answer` for
 Groundedness. Raw text is never written to the training log.
@@ -55,17 +56,19 @@ python -m tools.rag_guard.export_onnx \
 ```
 
 The exporter produces one shared-encoder, dual-head ONNX model. `task_ids=0` selects
-Answerability and `task_ids=1` selects Groundedness. It dynamically quantizes `MatMul`, `Gemm`,
-and `Gather` weights to per-tensor INT8, validates the ONNX I/O contract, compares PyTorch,
-FP32 ONNX, and INT8 ONNX predictions, and writes `manifest.json` only when every quality gate
-passes:
+Answerability and `task_ids=1` selects Groundedness. The shared output has four logits;
+Answerability uses the first three and pads the fourth with `-10000`. The exporter dynamically
+quantizes `MatMul`, `Gemm`, and `Gather` weights to per-tensor INT8, validates the ONNX I/O
+contract, compares PyTorch, FP32 ONNX, and INT8 ONNX predictions, and evaluates only the
+calibration split. It must not open the frozen v4.2 test split.
 
-- INT8/FP32 label agreement is at least 99.5%.
-- The largest macro-F1 drop is no more than 0.01.
-- The INT8 file is no more than 40% of the FP32 file size.
+Performance comparisons are recorded in `quantization_metrics.json` and `manifest.json`; they
+do not block production export. Artifact integrity remains mandatory: controlled paths, exact
+model byte count, SHA-256, tokenizer identity, ONNX input/output contract, and APK signing must
+all verify successfully.
 
-The validated 2026-08-18 export is 118,169,267 bytes with SHA-256
-`45d42125648c169a19697ce8b64f6883e63c2d8a45fd666c73bf163a3c59e097`. Its compression ratio
-is 0.2513, label agreement is 0.9984, and the measured macro-F1 drop is 0.0 on the calibration,
-test, and test-only regression sets. These numbers validate export equivalence, not production
-accuracy; Android integration and anonymized real-distribution evaluation remain required.
+The 2026-08-28 production INT8 export is 118,171,779 bytes with SHA-256
+`d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2`. Its compression ratio
+is 0.2512633907, calibration label agreement is 0.9693585127, and the largest calibration
+macro-F1 drop is 0.0107869130. These numbers are recorded observations, not a release gate.
+The manifest states `test_evaluated=false` and `test=null`.

@@ -38,7 +38,7 @@ class CascadedEvidenceAcceptancePolicyTest {
     }
 
     @Test
-    fun `unqualified production profile keeps semantic evidence closed without opening model`() = runBlocking {
+    fun `missing production profile keeps semantic evidence closed without opening model`() = runBlocking {
         var opens = 0
         val lazyClassifier = LazyAnswerabilityClassifier {
             opens++
@@ -47,7 +47,7 @@ class CascadedEvidenceAcceptancePolicyTest {
         val policy = CascadedEvidenceAcceptancePolicy(
             retrievalKey = RETRIEVAL_KEY,
             classifier = lazyClassifier,
-            profile = CurrentAnswerabilityCalibration.profile,
+            profile = null,
         )
 
         assertEquals(
@@ -55,6 +55,17 @@ class CascadedEvidenceAcceptancePolicyTest {
             policy.accept("question", listOf(source(1).copy(denseScore = 0.9f))),
         )
         assertEquals(0, opens)
+    }
+
+    @Test
+    fun `production profile is pinned to the approved override model`() {
+        val profile = CurrentAnswerabilityCalibration.profile
+
+        assertEquals(
+            "d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2",
+            profile.classifierSha256,
+        )
+        assertEquals(0.95f, profile.supportedProbabilityThreshold)
     }
 
     @Test

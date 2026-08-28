@@ -1,6 +1,7 @@
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.util.Properties
+import groovy.json.JsonSlurper
 
 plugins {
     alias(libs.plugins.android.application)
@@ -31,6 +32,15 @@ val installationSigningIsConfigured = listOf(
 // Certificate of the one canonical key accepted by existing development installs.
 val expectedInstallationCertificateSha256 =
     "12BEFEDA42FECFE1F9A268466B85906E0B18E13C960B7217487FC6145166EB85"
+
+val ragGuardArtifactDir = providers.gradleProperty("RAG_GUARD_ARTIFACT_DIR").orNull
+    ?.takeIf { it.isNotBlank() }
+    ?.let(::file)
+    ?: providers.environmentVariable("RAG_GUARD_ARTIFACT_DIR").orNull
+        ?.takeIf { it.isNotBlank() }
+        ?.let(::file)
+    ?: rootProject.file("../../artifacts/rag-guard-v4-2-e5")
+val generatedRagGuardAssets = layout.buildDirectory.dir("generated/ragGuardAssets")
 
 android {
     namespace = "com.example.minicpm_v_demo"
@@ -131,6 +141,67 @@ android {
     androidResources {
         noCompress.add("gguf")
         noCompress.add("bin")
+        noCompress.add("onnx")
+    }
+
+    sourceSets.getByName("main").assets.directories.add(
+        generatedRagGuardAssets.get().asFile.absolutePath,
+    )
+}
+
+val prepareRagGuardAssets = tasks.register("prepareRagGuardAssets") {
+    group = "build"
+    description = "Verify and stage the pinned RAG Guard v4.2 INT8 model for APK assets."
+    val manifestFile = ragGuardArtifactDir.resolve("manifest.json")
+    val modelFile = ragGuardArtifactDir.resolve("model.int8.onnx")
+    inputs.files(manifestFile, modelFile)
+    outputs.dir(generatedRagGuardAssets)
+    doLast {
+        check(manifestFile.isFile && modelFile.isFile) {
+            "Verified RAG Guard v4.2 artifacts are missing from ${ragGuardArtifactDir.absolutePath}"
+        }
+        val artifactRoot = ragGuardArtifactDir.canonicalFile
+        check(manifestFile.canonicalFile.parentFile == artifactRoot)
+        check(modelFile.canonicalFile.parentFile == artifactRoot)
+        @Suppress("UNCHECKED_CAST")
+        val manifest = JsonSlurper().parse(manifestFile) as Map<String, Any?>
+        check(manifest["architecture"] == "shared_encoder_three_plus_four_heads")
+        check(manifest["test_evaluated"] == false && manifest["test"] == null)
+        check(manifest["evaluated_splits"] == listOf("calibration"))
+        @Suppress("UNCHECKED_CAST")
+        val deployment = manifest["deployment"] as? Map<String, Any?>
+            ?: error("RAG Guard deployment metadata is missing")
+        check(deployment["channel"] == "production")
+        check(deployment["selection_basis"] == "recorded_metrics")
+        @Suppress("UNCHECKED_CAST")
+        val files = manifest["files"] as? Map<String, Map<String, Any?>>
+            ?: error("RAG Guard manifest files section is invalid")
+        val model = files["model.int8.onnx"] ?: error("RAG Guard INT8 model is not declared")
+        val declaredBytes = (model["bytes"] as Number).toLong()
+        val declaredSha256 = model["sha256"] as String
+        check(modelFile.length() == declaredBytes) { "RAG Guard model size mismatch" }
+        val modelDigest = MessageDigest.getInstance("SHA-256")
+        modelFile.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                if (count > 0) modelDigest.update(buffer, 0, count)
+            }
+        }
+        val actualSha256 = modelDigest.digest().joinToString("") { byte -> "%02x".format(byte) }
+        check(actualSha256 == declaredSha256) { "RAG Guard model SHA-256 mismatch" }
+        val outputRoot = generatedRagGuardAssets.get().asFile
+        project.delete(outputRoot)
+        val assetDirectory = outputRoot.resolve("rag_guard_v4_2")
+        check(assetDirectory.mkdirs() || assetDirectory.isDirectory)
+        modelFile.copyTo(assetDirectory.resolve("model.int8.onnx"), overwrite = false)
+    }
+}
+
+tasks.configureEach {
+    if (name.matches(Regex("merge(?:Debug|Release)Assets", RegexOption.IGNORE_CASE))) {
+        dependsOn(prepareRagGuardAssets)
     }
 }
 

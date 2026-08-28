@@ -50,16 +50,15 @@ data class GroundednessCalibrationProfile(
 }
 
 object CurrentGroundednessCalibration {
-    // Activated only after the final exported model hash and threshold are frozen.
-    val profile: GroundednessCalibrationProfile? = null
+    val profile = GroundednessCalibrationProfile(
+        classifierSha256 =
+            "d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2",
+        groundedProbabilityThreshold = 0.95f,
+    )
 }
 
 object ExperimentalGroundednessCalibration {
-    val profile = GroundednessCalibrationProfile(
-        classifierSha256 =
-            "6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa",
-        groundedProbabilityThreshold = 0.95f,
-    )
+    val profile = CurrentGroundednessCalibration.profile
 }
 
 sealed interface ReviewedRagGeneration {
@@ -89,18 +88,39 @@ class RagReviewedGenerator(
         require(sources.isNotEmpty())
 
         return try {
-            if (isAccepted(classifyVisible(question, sources, firstCandidate))) {
-                ReviewedRagGeneration.Accepted(attributedAnswer(question, firstCandidate), regenerationCount = 0)
-            } else {
-                val correctionPrompt = buildCorrectionPrompt(question, sources)
-                val correctedCandidate = regenerate(correctionPrompt)
-                if (isAccepted(classifyVisible(question, sources, correctedCandidate))) {
-                    ReviewedRagGeneration.Accepted(
-                        attributedAnswer(question, correctedCandidate),
-                        regenerationCount = 1,
-                    )
-                } else {
+            when (reviewAction(classifyVisible(question, sources, firstCandidate), regenerationCount = 0)) {
+                RagOutputReviewAction.ACCEPT -> ReviewedRagGeneration.Accepted(
+                    attributedAnswer(question, firstCandidate),
+                    regenerationCount = 0,
+                )
+                RagOutputReviewAction.FALLBACK_TO_NORMAL_GENERATION ->
                     ReviewedRagGeneration.FallbackToNormalGeneration
+                RagOutputReviewAction.REPLACE_WITH_KNOWLEDGE_BASE -> ReviewedRagGeneration.Accepted(
+                    knowledgeBaseEvidenceAnswer(question, sources),
+                    regenerationCount = 0,
+                )
+                RagOutputReviewAction.REGENERATE -> {
+                    val correctionPrompt = buildCorrectionPrompt(question, sources)
+                    val correctedCandidate = regenerate(correctionPrompt)
+                    when (
+                        reviewAction(
+                            classifyVisible(question, sources, correctedCandidate),
+                            regenerationCount = 1,
+                        )
+                    ) {
+                        RagOutputReviewAction.ACCEPT -> ReviewedRagGeneration.Accepted(
+                            attributedAnswer(question, correctedCandidate),
+                            regenerationCount = 1,
+                        )
+                        RagOutputReviewAction.FALLBACK_TO_NORMAL_GENERATION ->
+                            ReviewedRagGeneration.FallbackToNormalGeneration
+                        RagOutputReviewAction.REGENERATE,
+                        RagOutputReviewAction.REPLACE_WITH_KNOWLEDGE_BASE ->
+                            ReviewedRagGeneration.Accepted(
+                                knowledgeBaseEvidenceAnswer(question, sources),
+                                regenerationCount = 1,
+                            )
+                    }
                 }
             }
         } catch (cancelled: CancellationException) {
@@ -110,12 +130,22 @@ class RagReviewedGenerator(
         }
     }
 
-    private fun isAccepted(verdict: GroundednessVerdict): Boolean {
+    private fun reviewAction(
+        verdict: GroundednessVerdict,
+        regenerationCount: Int,
+    ): RagOutputReviewAction {
         if (verdict.modelSha256 != profile.classifierSha256) {
             throw ClassifierIdentityMismatchException()
         }
-        return verdict.label == GroundednessLabel.GROUNDED &&
-            verdict.groundedProbability >= profile.groundedProbabilityThreshold
+        val calibratedLabel = if (
+            verdict.label == GroundednessLabel.GROUNDED &&
+            verdict.groundedProbability < profile.groundedProbabilityThreshold
+        ) {
+            GroundednessLabel.PARTIAL
+        } else {
+            verdict.label
+        }
+        return RagOutputReviewPolicy.decide(calibratedLabel, regenerationCount)
     }
 
     private suspend fun classifyVisible(
@@ -145,16 +175,33 @@ class RagReviewedGenerator(
     ): String = RagPromptAssembler.assemble(question, sources) + "\n\n" + correctionInstruction(question)
 
     private fun correctionInstruction(question: String): String =
-        if (question.codePoints().anyMatch { Character.UnicodeScript.of(it) == Character.UnicodeScript.HAN }) {
+        if (usesChinese(question)) {
             "上一次草稿未通过依据性审核。请重新回答，并确保每一项事实断言都能由以上摘录直接支持；不要猜测或补充摘录之外的事实。"
         } else {
             "The previous draft failed grounding review. Answer again, ensuring every factual claim is directly supported by the excerpts above. Do not guess or add facts outside the excerpts."
         }
 
+    private fun knowledgeBaseEvidenceAnswer(
+        question: String,
+        sources: List<RetrievedChunk>,
+    ): String {
+        val prefix = if (usesChinese(question)) {
+            "根据数据库中内容："
+        } else {
+            "According to the knowledge base:"
+        }
+        val excerpts = sources.mapIndexed { index, source ->
+            "[S${index + 1}] ${neutralizeDisplayControlTags(source.text.trim())}"
+        }
+        return prefix + "\n" + excerpts.joinToString("\n\n")
+    }
+
+    private fun neutralizeDisplayControlTags(text: String): String =
+        text.replace(THINKING_START_TAG, "＜think＞", ignoreCase = true)
+            .replace(THINKING_END_TAG, "＜/think＞", ignoreCase = true)
+
     private fun attributedAnswer(question: String, answer: String): String {
-        val prefix = if (
-            question.codePoints().anyMatch { Character.UnicodeScript.of(it) == Character.UnicodeScript.HAN }
-        ) {
+        val prefix = if (usesChinese(question)) {
             "根据数据库中内容，"
         } else {
             "According to the knowledge base, "
@@ -167,6 +214,9 @@ class RagReviewedGenerator(
             prefix + answer.trimStart()
         }
     }
+
+    private fun usesChinese(text: String): Boolean =
+        text.codePoints().anyMatch { Character.UnicodeScript.of(it) == Character.UnicodeScript.HAN }
 
     private class ClassifierIdentityMismatchException : IllegalStateException()
     private class EmptyVisibleAnswerException : IllegalStateException()

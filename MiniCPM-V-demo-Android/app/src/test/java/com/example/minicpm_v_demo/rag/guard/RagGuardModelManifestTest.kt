@@ -13,11 +13,15 @@ class RagGuardModelManifestTest {
         assertEquals(256, manifest.maxTokens)
         assertEquals(0, manifest.answerabilityTaskId)
         assertEquals(1, manifest.groundednessTaskId)
+        assertEquals("shared_encoder_three_plus_four_heads", manifest.architecture)
+        assertEquals(3, manifest.answerabilityClassCount)
+        assertEquals(4, manifest.groundednessClassCount)
+        assertEquals(-10000f, manifest.answerabilityPaddingLogit)
+        assertEquals(118_171_779L, manifest.model.bytes)
         assertEquals(
-            "6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa",
+            "d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2",
             manifest.model.sha256,
         )
-        assertEquals(118_169_267L, manifest.model.bytes)
         assertEquals(
             "3396f311d68a8ee4351c0949ab2626543334c5566d7f8ea17b026952ac14d0fe",
             manifest.externalTokenizerSha256,

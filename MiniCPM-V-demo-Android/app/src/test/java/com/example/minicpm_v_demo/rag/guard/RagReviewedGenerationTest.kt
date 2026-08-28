@@ -13,6 +13,15 @@ import org.junit.Test
 
 class RagReviewedGenerationTest {
     @Test
+    fun `production groundedness profile is pinned to the approved override model`() {
+        assertEquals(
+            "d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2",
+            CurrentGroundednessCalibration.profile.classifierSha256,
+        )
+        assertEquals(0.95f, CurrentGroundednessCalibration.profile.groundedProbabilityThreshold)
+    }
+
+    @Test
     fun `grounded first candidate is accepted without regeneration`() = runBlocking {
         val reviewer = reviewer(GroundednessVerdict(GroundednessLabel.GROUNDED, 0.96f, SHA))
         var regenerations = 0
@@ -27,7 +36,7 @@ class RagReviewedGenerationTest {
     }
 
     @Test
-    fun `unsupported first candidate regenerates once and accepts corrected answer`() = runBlocking {
+    fun `partial first candidate regenerates once and accepts corrected answer`() = runBlocking {
         val reviewer = reviewer(
             GroundednessVerdict(GroundednessLabel.PARTIAL, 0.31f, SHA),
             GroundednessVerdict(GroundednessLabel.GROUNDED, 0.94f, SHA),
@@ -46,9 +55,9 @@ class RagReviewedGenerationTest {
     }
 
     @Test
-    fun `second rejection falls back to normal generation without candidate text`() = runBlocking {
+    fun `second rejection replaces candidates with the knowledge base evidence`() = runBlocking {
         val reviewer = reviewer(
-            GroundednessVerdict(GroundednessLabel.UNGROUNDED, 0.05f, SHA),
+            GroundednessVerdict(GroundednessLabel.PARTIAL, 0.05f, SHA),
             GroundednessVerdict(GroundednessLabel.PARTIAL, 0.40f, SHA),
         )
 
@@ -56,8 +65,47 @@ class RagReviewedGenerationTest {
             "secret second candidate"
         }
 
-        assertEquals(ReviewedRagGeneration.FallbackToNormalGeneration, result)
+        assertEquals(
+            ReviewedRagGeneration.Accepted(
+                "According to the knowledge base:\n[S1] evidence text",
+                regenerationCount = 1,
+            ),
+            result,
+        )
         assertFalse(result.toString().contains("secret"))
+    }
+
+    @Test
+    fun `unsupported candidate falls back to normal generation without regeneration`() = runBlocking {
+        val reviewer = reviewer(
+            GroundednessVerdict(GroundednessLabel.UNSUPPORTED, 0.05f, SHA),
+        )
+        var regenerations = 0
+
+        val result = reviewer.review("question", SOURCES, "candidate") {
+            regenerations++
+            "unused"
+        }
+
+        assertEquals(ReviewedRagGeneration.FallbackToNormalGeneration, result)
+        assertEquals(0, regenerations)
+    }
+
+    @Test
+    fun `contradicted candidate immediately uses knowledge base evidence`() = runBlocking {
+        val reviewer = reviewer(
+            GroundednessVerdict(GroundednessLabel.CONTRADICTED, 0.01f, SHA),
+        )
+
+        val result = reviewer.review("question", SOURCES, "wrong candidate") { "unused" }
+
+        assertEquals(
+            ReviewedRagGeneration.Accepted(
+                "According to the knowledge base:\n[S1] evidence text",
+                regenerationCount = 0,
+            ),
+            result,
+        )
     }
 
     @Test

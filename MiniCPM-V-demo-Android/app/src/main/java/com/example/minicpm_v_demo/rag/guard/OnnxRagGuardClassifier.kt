@@ -27,8 +27,9 @@ class OnnxRagGuardClassifier private constructor(
         sources: List<RetrievedChunk>,
     ): AnswerabilityVerdict {
         val probabilities = runTask(
-            RagGuardInput.answerability(question, sources),
+            RagGuardInput.answerabilityPair(question, sources),
             manifest.answerabilityTaskId,
+            manifest.answerabilityClassCount,
         )
         return AnswerabilityVerdict(
             label = AnswerabilityLabel.entries[probabilities.maxIndex()],
@@ -43,8 +44,9 @@ class OnnxRagGuardClassifier private constructor(
         answer: String,
     ): GroundednessVerdict {
         val probabilities = runTask(
-            RagGuardInput.groundedness(question, sources, answer),
+            RagGuardInput.groundednessPair(question, sources, answer),
             manifest.groundednessTaskId,
+            manifest.groundednessClassCount,
         )
         return GroundednessVerdict(
             label = GroundednessLabel.entries[probabilities.maxIndex()],
@@ -54,10 +56,19 @@ class OnnxRagGuardClassifier private constructor(
     }
 
     @Synchronized
-    private fun runTask(text: String, taskId: Int): FloatArray {
-        val ids = RagGuardInput.truncatePreservingEndToken(encode(text), manifest.maxTokens)
+    private fun runTask(pair: RagGuardTextPair, taskId: Int, classCount: Int): FloatArray {
+        val ids = RagGuardInput.assembleXlmrPair(
+            protectedIds = encode(pair.protectedText),
+            evidenceIds = encode(pair.evidenceText),
+            maxTokens = manifest.maxTokens,
+        )
         val attention = LongArray(ids.size) { 1L }
-        return softmax(infer(ids, attention, taskId))
+        val logits = infer(ids, attention, taskId)
+        require(logits.size == manifest.groundednessClassCount)
+        if (taskId == manifest.answerabilityTaskId) {
+            require(logits.last() == manifest.answerabilityPaddingLogit)
+        }
+        return softmax(logits.copyOf(classCount))
     }
 
     override fun close() = closeAction()
@@ -119,7 +130,7 @@ class OnnxRagGuardClassifier private constructor(
         ) = OnnxRagGuardClassifier(manifest, encode, infer, closeAction)
 
         internal fun softmax(logits: FloatArray): FloatArray {
-            require(logits.size == 3 && logits.all(Float::isFinite))
+            require(logits.size in 3..4 && logits.all(Float::isFinite))
             val maximum = logits.max()
             val exponentials = DoubleArray(logits.size) { index ->
                 exp((logits[index] - maximum).toDouble())

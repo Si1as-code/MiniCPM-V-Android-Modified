@@ -3,7 +3,8 @@ package com.example.minicpm_v_demo.rag.guard
 enum class RagOutputReviewAction {
     ACCEPT,
     REGENERATE,
-    REJECT_WITH_LOCAL_REPLY,
+    REPLACE_WITH_KNOWLEDGE_BASE,
+    FALLBACK_TO_NORMAL_GENERATION,
 }
 
 object RagOutputReviewPolicy {
@@ -14,11 +15,15 @@ object RagOutputReviewPolicy {
         regenerationCount: Int,
     ): RagOutputReviewAction {
         require(regenerationCount >= 0)
-        if (label == GroundednessLabel.GROUNDED) return RagOutputReviewAction.ACCEPT
-        return if (regenerationCount < MAX_REGENERATIONS) {
-            RagOutputReviewAction.REGENERATE
-        } else {
-            RagOutputReviewAction.REJECT_WITH_LOCAL_REPLY
+        return when (label) {
+            GroundednessLabel.GROUNDED -> RagOutputReviewAction.ACCEPT
+            GroundednessLabel.UNSUPPORTED -> RagOutputReviewAction.FALLBACK_TO_NORMAL_GENERATION
+            GroundednessLabel.CONTRADICTED -> RagOutputReviewAction.REPLACE_WITH_KNOWLEDGE_BASE
+            GroundednessLabel.PARTIAL -> if (regenerationCount < MAX_REGENERATIONS) {
+                RagOutputReviewAction.REGENERATE
+            } else {
+                RagOutputReviewAction.REPLACE_WITH_KNOWLEDGE_BASE
+            }
         }
     }
 }

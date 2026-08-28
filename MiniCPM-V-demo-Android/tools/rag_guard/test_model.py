@@ -29,7 +29,8 @@ class DualHeadRagGuardTest(unittest.TestCase):
         loss = torch.nn.functional.cross_entropy(logits, labels)
         loss.backward()
 
-        self.assertEqual(tuple(logits.shape), (2, 3))
+        self.assertEqual(tuple(logits.shape), (2, 4))
+        self.assertLessEqual(logits[0, 3].item(), -1000.0)
         self.assertIsNotNone(model.answerability_head.weight.grad)
         self.assertIsNotNone(model.groundedness_head.weight.grad)
 

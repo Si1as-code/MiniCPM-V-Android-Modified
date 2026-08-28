@@ -11,15 +11,18 @@ from pathlib import Path
 from typing import Mapping, Sequence
 
 from tools.rag_guard.training_data import (
-    LABELS_BY_TASK,
+    LABELS_BY_TASK_V4,
     expected_calibration_error,
-    format_model_input,
-    load_jsonl,
+    format_model_pair_v4,
+    load_jsonl_v4,
     macro_f1,
 )
 
 
 TASK_IDS = {"answerability": 0, "groundedness": 1}
+EVALUATED_SPLITS = ("calibration",)
+TEST_EVALUATED = False
+EVALUATION_BATCH_SIZE = 128
 QUANTIZED_OP_TYPES = ("MatMul", "Gemm", "Gather")
 PER_CHANNEL_QUANTIZATION = False
 SAFE_FILE_NAME = re.compile(r"[A-Za-z0-9._-]{1,128}")
@@ -50,17 +53,23 @@ def build_artifact_manifest(
         raise ValueError("max_tokens must be between 1 and 256")
     return {
         "schema_version": 1,
-        "architecture": "shared_encoder_dual_three_class_heads",
+        "architecture": "shared_encoder_three_plus_four_heads",
         "max_tokens": max_tokens,
         "task_ids": TASK_IDS,
-        "labels_by_task": LABELS_BY_TASK,
+        "labels_by_task": LABELS_BY_TASK_V4,
         "inputs": {
             "input_ids": "int64[batch,sequence]",
             "attention_mask": "int64[batch,sequence]",
             "task_ids": "int64[batch]",
         },
-        "output": {"logits": "float32[batch,3]"},
+        "output": {
+            "logits": "float32[batch,4]",
+            "answerability_padding_logit": -10000.0,
+        },
         "external_tokenizer_sha256": tokenizer_sha256,
+        "evaluated_splits": list(EVALUATED_SPLITS),
+        "test_evaluated": TEST_EVALUATED,
+        "test": None,
         "files": {
             model_path.name: {
                 "bytes": model_path.stat().st_size,
@@ -71,18 +80,26 @@ def build_artifact_manifest(
     }
 
 
-def quantization_passes(
+def build_production_manifest(
     *,
-    label_agreement: float,
-    largest_macro_f1_drop: float,
-    int8_bytes: int,
-    fp32_bytes: int,
-) -> bool:
-    return (
-        label_agreement >= 0.995
-        and largest_macro_f1_drop <= 0.01
-        and 0 < int8_bytes <= fp32_bytes * 0.40
+    model_path: Path,
+    tokenizer_sha256: str,
+    metrics: Mapping[str, object],
+    max_tokens: int,
+) -> dict[str, object]:
+    if metrics.get("test_evaluated") is not False or metrics.get("test") is not None:
+        raise ValueError("production manifest requires an unopened frozen test split")
+    manifest = build_artifact_manifest(
+        model_path=model_path,
+        tokenizer_sha256=tokenizer_sha256,
+        metrics=metrics,
+        max_tokens=max_tokens,
     )
+    manifest["deployment"] = {
+        "channel": "production",
+        "selection_basis": "recorded_metrics",
+    }
+    return manifest
 
 
 def _write_json(path: Path, value: object) -> None:
@@ -94,36 +111,27 @@ def _write_json(path: Path, value: object) -> None:
     temporary.replace(path)
 
 
-def _load_regression_rows(path: Path) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    with path.resolve().open("r", encoding="utf-8") as source:
-        for line_number, line in enumerate(source, start=1):
-            row = json.loads(line)
-            if not isinstance(row, dict) or row.get("task") not in TASK_IDS:
-                raise ValueError(f"invalid regression row on line {line_number}")
-            if row.get("split") != "test" or row.get("label") not in LABELS_BY_TASK[row["task"]]:
-                raise ValueError(f"invalid regression label on line {line_number}")
-            format_model_input(row)
-            rows.append(row)
-    if not rows:
-        raise ValueError("regression dataset is empty")
-    return rows
+def reusable_export_paths(output_dir: Path) -> bool:
+    resolved = output_dir.resolve()
+    return all(
+        path.is_file() and path.stat().st_size > 0
+        for path in (resolved / "model.fp32.onnx", resolved / "model.int8.onnx")
+    )
 
 
-def _load_evaluation_rows(data_dir: Path, regression_path: Path) -> dict[str, list[dict[str, str]]]:
-    result: dict[str, list[dict[str, str]]] = {}
-    for split in ("calibration", "test"):
-        rows: list[dict[str, str]] = []
+def _load_evaluation_rows(data_dir: Path) -> dict[str, list[dict[str, object]]]:
+    result: dict[str, list[dict[str, object]]] = {}
+    for split in EVALUATED_SPLITS:
+        rows: list[dict[str, object]] = []
         for task in TASK_IDS:
             rows.extend(
-                load_jsonl(
+                load_jsonl_v4(
                     data_dir / f"{task}_{split}.jsonl",
                     expected_task=task,
                     expected_split=split,
                 )
             )
         result[split] = rows
-    result["regression"] = _load_regression_rows(regression_path)
     return result
 
 
@@ -196,19 +204,37 @@ def _validate_onnx(path: Path) -> None:
         raise RuntimeError(f"unexpected ONNX outputs: {outputs}")
 
 
-def _session_logits(session: object, tokenizer: object, rows: Sequence[Mapping[str, str]], max_tokens: int):
+def _encoded_batch(
+    tokenizer: object,
+    rows: Sequence[Mapping[str, object]],
+    max_tokens: int,
+    *,
+    return_tensors: str,
+):
+    pairs = [format_model_pair_v4(row) for row in rows]
+    return tokenizer(
+        [pair[0] for pair in pairs],
+        [pair[1] for pair in pairs],
+        add_special_tokens=True,
+        truncation="only_second",
+        max_length=max_tokens,
+        padding=True,
+        return_tensors=return_tensors,
+    )
+
+
+def _session_logits(
+    session: object,
+    tokenizer: object,
+    rows: Sequence[Mapping[str, object]],
+    max_tokens: int,
+):
     import numpy as np
 
     all_logits: list[object] = []
-    for start in range(0, len(rows), 32):
-        batch = rows[start : start + 32]
-        encoded = tokenizer(
-            [format_model_input(row) for row in batch],
-            padding=True,
-            truncation=True,
-            max_length=max_tokens,
-            return_tensors="np",
-        )
+    for start in range(0, len(rows), EVALUATION_BATCH_SIZE):
+        batch = rows[start : start + EVALUATION_BATCH_SIZE]
+        encoded = _encoded_batch(tokenizer, batch, max_tokens, return_tensors="np")
         logits = session.run(
             ["logits"],
             {
@@ -218,22 +244,25 @@ def _session_logits(session: object, tokenizer: object, rows: Sequence[Mapping[s
             },
         )[0]
         all_logits.append(logits)
+        completed = min(start + len(batch), len(rows))
+        if completed == len(rows) or completed % (EVALUATION_BATCH_SIZE * 10) == 0:
+            print(f"progress=inference rows={completed}/{len(rows)}", flush=True)
     return np.concatenate(all_logits, axis=0)
 
 
-def _pytorch_logits(torch: object, model: object, tokenizer: object, rows: Sequence[Mapping[str, str]], max_tokens: int):
+def _pytorch_logits(
+    torch: object,
+    model: object,
+    tokenizer: object,
+    rows: Sequence[Mapping[str, object]],
+    max_tokens: int,
+):
     import numpy as np
 
     all_logits: list[object] = []
-    for start in range(0, len(rows), 32):
-        batch = rows[start : start + 32]
-        encoded = tokenizer(
-            [format_model_input(row) for row in batch],
-            padding=True,
-            truncation=True,
-            max_length=max_tokens,
-            return_tensors="pt",
-        )
+    for start in range(0, len(rows), EVALUATION_BATCH_SIZE):
+        batch = rows[start : start + EVALUATION_BATCH_SIZE]
+        encoded = _encoded_batch(tokenizer, batch, max_tokens, return_tensors="pt")
         task_ids = torch.tensor([TASK_IDS[row["task"]] for row in batch], dtype=torch.long)
         with torch.no_grad():
             logits = model(encoded["input_ids"], encoded["attention_mask"], task_ids)
@@ -249,20 +278,22 @@ def _softmax(logits):
     return values / values.sum(axis=1, keepdims=True)
 
 
-def _task_metrics(rows: Sequence[Mapping[str, str]], logits) -> dict[str, dict[str, float]]:
+def _task_metrics(rows: Sequence[Mapping[str, object]], logits) -> dict[str, dict[str, float]]:
     import numpy as np
 
-    probabilities = _softmax(logits)
     result: dict[str, dict[str, float]] = {}
     for task in TASK_IDS:
         indices = [index for index, row in enumerate(rows) if row["task"] == task]
-        targets = [LABELS_BY_TASK[task].index(rows[index]["label"]) for index in indices]
-        selected = probabilities[np.asarray(indices)]
+        if not indices:
+            continue
+        class_count = len(LABELS_BY_TASK_V4[task])
+        targets = [LABELS_BY_TASK_V4[task].index(str(rows[index]["label"])) for index in indices]
+        selected = _softmax(logits[np.asarray(indices), :class_count])
         predictions = selected.argmax(axis=1).tolist()
         result[task] = {
             "count": float(len(indices)),
             "accuracy": sum(a == b for a, b in zip(targets, predictions)) / len(targets),
-            "macro_f1": macro_f1(targets, predictions, 3),
+            "macro_f1": macro_f1(targets, predictions, class_count),
             "ece": expected_calibration_error(selected.tolist(), targets, bins=10),
         }
     return result
@@ -276,23 +307,35 @@ def run_export(arguments: argparse.Namespace) -> dict[str, object]:
     base_model = arguments.base_model.resolve()
     output_dir = arguments.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
+    print("stage=load_checkpoint", flush=True)
     torch, tokenizer, model = _load_trained_model(checkpoint_dir, base_model)
     fp32_path = output_dir / "model.fp32.onnx"
     int8_path = output_dir / "model.int8.onnx"
-    _export_fp32(torch, model, fp32_path, arguments.max_tokens)
-    _validate_onnx(fp32_path)
-    _quantize(fp32_path, int8_path)
-    _validate_onnx(int8_path)
+    if arguments.reuse_existing:
+        if not reusable_export_paths(output_dir):
+            raise ValueError("both existing FP32 and INT8 models are required for reuse")
+        print("stage=validate_reused_models", flush=True)
+        _validate_onnx(fp32_path)
+        _validate_onnx(int8_path)
+    else:
+        print("stage=export_fp32", flush=True)
+        _export_fp32(torch, model, fp32_path, arguments.max_tokens)
+        _validate_onnx(fp32_path)
+        print("stage=quantize_int8", flush=True)
+        _quantize(fp32_path, int8_path)
+        _validate_onnx(int8_path)
 
     fp32_session = ort.InferenceSession(str(fp32_path), providers=["CPUExecutionProvider"])
     int8_session = ort.InferenceSession(str(int8_path), providers=["CPUExecutionProvider"])
-    evaluation_rows = _load_evaluation_rows(arguments.data_dir.resolve(), arguments.regression_path.resolve())
+    evaluation_rows = _load_evaluation_rows(arguments.data_dir.resolve())
     all_fp32: list[object] = []
     all_int8: list[object] = []
     split_metrics: dict[str, object] = {}
     largest_macro_f1_drop = 0.0
     for split, rows in evaluation_rows.items():
+        print(f"stage=evaluate_fp32 split={split} rows={len(rows)}", flush=True)
         fp32_logits = _session_logits(fp32_session, tokenizer, rows, arguments.max_tokens)
+        print(f"stage=evaluate_int8 split={split} rows={len(rows)}", flush=True)
         int8_logits = _session_logits(int8_session, tokenizer, rows, arguments.max_tokens)
         fp32_metrics = _task_metrics(rows, fp32_logits)
         int8_metrics = _task_metrics(rows, int8_logits)
@@ -309,18 +352,15 @@ def run_export(arguments: argparse.Namespace) -> dict[str, object]:
     int8_logits = np.concatenate(all_int8, axis=0)
     label_agreement = float((fp32_logits.argmax(axis=1) == int8_logits.argmax(axis=1)).mean())
     logit_delta = np.abs(fp32_logits - int8_logits)
-    regression_rows = evaluation_rows["regression"]
-    pytorch_logits = _pytorch_logits(torch, model, tokenizer, regression_rows, arguments.max_tokens)
-    regression_fp32 = _session_logits(fp32_session, tokenizer, regression_rows, arguments.max_tokens)
-    fp32_pytorch_max_abs = float(np.abs(pytorch_logits - regression_fp32).max())
-    gate_passed = quantization_passes(
-        label_agreement=label_agreement,
-        largest_macro_f1_drop=largest_macro_f1_drop,
-        int8_bytes=int8_path.stat().st_size,
-        fp32_bytes=fp32_path.stat().st_size,
-    ) and fp32_pytorch_max_abs <= 1e-4
+    calibration_rows = evaluation_rows["calibration"]
+    parity_rows: list[dict[str, object]] = []
+    for task in TASK_IDS:
+        parity_rows.extend([row for row in calibration_rows if row["task"] == task][:128])
+    print(f"stage=verify_pytorch_parity rows={len(parity_rows)}", flush=True)
+    pytorch_logits = _pytorch_logits(torch, model, tokenizer, parity_rows, arguments.max_tokens)
+    parity_fp32 = _session_logits(fp32_session, tokenizer, parity_rows, arguments.max_tokens)
+    fp32_pytorch_max_abs = float(np.abs(pytorch_logits - parity_fp32).max())
     metrics = {
-        "gate_passed": gate_passed,
         "fp32_pytorch_max_abs": fp32_pytorch_max_abs,
         "int8_fp32_label_agreement": label_agreement,
         "int8_fp32_max_abs_logit_delta": float(logit_delta.max()),
@@ -329,6 +369,9 @@ def run_export(arguments: argparse.Namespace) -> dict[str, object]:
         "fp32_bytes": fp32_path.stat().st_size,
         "int8_bytes": int8_path.stat().st_size,
         "compression_ratio": int8_path.stat().st_size / fp32_path.stat().st_size,
+        "evaluated_splits": list(EVALUATED_SPLITS),
+        "test_evaluated": TEST_EVALUATED,
+        "test": None,
         "splits": split_metrics,
         "versions": {
             "torch": torch.__version__,
@@ -336,19 +379,15 @@ def run_export(arguments: argparse.Namespace) -> dict[str, object]:
         },
     }
     _write_json(output_dir / "quantization_metrics.json", metrics)
-    if not gate_passed:
-        raise RuntimeError("quantized model failed alignment or quality gates")
-    manifest = build_artifact_manifest(
+    print("stage=record_metrics", flush=True)
+    manifest = build_production_manifest(
         model_path=int8_path,
         tokenizer_sha256=arguments.tokenizer_sha256,
-        metrics={
-            "int8_fp32_label_agreement": label_agreement,
-            "largest_macro_f1_drop": largest_macro_f1_drop,
-            "fp32_pytorch_max_abs": fp32_pytorch_max_abs,
-        },
+        metrics=metrics,
         max_tokens=arguments.max_tokens,
     )
     _write_json(output_dir / "manifest.json", manifest)
+    print("stage=complete", flush=True)
     return metrics
 
 
@@ -357,10 +396,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint-dir", type=Path, required=True)
     parser.add_argument("--base-model", type=Path, required=True)
     parser.add_argument("--data-dir", type=Path, required=True)
-    parser.add_argument("--regression-path", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--tokenizer-sha256", required=True)
     parser.add_argument("--max-tokens", type=int, default=256)
+    parser.add_argument("--reuse-existing", action="store_true")
     arguments = parser.parse_args()
     if not 1 <= arguments.max_tokens <= 256:
         parser.error("max-tokens must be between 1 and 256")

@@ -23,6 +23,13 @@
     "daily_conversation_sources": ["OpenAssistant OASST1", "CrossWOZ", "KdConv"],
     "committed_to_git": false
   },
+  "classification_training_v4": {
+    "documentation": "tools/rag_guard/V4_LABEL_CONTRACT.md",
+    "registry": "tools/rag_guard/data/dataset_registry_v4.json",
+    "role": "answerability_three_class_groundedness_four_class",
+    "status": "pre_training_preparation",
+    "committed_to_git": false
+  },
   "classification_regression": {
     "path": "tools/rag_guard/data/regression_seed.jsonl",
     "role": "test_only"

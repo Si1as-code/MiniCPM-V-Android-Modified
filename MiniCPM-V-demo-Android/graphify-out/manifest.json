@@ -1,8 +1,8 @@
 {
   "app/build.gradle.kts": {
-    "mtime": 1786674556.4156477,
-    "ast_hash": "7d8e0d61ebc316ab957d0f91e9b83cec",
-    "semantic_hash": "7d8e0d61ebc316ab957d0f91e9b83cec"
+    "mtime": 1787886124.8894663,
+    "ast_hash": "0d7255540a9f3e297b3609344efe9386",
+    "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/CameraFileProviderTest.kt": {
     "mtime": 1785469809.9457726,
@@ -190,8 +190,8 @@
     "semantic_hash": "842a5ffe0e6516e3c43dbe86b6f8f479"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MainActivity.kt": {
-    "mtime": 1787541544.865966,
-    "ast_hash": "d266ecebd7746b06e8da6acfe66195d9",
+    "mtime": 1787885900.4464698,
+    "ast_hash": "93bc6d7590ebdc46637e01afd27f1b09",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/MarkdownEscape.kt": {
@@ -205,8 +205,8 @@
     "semantic_hash": "b082d81818f9c80d199fd33af5ea02c0"
   },
   "app/src/main/java/com/example/minicpm_v_demo/MiniCPMApplication.kt": {
-    "mtime": 1787303703.9552095,
-    "ast_hash": "62b3ed09f07daba7d58381bdec7faeab",
+    "mtime": 1787885891.9124253,
+    "ast_hash": "3828eb171e17be243d8a5631817c09ad",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/ModelAdapter.kt": {
@@ -405,34 +405,34 @@
     "semantic_hash": "26e7bdcb457679185cd0e281774d289e"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/OnnxRagGuardClassifier.kt": {
-    "mtime": 1787025558.8282344,
-    "ast_hash": "7083a626af4fab7d568af1a25eab84b9",
-    "semantic_hash": "7083a626af4fab7d568af1a25eab84b9"
+    "mtime": 1787814188.997226,
+    "ast_hash": "fe2e70f16faabcd8c0fe6454a7144992",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagGuardClassifier.kt": {
-    "mtime": 1787020037.5899396,
-    "ast_hash": "7ededc540134808b9438d650b461293a",
-    "semantic_hash": "7ededc540134808b9438d650b461293a"
+    "mtime": 1787814176.761213,
+    "ast_hash": "8966c579cc27abb335749d8e2e7cbc40",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagGuardInput.kt": {
-    "mtime": 1787025341.654926,
-    "ast_hash": "cb4ef8cdc234f8b18f7c5fa0eb94528f",
-    "semantic_hash": "cb4ef8cdc234f8b18f7c5fa0eb94528f"
+    "mtime": 1787814170.996649,
+    "ast_hash": "0514897908a4b0e4b5132aaf17b6bd8c",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagGuardModelManager.kt": {
-    "mtime": 1787117630.87216,
-    "ast_hash": "23a44b66143c190c980f3596225f635a",
+    "mtime": 1787818676.5928125,
+    "ast_hash": "56dc248a8322cb29f0a950eafb50a907",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagGuardModelManifest.kt": {
-    "mtime": 1787117628.2548537,
-    "ast_hash": "e2fabacf6312b004e9c3a3088e7129e3",
+    "mtime": 1787885866.1883228,
+    "ast_hash": "cd9f7ef71672aea4fd478c8797a88ecc",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagOutputReviewPolicy.kt": {
-    "mtime": 1787020037.5899396,
-    "ast_hash": "65713ddcbfae27f4fac86dfbb222d083",
-    "semantic_hash": "65713ddcbfae27f4fac86dfbb222d083"
+    "mtime": 1787814195.4131546,
+    "ast_hash": "e1079c5e5078a6e790f4cf65dc54f28e",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/importer/DocumentImportQueue.kt": {
     "mtime": 1786514793.6564717,
@@ -540,8 +540,8 @@
     "semantic_hash": "024cc498c4b34634a3f349e94efb5c7f"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/CascadedEvidenceAcceptancePolicy.kt": {
-    "mtime": 1787117633.3925972,
-    "ast_hash": "98a803c6a24c8fa46a80668df2b0ea0a",
+    "mtime": 1787885871.814748,
+    "ast_hash": "738ec7e649f557e3d3ad1bd9c35baf66",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/retrieval/CitationValidator.kt": {
@@ -830,14 +830,14 @@
     "semantic_hash": "1c8303fcdc7d3399be84a6895b26f1b8"
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagGuardContractTest.kt": {
-    "mtime": 1787019819.8782134,
-    "ast_hash": "21be40e3e7f8d62fb6d79b8bd92dbf0e",
-    "semantic_hash": "21be40e3e7f8d62fb6d79b8bd92dbf0e"
+    "mtime": 1787814608.8058825,
+    "ast_hash": "0ad8d26559c99c870d11ab577d50d727",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagGuardInferenceContractTest.kt": {
-    "mtime": 1787025192.488405,
-    "ast_hash": "00020a111eb4da9f311dc0bc11754c80",
-    "semantic_hash": "00020a111eb4da9f311dc0bc11754c80"
+    "mtime": 1787813917.4271357,
+    "ast_hash": "e0fe46ec09671ebb48727d59622c4ace",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagGuardModelManagerTest.kt": {
     "mtime": 1787025498.7762053,
@@ -845,14 +845,14 @@
     "semantic_hash": "9d77045558b03a3794c8bd0732c36a4d"
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagGuardModelManifestTest.kt": {
-    "mtime": 1787117643.675462,
-    "ast_hash": "366aebf0f61e2851c9c34ec3f8174712",
+    "mtime": 1787885448.7133808,
+    "ast_hash": "45ffdbb36f71572efc47a5f0aa234ab7",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagOutputReviewPolicyTest.kt": {
-    "mtime": 1787019819.8803992,
-    "ast_hash": "a84dd566bf1ed12dc34b217f28c5b6a3",
-    "semantic_hash": "a84dd566bf1ed12dc34b217f28c5b6a3"
+    "mtime": 1787813928.1942391,
+    "ast_hash": "bb93acdec588a5d68f884d5abcab815f",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/importer/DocumentImporterTest.kt": {
     "mtime": 1786514960.2397826,
@@ -895,9 +895,9 @@
     "semantic_hash": "5782543568068fe3c51fd544c706f0ea"
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/retrieval/CascadedEvidenceAcceptancePolicyTest.kt": {
-    "mtime": 1787102148.1237872,
-    "ast_hash": "15ce68f3cefbf385f09f152b9f560456",
-    "semantic_hash": "15ce68f3cefbf385f09f152b9f560456"
+    "mtime": 1787885454.1097615,
+    "ast_hash": "893713b831af7882ae4d3d26541a4fe9",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/retrieval/CitationValidatorTest.kt": {
     "mtime": 1786674556.4804335,
@@ -1030,13 +1030,13 @@
     "semantic_hash": "1e953b54abaec27874e636e59c9d5bfe"
   },
   "tools/rag_guard/export_onnx.py": {
-    "mtime": 1787110013.8040435,
-    "ast_hash": "1b7b332ad5cdc6d28416fdfb4f7a8f6f",
+    "mtime": 1787886077.1460567,
+    "ast_hash": "d4b12a66b8e300222fa208c065776c06",
     "semantic_hash": ""
   },
   "tools/rag_guard/model.py": {
-    "mtime": 1787120888.3790486,
-    "ast_hash": "e8a351dbcd2d9a270b55c720b3b13a1c",
+    "mtime": 1787555564.1018577,
+    "ast_hash": "9c639ceb3d15d0254a8b82fd1a81bf3a",
     "semantic_hash": ""
   },
   "tools/rag_guard/quality_gate.py": {
@@ -1055,14 +1055,14 @@
     "semantic_hash": "c6e83c93a012ca6fc9c061a7aee9a480"
   },
   "tools/rag_guard/test_export_onnx.py": {
-    "mtime": 1787024331.8699105,
-    "ast_hash": "d8868f2bcda7d6564928a7418cb11291",
-    "semantic_hash": "d8868f2bcda7d6564928a7418cb11291"
+    "mtime": 1787886055.8270607,
+    "ast_hash": "f68d0a7ef062a4d806a148c770176308",
+    "semantic_hash": ""
   },
   "tools/rag_guard/test_model.py": {
-    "mtime": 1787021643.3182795,
-    "ast_hash": "e4a310c32f889cc7ba16c0d817440e6c",
-    "semantic_hash": "e4a310c32f889cc7ba16c0d817440e6c"
+    "mtime": 1787555560.4641852,
+    "ast_hash": "bc39a4d2a0ae404b4ab389c1f6945806",
+    "semantic_hash": ""
   },
   "tools/rag_guard/test_quality_gate.py": {
     "mtime": 1787112078.8213427,
@@ -1075,23 +1075,23 @@
     "semantic_hash": "886075a4a8668547516f9033b6620765"
   },
   "tools/rag_guard/test_training_data.py": {
-    "mtime": 1787021079.347695,
-    "ast_hash": "8d83702a7e26481273dcc8e133fa00ad",
-    "semantic_hash": "8d83702a7e26481273dcc8e133fa00ad"
+    "mtime": 1787647819.0638185,
+    "ast_hash": "362e2e0622e9b260dea26bbcd493753f",
+    "semantic_hash": ""
   },
   "tools/rag_guard/test_training_pipeline.py": {
-    "mtime": 1787022379.6723673,
-    "ast_hash": "f5d327dcc0915e3dfc0b95cb91f73db9",
-    "semantic_hash": "f5d327dcc0915e3dfc0b95cb91f73db9"
+    "mtime": 1787641134.7138295,
+    "ast_hash": "516fd9bd05996d3bd06515bc69eab375",
+    "semantic_hash": ""
   },
   "tools/rag_guard/train.py": {
-    "mtime": 1787022461.0403051,
-    "ast_hash": "c5e90a4c36d43ae0a179c7fd2e84d889",
-    "semantic_hash": "c5e90a4c36d43ae0a179c7fd2e84d889"
+    "mtime": 1787709527.0159774,
+    "ast_hash": "7f2fbd58ffecb7561ccfd624afb7ee5d",
+    "semantic_hash": ""
   },
   "tools/rag_guard/training_data.py": {
-    "mtime": 1787120891.2012143,
-    "ast_hash": "42cf42521921a4f056c91d0d3fa833f2",
+    "mtime": 1787647898.8609045,
+    "ast_hash": "b859ac1b47bc7ed58461279a41431898",
     "semantic_hash": ""
   },
   "AGENTS.md": {
@@ -1100,8 +1100,8 @@
     "semantic_hash": "e319d508c87cf2d5a39b8a16e73c6524"
   },
   "README_MODIFIED_zh.md": {
-    "mtime": 1787541797.0009644,
-    "ast_hash": "6c3919f1312bcf490ce8b01c983b71b3",
+    "mtime": 1787895964.111091,
+    "ast_hash": "a0fd27aed53fd2f0b445a8bd4058807c",
     "semantic_hash": ""
   },
   "docs/architecture/ADR-001-local-rag-stack.md": {
@@ -1140,8 +1140,8 @@
     "semantic_hash": "6112ddff6d42aba66988515d27814b46"
   },
   "docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md": {
-    "mtime": 1787537893.410834,
-    "ast_hash": "b6b3570d06e2a904a7b9ef26e8422d89",
+    "mtime": 1787895957.6668735,
+    "ast_hash": "a326a1b60a529940b8fcfbb7562472f5",
     "semantic_hash": ""
   },
   "tools/rag_guard/OFFICE_QUALITY_GATE.md": {
@@ -1155,9 +1155,9 @@
     "semantic_hash": "f19e0ef969b2c7a9db90a1d73a95d01d"
   },
   "tools/rag_guard/TRAINING.md": {
-    "mtime": 1787024799.5580451,
-    "ast_hash": "ff5a4c6ca5562381743e4fe5a26ec4fd",
-    "semantic_hash": "ff5a4c6ca5562381743e4fe5a26ec4fd"
+    "mtime": 1787888615.899868,
+    "ast_hash": "6156fc61e015283559fd40fc4b0ef0ee",
+    "semantic_hash": ""
   },
   "tools/rag_guard/requirements-export.txt": {
     "mtime": 1787036080.657416,
@@ -1205,8 +1205,8 @@
     "semantic_hash": "f173c24bacf92b8f62630fe3c4a04514"
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagReviewedGenerator.kt": {
-    "mtime": 1787534480.8686953,
-    "ast_hash": "075ec75d2476edae4924238812423b4f",
+    "mtime": 1787885882.3279312,
+    "ast_hash": "19334fde860d67525954b490ed2ffd49",
     "semantic_hash": ""
   },
   "app/src/main/java/com/example/minicpm_v_demo/rag/index/ExactVectorBuffer.kt": {
@@ -1225,8 +1225,8 @@
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagReviewedGenerationTest.kt": {
-    "mtime": 1787534483.4328797,
-    "ast_hash": "d389edb10075c32e666d04403327e60e",
+    "mtime": 1787885460.082431,
+    "ast_hash": "47ed137f1e106d633a673bf502c93352",
     "semantic_hash": ""
   },
   "app/src/test/java/com/example/minicpm_v_demo/rag/index/ExactVectorBufferTest.kt": {
@@ -1515,8 +1515,8 @@
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/InstallationPersistenceInstrumentedTest.kt": {
-    "mtime": 1787535108.5677767,
-    "ast_hash": "ac13ae977b6ddf1fd9f13ef87bac21eb",
+    "mtime": 1787895602.7082884,
+    "ast_hash": "857d3c7ece76e66d12ca242437c64696",
     "semantic_hash": ""
   },
   "app/src/androidTest/java/com/example/minicpm_v_demo/rag/RagAllQueriesFlowInstrumentedTest.kt": {
@@ -1607,6 +1607,276 @@
   "docs/execution/evidence/rag-end-to-end-performance-20260824.md": {
     "mtime": 1787538200.423323,
     "ast_hash": "65c6e41c2363b7deb63802f46ec9df68",
+    "semantic_hash": ""
+  },
+  "docs/execution/evidence/manual-ui-lifecycle-acceptance-20260824.md": {
+    "mtime": 1787542424.753901,
+    "ast_hash": "1526b329766ac3a71836e1978278a0d5",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-24-rag-guard-dataset-rebuild-training-plan.md": {
+    "mtime": 1787553884.8460126,
+    "ast_hash": "f75904e4e616add3205dd9dc401bc5ed",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-24-rag-guard-answerability-3-groundedness-4-plan.md": {
+    "mtime": 1787563467.8193395,
+    "ast_hash": "a96b21b22b506f5b89144fdc06a0fe3c",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/audit_dataset_v4.py": {
+    "mtime": 1787648515.703928,
+    "ast_hash": "f7bf050b1323f318abcb7d39411f3d9e",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/build_answerability_v4.py": {
+    "mtime": 1787554805.8585732,
+    "ast_hash": "b0a31a2d5170941c625c1ec15b793e89",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/build_groundedness_v4.py": {
+    "mtime": 1787554952.087571,
+    "ast_hash": "9457765309414185ce551de2838d1739",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/claim_labeling.py": {
+    "mtime": 1787554939.265243,
+    "ast_hash": "d84224605cf3e7d2b6ca9d7855f4a97d",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/dataset_schema_v2.py": {
+    "mtime": 1787555301.3351796,
+    "ast_hash": "058e31cd84e49ccf89708ed0e01eae87",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/deduplicate_and_split_v4.py": {
+    "mtime": 1787639889.5915093,
+    "ast_hash": "ab5040f60ec8b96fe087c261aa9ef455",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/evaluate_slices.py": {
+    "mtime": 1787625388.068227,
+    "ast_hash": "c5a6f2b3b8594ffd4b59ae79cc683ad7",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/mutations/amount_date.py": {
+    "mtime": 1787636415.0450215,
+    "ast_hash": "b2b4eebefd9acb420e8fa5cedf4ea286",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/mutations/citation_injection.py": {
+    "mtime": 1787554949.195258,
+    "ast_hash": "83fae01cd830494faa3d34bde33ddc39",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/mutations/entity_scope.py": {
+    "mtime": 1787636595.8818526,
+    "ast_hash": "bdb83bd1ca9cc93056b87c0d1a341423",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/prepare_training_v4.py": {
+    "mtime": 1787556389.1215627,
+    "ast_hash": "55a7a706ff8ce9ef30bdcbfcc016a7b2",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_build_answerability_v4.py": {
+    "mtime": 1787554737.314433,
+    "ast_hash": "0d528d5dbec1645259f358dd4a2380ef",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_build_groundedness_v4.py": {
+    "mtime": 1787636550.216875,
+    "ast_hash": "b019a540e533bd2999ad166283b66ad2",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_dataset_audit_v4.py": {
+    "mtime": 1787639749.8647785,
+    "ast_hash": "9593f14782ca298027c1a37b6205544b",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_dataset_schema_v2.py": {
+    "mtime": 1787554603.9997678,
+    "ast_hash": "3431e0b1a12f10dd76bf23b023e907f1",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_evaluate_slices.py": {
+    "mtime": 1787625178.941624,
+    "ast_hash": "fd92d7613eac7a380a0699edb9164052",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_prepare_training_v4.py": {
+    "mtime": 1787556349.0901132,
+    "ast_hash": "61eaf7532462caf08a6ae571fd5ae186",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_v4_label_contract.py": {
+    "mtime": 1787555453.562413,
+    "ast_hash": "d901a02bdeb5f4b0d18fbdfe85413ab5",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-24-rag-guard-v4-manual-downloads.md": {
+    "mtime": 1787561339.0442345,
+    "ast_hash": "d9d5aafe5342310ff6e9700c0226420f",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/DATASET_CARD_V4.md": {
+    "mtime": 1787895977.2918491,
+    "ast_hash": "7816f78117bf9571fea96df1b18a6deb",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/TRAINING_PREFLIGHT_V4.md": {
+    "mtime": 1787563452.4522984,
+    "ast_hash": "b8be4819e11c065c0e740c6bc8b82f18",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/V4_LABEL_CONTRACT.md": {
+    "mtime": 1787554564.8021386,
+    "ast_hash": "89ec8a5808a8172af6bb84e5fa111216",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/build_full_corpus_v4.py": {
+    "mtime": 1787735916.7148008,
+    "ast_hash": "dbb6cfabceda63f5d8aba6e2ab5774e2",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/source_loaders_v4.py": {
+    "mtime": 1787561789.3302257,
+    "ast_hash": "80238a9d78876ac702dddaca0b746900",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_build_full_corpus_v4.py": {
+    "mtime": 1787735881.8514264,
+    "ast_hash": "a18c846b72c956854393c22005a5ff76",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_source_loaders_v4.py": {
+    "mtime": 1787561715.3315444,
+    "ast_hash": "65532bdcce252a373ef129f10013e6bf",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/TRAINING_RUN_V4.md": {
+    "mtime": 1787895970.6038773,
+    "ast_hash": "618f44bba49f2242818b2d3cf1b8ad4b",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/dataset_balance_v4.py": {
+    "mtime": 1787735630.1750522,
+    "ast_hash": "ecc7f5546fb89bda4fc802f565938c7b",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/mutations/unit_scope.py": {
+    "mtime": 1787636417.3126314,
+    "ast_hash": "218d6538f34590e0eee58cd7b67ad19c",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/select_balanced_corpus_v4.py": {
+    "mtime": 1787637253.7125132,
+    "ast_hash": "c10ff2df715beb8483220c3df49c96cb",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_dataset_balance_v4.py": {
+    "mtime": 1787636108.8013537,
+    "ast_hash": "981242328dddd00fb9ec1868213f7975",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_select_balanced_corpus_v4.py": {
+    "mtime": 1787637219.957349,
+    "ast_hash": "1e7b2b8ce5f47e4ada639435a2d3c8dd",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_training_dynamics_v4.py": {
+    "mtime": 1787640376.031371,
+    "ast_hash": "d6250f4a27023ce09fc037b1ce699a04",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/training_dynamics_v4.py": {
+    "mtime": 1787640431.0953734,
+    "ast_hash": "c8a0ec7ee0e1afb93c2329d734dfebb7",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-25-rag-guard-v4-dataset-stabilization-plan.md": {
+    "mtime": 1787641492.8523366,
+    "ast_hash": "0907996ceaf2a6b1ed1f7ec0829d34d3",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/dataset_correctness_v4.py": {
+    "mtime": 1787735310.015576,
+    "ast_hash": "deb155bfe745635448a2ef9c0c0aefa5",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/hard_types_v4.py": {
+    "mtime": 1787648295.7374978,
+    "ast_hash": "38d1c72c131366fa1e6eeb2c968f58ea",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_dataset_correctness_v4.py": {
+    "mtime": 1787735252.6435606,
+    "ast_hash": "8a97941f933339eaa1621b7d865ee038",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_hard_types_v4.py": {
+    "mtime": 1787648246.3917747,
+    "ast_hash": "16e102eec36eb4f9652886a5b3b35a14",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-25-rag-guard-v4-1-correctness-rebuild-plan.md": {
+    "mtime": 1787718136.3264134,
+    "ast_hash": "02a0f9d150a638ba636f7b37e69255ac",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_training_protocol.py": {
+    "mtime": 1787709420.8946455,
+    "ast_hash": "2211fe74e7b6ec7d732e7a2575c333cf",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/training_protocol.py": {
+    "mtime": 1787709521.4743736,
+    "ast_hash": "837dee7c334e35bf058d1a73de2f2084",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/checkpoint_audit_v4.py": {
+    "mtime": 1787713383.3596122,
+    "ast_hash": "b1117bf7fd1048ff225b9f8c4103c8ec",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_checkpoint_audit_v4.py": {
+    "mtime": 1787713346.774925,
+    "ast_hash": "663ee5f7d7d5a55cc85aad2bd73b1670",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/SMOKE_ERROR_AUDIT_V4_1.md": {
+    "mtime": 1787812433.2487903,
+    "ast_hash": "cb4299b7bb6699adcbf7e68e128935d2",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/qa_repairs_v4_2.py": {
+    "mtime": 1787726821.9054115,
+    "ast_hash": "232a2aa4cac0011a3342e47239007393",
+    "semantic_hash": ""
+  },
+  "tools/rag_guard/test_qa_repairs_v4_2.py": {
+    "mtime": 1787726780.4009407,
+    "ast_hash": "35846afea9f732860570efe003c6c149",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-26-rag-guard-v4-2-dataset-repair-plan.md": {
+    "mtime": 1787812436.5863633,
+    "ast_hash": "a2cb570e8bac20fad04a4790b976afbc",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/example/minicpm_v_demo/rag/guard/RagGuardBundledModelInstaller.kt": {
+    "mtime": 1787815017.1793568,
+    "ast_hash": "cf276d077efb146bc456b392cbf69473",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/example/minicpm_v_demo/rag/guard/RagGuardBundledModelInstallerTest.kt": {
+    "mtime": 1787814863.6520243,
+    "ast_hash": "897ce4b46b6ee18cc93e292bf52c6982",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-27-rag-guard-v4-2-e5-export-android-integration-plan.md": {
+    "mtime": 1787895951.384988,
+    "ast_hash": "499a5783997919dcf915473b6fd8b8df",
     "semantic_hash": ""
   }
 }

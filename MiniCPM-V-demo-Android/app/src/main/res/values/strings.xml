@@ -17,6 +17,7 @@
     <string name="rag_knowledge_bases">知识库</string>
     <string name="rag_settings_summary">创建知识库并从手机批量导入文档</string>
     <string name="rag_knowledge_base_summary">选择知识库后可批量提交文档。正文会在后台复制、校验并加密保存。</string>
+    <string name="rag_knowledge_base_priority_notice">模型回答与知识库内容不一致时，将优先采用知识库中的答案。请确保导入的文档内容准确、有效。</string>
     <string name="rag_create_knowledge_base">新建知识库</string>
     <string name="rag_import_documents">导入文档</string>
     <string name="rag_knowledge_base_name_hint">知识库名称</string>

@@ -135,7 +135,7 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 - 唯一活动计划：[docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md](docs/superpowers/plans/2026-08-18-minicpm-android-unified-progress-plan.md)
 - 历史总体设计：[docs/superpowers/plans/2026-08-10-android-local-rag.md](docs/superpowers/plans/2026-08-10-android-local-rag.md)
 
-当前工程估算：RAG 基础闭环约完成 `95%`，完整办公发布目标约完成 `80%`。详细口径、验证证据和后续唯一执行顺序以统一活动计划为准。
+当前工程估算：基础 App、RAG 工程闭环、v4.2 E5 正式模型、APK 和真机专项验收均完成 `100%`。真实办公数据评测作为后续非阻断质量观测。详细口径以统一活动计划为准。
 
 当前已经完成：
 
@@ -146,24 +146,21 @@ app/src/test/resources/visual_guard_regression_cases.tsv
 - 结构化切块、中文检索文本、E5 INT8 ONNX 嵌入和真机推理；
 - FTS4 BM25、dense、RRF 混合检索和受限候选；
 - `RagCoordinator` 状态决策、native checkpoint 临时证据事务和无结果普通回答；
-- Groundedness 完整候选审查、同证据最多一次纠偏重生成，以及审核失败后恢复 checkpoint 并静默回退普通回答；
-- 只有审核通过的 RAG 回答才显示“根据数据库中内容”标识，普通回答不冒充知识库回答；
+- Groundedness 完整候选审查和同证据最多一次纠偏重生成；明确审核失败时隐藏模型草稿并改用带来源编号的知识库摘录，分类器缺失、超时或哈希异常等技术故障才静默回退普通回答；
+- 只有审核通过的 RAG 回答或明确标注来源的知识库摘录替换才显示“根据数据库中内容”标识，普通回答不冒充知识库回答；
 - 中文/英文句子、条款和表格行窗口缩减，MiniCPM 原生 tokenizer 证据预算，以及 XML 数据边界转义；
 - 小库连续向量缓存（最多 5000 chunks）和语料校验戳失效；
 - 大库 HNSW 加密索引、后台重建、上一代恢复、损坏精确检索回退和 5001 向量真机闭环；
 - 引用白名单、引用快照、会话归档 v2，以及 AI 气泡来源 chip/归档摘录详情；
-- Answerability/Groundedness 双头 INT8 模型、Android runtime、CPU 真机性能和独立质量门槛工具。
+- Answerability 三分类/Groundedness 四分类双头 INT8 模型、Android runtime、CPU 推理和量化观测工具。
 
-当前实验 Guard v3 的 INT8 SHA-256 为 `6d11400d62b8f15250932e3187aa7b7823809dc0baf0a0ff0a3c157dbe1d35fa`。它在本轮独立测试上的 Answerability/Groundedness macro-F1 分别约为 `0.9885/0.8088`，但未通过冻结的量化对齐发布门槛，因此只在当前实验分支使用 `0.95` 保守阈值；不能据此宣称稳定发布。模型缺失、哈希不符、低于阈值或输出审核失败时，App 会恢复 RAG checkpoint 并按普通模型回答。
+当前正式 Guard 为 v4.2 E5 INT8，大小 `118,171,779` bytes，SHA-256 为 `d674ef4ef4fb2b4dce37d43c46eeb4b0e8038eb66da7cde1b568ca78dc45e1c2`。模型随 APK 以未压缩 asset 打包，首次使用时原子安装到应用私有目录并校验大小与哈希。Android 按训练期的 XLM-R 双序列格式组装输入；Answerability 使用 `SUPPORTED/PARTIAL/UNSUPPORTED`，Groundedness 使用 `GROUNDED/PARTIAL/UNSUPPORTED/CONTRADICTED`。
 
-当前尚未完成，因而还不能标记为稳定 RAG：
+本次量化结果如实记录：PyTorch/FP32 最大绝对差 `0.0000088215`，INT8/FP32 标签一致率 `0.9693585127`，最大 calibration macro-F1 降幅 `0.0107869130`，INT8 体积为 FP32 的 `0.2512633907`。按当前产品决定，这些性能指标不再作为 APK 接入门槛；受控路径、模型大小、SHA-256、ONNX 输入输出契约和 APK 签名仍必须校验通过。v4.2 frozen test 未读取、未评估。
 
-- 脱敏真实办公校准/测试集和生产 Answerability profile；
-- 新 Guard 模型最终 INT8 导出、固定哈希、阈值 profile 和真机模型包替换；
-- HNSW 各发布边界强制中断恢复矩阵，以及 1k/5k/20k Recall@10、P50/P95、RSS 和索引体积基准；
-- `ALL_QUERIES` 已固定为正式模式，E5 固定使用真机更快的 ORT CPU，编辑/前后台和端到端性能矩阵已闭环；
-- Groundedness 真机确认错误金额/日期会漏判，该项只记录为最终模型重训输入，不用应用层规则掩盖；
-- Guard 重训后的错误金额、错误日期、伪引用与最终安全矩阵。
+输出策略为：`GROUNDED` 采用模型回答；`PARTIAL` 最多使用同一证据纠偏重生成一次，仍未通过则替换为带来源的知识库摘录；`CONTRADICTED` 直接替换为知识库摘录；`UNSUPPORTED` 不冒充知识库回答，恢复为普通聊天。模型缺失、哈希不符、超时等技术故障同样恢复 RAG checkpoint 并按普通模型回答。
+
+vivo V2359A 已完成固定签名覆盖安装、私有 asset 大小/SHA-256、三加四分类和 30 次稳定推理验收；会话、消息、知识库、文档、E5 与 HNSW 聚合指纹在覆盖安装前后保持一致，Guard 从旧 v3 受控迁移到当前 v4.2。模型在真实办公分布上的后续评测结果继续单独记录，不回写为量化接入门控。
 
 环境要求：
 
@@ -205,6 +202,7 @@ adb install app\build\outputs\apk\debug\app-debug.apk
 | Android 测试代码编译 | 通过 |
 | Debug APK 组装 | 通过 |
 | APK 签名校验 | APK Signature Scheme v2 验证通过 |
+| v4.2 Guard 真机 | 私有模型 SHA-256 与正式制品一致；模型打开 1441.170 ms，Answerability P50/P95 8.245/8.475 ms，Groundedness P50/P95 10.505/11.755 ms，30 次无漂移 |
 | arm64 原生库 | `libminicpm_v_demo.so`、`libggml-cpu-v86.so` 均已打包 |
 | 真机安装与启动 | vivo V2359A / Android 16 覆盖安装、启动通过 |
 | 固定签名覆盖安装 | `adb install -r` 前后会话、知识库、文档状态、E5/Guard 与 HNSW 聚合指纹一致；测试探针已清理 |
@@ -218,7 +216,8 @@ adb install app\build\outputs\apk\debug\app-debug.apk
 | 消息时间线编辑 | 用户修改后截断并重新回答；AI 修改仅更新显示和上下文；单条删除与上下文重建通过回归测试 |
 | 预处理图片删除 | 处理中立即隐藏并安全取消，完成态同样可删除；上下文重置仍保持清理状态 |
 | AI 气泡长按 | 长按监听覆盖气泡及全部子视图，生成期间继续禁止编辑 |
-| 真机图片预处理 | 待人工复验暗化圆环、等待提示、完成态及两处原图点击 |
+| 真机图片预处理 | 人工验收通过：暗化圆环、等待提示、完成态、处理中删除、两处原图点击及完整视觉推理正常 |
+| 真机生命周期与交互 | 人工验收通过：旋转、前后台、pause/resume、会话/消息操作及键盘锚点、滑动和点击行为正常 |
 | 本地 RAG 构建骨架 | 固定版本依赖、AGP 9 内置 Kotlin + KSP2、Room schema 导出和 ORT R8 规则通过编译与 Debug APK 构建 |
 | 本地 RAG 数据层 | 第 1 版知识库/文档/chunk/FTS4/引用 schema 已导出；Room/FTS 真机测试 2/2 通过 |
 | 本地 RAG 加密层 | Keystore、SQLCipher、AES-GCM 文件容器真机测试 4/4 通过；错误密钥和篡改数据均被拒绝 |

@@ -15,6 +15,7 @@
     <string name="rag_knowledge_bases">Knowledge bases</string>
     <string name="rag_settings_summary">Create knowledge bases and import documents from this device</string>
     <string name="rag_knowledge_base_summary">Select a knowledge base, then submit multiple documents. Content is copied, validated, and encrypted in the background.</string>
+    <string name="rag_knowledge_base_priority_notice">When the model and knowledge base disagree, the knowledge-base answer takes priority. Make sure imported documents are accurate and up to date.</string>
     <string name="rag_create_knowledge_base">Create knowledge base</string>
     <string name="rag_import_documents">Import documents</string>
     <string name="rag_knowledge_base_name_hint">Knowledge base name</string>

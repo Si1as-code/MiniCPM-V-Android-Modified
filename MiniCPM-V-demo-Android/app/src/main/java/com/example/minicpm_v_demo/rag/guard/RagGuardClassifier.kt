@@ -6,7 +6,8 @@ import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 enum class GroundednessLabel {
     GROUNDED,
     PARTIAL,
-    UNGROUNDED,
+    UNSUPPORTED,
+    CONTRADICTED,
 }
 
 data class GroundednessVerdict(

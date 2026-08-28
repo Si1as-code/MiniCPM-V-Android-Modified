@@ -7,7 +7,7 @@ import android.os.SystemClock
 import com.example.minicpm_v_demo.rag.crypto.RagKeyManager
 import com.example.minicpm_v_demo.rag.crypto.RagTempFileCleaner
 import com.example.minicpm_v_demo.rag.retrieval.CascadedEvidenceAcceptancePolicy
-import com.example.minicpm_v_demo.rag.retrieval.ExperimentalAnswerabilityCalibration
+import com.example.minicpm_v_demo.rag.retrieval.CurrentAnswerabilityCalibration
 import com.example.minicpm_v_demo.rag.retrieval.CurrentRetrievalCalibration
 import com.example.minicpm_v_demo.rag.retrieval.LazyAnswerabilityClassifier
 import com.example.minicpm_v_demo.rag.DatabaseRagTurnStateSource
@@ -106,7 +106,7 @@ class MiniCPMApplication : Application() {
             acceptancePolicy = CascadedEvidenceAcceptancePolicy(
                 retrievalKey = CurrentRetrievalCalibration.key,
                 classifier = LazyAnswerabilityClassifier(ragGuardModelManager::openInstalled),
-                profile = ExperimentalAnswerabilityCalibration.profile,
+                profile = CurrentAnswerabilityCalibration.profile,
             ),
             reducer = SentenceWindowEvidenceReducer,
             budgeter = RagContextBudgeter(),

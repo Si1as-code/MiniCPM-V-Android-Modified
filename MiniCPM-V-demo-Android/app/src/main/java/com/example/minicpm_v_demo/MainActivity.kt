@@ -40,7 +40,7 @@ import com.example.minicpm_v_demo.rag.retrieval.RagVisualGroundingPolicy
 import com.example.minicpm_v_demo.rag.retrieval.RetrievedChunk
 import com.example.minicpm_v_demo.rag.RagTurnTransaction
 import com.example.minicpm_v_demo.rag.RagPromptTokenCounter
-import com.example.minicpm_v_demo.rag.guard.ExperimentalGroundednessCalibration
+import com.example.minicpm_v_demo.rag.guard.CurrentGroundednessCalibration
 import com.example.minicpm_v_demo.rag.guard.GroundednessClassifier
 import com.example.minicpm_v_demo.rag.guard.RagReviewedGenerator
 import com.example.minicpm_v_demo.rag.guard.ReviewedRagGeneration
@@ -1957,7 +1957,7 @@ class MainActivity : StatusBarVisibleActivity() {
                 if (ragRunId != null && ragTransaction != null && fullResponse.isNotBlank()) {
                     val app = application as MiniCPMApplication
                     val installedClassifier = app.ragGuardModelManager.openInstalled()
-                    val profile = ExperimentalGroundednessCalibration.profile
+                    val profile = CurrentGroundednessCalibration.profile
                     val reviewed = if (installedClassifier != null) {
                         RagReviewedGenerator(
                             classifier = WatchdogGroundednessClassifier(

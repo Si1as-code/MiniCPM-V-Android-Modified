@@ -53,7 +53,7 @@ class RagGuardContractTest {
             GroundednessVerdict(GroundednessLabel.PARTIAL, Float.NaN, SHA)
         }
         assertThrows(IllegalArgumentException::class.java) {
-            GroundednessVerdict(GroundednessLabel.UNGROUNDED, 0.4f, "A".repeat(64))
+            GroundednessVerdict(GroundednessLabel.UNSUPPORTED, 0.4f, "A".repeat(64))
         }
     }
 

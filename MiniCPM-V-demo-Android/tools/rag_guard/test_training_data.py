@@ -13,6 +13,95 @@ from tools.rag_guard.training_data import (
 
 
 class TrainingDataTest(unittest.TestCase):
+    @staticmethod
+    def _v4_groundedness_row() -> dict[str, object]:
+        return {
+            "id": "v4-groundedness-protected-input",
+            "task": "groundedness",
+            "label": "GROUNDED",
+            "question": "差旅上限是多少？",
+            "evidence": [
+                {
+                    "source_id": "S1",
+                    "document_id": "doc-1",
+                    "text": "很长的制度正文。" * 200,
+                }
+            ],
+            "answer": "差旅报销上限为 800 元。",
+            "atomic_claims": [
+                {
+                    "text": "差旅报销上限为 800 元。",
+                    "support": "entailed",
+                    "material": True,
+                    "source_ids": ["S1"],
+                }
+            ],
+            "conversation_id": "",
+            "document_id": "doc-1",
+            "domain": "office",
+            "hard_negative_type": "NONE",
+            "mutation_family_id": "family-1",
+            "split": "train",
+            "language": "zh",
+            "distribution": "public_licensed",
+            "redaction_status": "public_source_redacted",
+            "source_dataset": "fixture",
+            "source_version": "1",
+            "source_record_id": "fixture-1",
+            "source_license": "MIT",
+            "license_status": "approved",
+            "provenance": {
+                "raw_sha256": "a" * 64,
+                "transform_version": "rag-guard-v4.1",
+                "generator_commit": "b" * 40,
+            },
+        }
+
+    def test_v4_pair_protects_query_and_candidate_answer_from_evidence_truncation(self) -> None:
+        from tools.rag_guard.training_data import format_model_pair_v4
+
+        protected, evidence = format_model_pair_v4(self._v4_groundedness_row())
+
+        self.assertEqual(
+            "query: 差旅上限是多少？\nanswer: 差旅报销上限为 800 元。",
+            protected,
+        )
+        self.assertTrue(evidence.startswith("evidence [S1]: 很长的制度正文。"))
+        self.assertNotIn("answer:", evidence)
+
+    def test_v4_encoder_truncates_only_evidence(self) -> None:
+        from tools.rag_guard.training_data import encode_model_pairs_v4
+
+        class RecordingTokenizer:
+            def __init__(self) -> None:
+                self.calls: list[tuple[object, object, dict[str, object]]] = []
+
+            def __call__(self, first: object, second: object = None, **kwargs: object):
+                self.calls.append((first, second, dict(kwargs)))
+                batch_size = len(first) if isinstance(first, list) else 1
+                if second is not None and isinstance(second, list) and all(item == "" for item in second):
+                    return {"input_ids": [[1, 2, 3, 4] for _ in range(batch_size)]}
+                return {
+                    "input_ids": [[1, 2, 3] for _ in range(batch_size)],
+                    "attention_mask": [[1, 1, 1] for _ in range(batch_size)],
+                }
+
+        tokenizer = RecordingTokenizer()
+        encoded = encode_model_pairs_v4(
+            [self._v4_groundedness_row()], tokenizer=tokenizer, max_length=256
+        )
+
+        protected, evidence, options = tokenizer.calls[-1]
+        self.assertEqual(
+            ["query: 差旅上限是多少？\nanswer: 差旅报销上限为 800 元。"],
+            protected,
+        )
+        self.assertEqual(1, len(evidence))
+        self.assertEqual("only_second", options["truncation"])
+        self.assertEqual(256, options["max_length"])
+        self.assertFalse(options["padding"])
+        self.assertEqual([[1, 2, 3]], encoded["input_ids"])
+
     def test_formats_each_task_without_adding_an_empty_answer(self) -> None:
         answerability = {
             "task": "answerability",
