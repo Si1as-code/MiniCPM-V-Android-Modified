@@ -2,6 +2,8 @@
 
 本版本基于官方仓库 [OpenBMB/MiniCPM-V-Apps](https://github.com/OpenBMB/MiniCPM-V-Apps) 的 Android Demo 2.3（基础提交 `2b4049fd877be538e77cae5122204ee0ea3ac34c`），增加常驻系统状态栏、聊天拍照入口、“先预处理、后推理”的图片发送流程、原图缓存查看、多会话永久保存和消息时间线编辑。除下述 Android 改动外，iOS、HarmonyOS 和共享 `llama.cpp-omni` 子模块仍保持官方仓库结构。
 
+从上游基线到当前正式版的完整时间线、端侧 RAG 架构、RAG Guard v4.2 训练与量化、代码/测试追溯矩阵、真机证据和论文来源，见[《MiniCPM-V Android 正式版完整改造报告》](docs/reports/2026-08-28-minicpm-android-formal-version-change-report-zh.md)。
+
 ## 功能变更
 
 ### 1. 顶部系统状态栏常驻

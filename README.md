@@ -8,6 +8,9 @@
 > private-cache original-image viewer. See
 > [the Chinese modification guide](MiniCPM-V-demo-Android/README_MODIFIED_zh.md)
 > for implementation, security limits, build instructions, and validation.
+> A complete, code-backed account of all changes from the upstream Android 2.3 baseline to the
+> current production branch is available in the
+> [Chinese formal-version change report](MiniCPM-V-demo-Android/docs/reports/2026-08-28-minicpm-android-formal-version-change-report-zh.md).
 
 **English** | [中文](README_zh.md)
 

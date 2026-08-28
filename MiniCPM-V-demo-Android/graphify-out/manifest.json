@@ -1100,8 +1100,8 @@
     "semantic_hash": "e319d508c87cf2d5a39b8a16e73c6524"
   },
   "README_MODIFIED_zh.md": {
-    "mtime": 1787896788.7067747,
-    "ast_hash": "27a64ae5023df12130bcf81ef5a11ed6",
+    "mtime": 1787900866.5232291,
+    "ast_hash": "c4958d9ae837c2289b7e1319d21425c6",
     "semantic_hash": ""
   },
   "docs/architecture/ADR-001-local-rag-stack.md": {
@@ -1887,6 +1887,11 @@
   "models/rag-guard-v4-2-e5/README.md": {
     "mtime": 1787896795.3283794,
     "ast_hash": "dbed1560ced6174c27faf2152ba0a890",
+    "semantic_hash": ""
+  },
+  "docs/reports/2026-08-28-minicpm-android-formal-version-change-report-zh.md": {
+    "mtime": 1787900874.2260344,
+    "ast_hash": "cbef4f686326f9f0f983f42ad9550f64",
     "semantic_hash": ""
   }
 }
